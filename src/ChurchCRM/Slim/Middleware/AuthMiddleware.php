@@ -62,57 +62,107 @@ class AuthMiddleware implements MiddlewareInterface
                     $response->getBody()->write(json_encode(['error' => 'Account has limited permissions. Contact an administrator.']));
                     return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
                 }
-            } elseif (AuthenticationManager::validateUserSessionIsActive(!$this->isPath($request, 'background'))) {
+            } else {
                 // validate the user session; however, do not update tLastOperation if the requested path is "/background"
                 // since /background operations do not connotate user activity.
+                $sessionValidation = AuthenticationManager::getUserSessionValidationResult(!$this->isPath($request, 'background'));
+                $requiredStepRequestAllowed = $sessionValidation->nextStepURL !== null
+                    && $this->isRequiredStepRequestAllowed($request, $sessionValidation->nextStepURL);
 
-                // Confine EditSelf-only users to the self-service flow.
-                // BUT allow them through if they need to change their password — blocking
-                // the change-password page locks new users out permanently. See #8680.
-                // Zero-permission users are NOT redirected: they retain read-only access
-                // to people/family records (read-default policy, #9003). Writes are denied
-                // by the per-route role middleware and the per-page permission guards.
-                $sessionUser = AuthenticationManager::getCurrentUser();
-                if ($sessionUser->isEditSelfExclusive() && !$this->isAuthFlowExemptPath($request)) {
+                if ($sessionValidation->nextStepURL !== null && !$requiredStepRequestAllowed) {
+                    return $this->requiredStepResponse($request, $sessionValidation->nextStepURL, $sessionValidation->isAuthenticated);
+                }
+
+                if ($sessionValidation->isAuthenticated || $requiredStepRequestAllowed) {
+                    // Confine EditSelf-only users to the self-service flow.
+                    // BUT allow exact required-step requests through; otherwise the
+                    // user cannot complete password change or mandatory 2FA enrollment.
+                    $sessionUser = AuthenticationManager::getCurrentUser();
+                    if ($sessionUser->isEditSelfExclusive() && !$requiredStepRequestAllowed && !$this->isAuthFlowExemptPath($request)) {
+                        if ($this->isBrowserRequest($request)) {
+                            $rootPath = SystemURLs::getRootPath();
+                            return (new Response())->withStatus(302)->withHeader('Location', $rootPath . '/external/limited-access');
+                        }
+                        // API request — return 403
+                        $response = new Response();
+                        $response->getBody()->write(json_encode(['error' => 'Account has limited permissions. Contact an administrator.']));
+                        return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+                    }
+                } else {
+                    $logger = LoggerUtils::getAppLogger();
+                    $logger->warning('No authenticated user or session', [
+                        'path' => $request->getUri()->getPath(),
+                        'method' => $request->getMethod()
+                    ]);
+
+                    // Check if this is a browser request - redirect to login instead of JSON error
                     if ($this->isBrowserRequest($request)) {
-                        $rootPath = SystemURLs::getRootPath();
-                        return (new Response())->withStatus(302)->withHeader('Location', $rootPath . '/external/limited-access');
+                        return $this->redirectToLogin($request);
                     }
-                    // API request — return 403
+
                     $response = new Response();
-                    $response->getBody()->write(json_encode(['error' => 'Account has limited permissions. Contact an administrator.']));
-                    return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+                    $errorBody = json_encode(['error' => gettext('No logged in user'), 'code' => 401]);
+                    $response->getBody()->write($errorBody);
+                    return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
                 }
-
-                // User with an active browser session is still authenticated.
-                // For browser requests (non-background), enforce any required redirect steps (e.g. forced password change).
-                // Use a PSR-15 response redirect rather than calling ensureAuthentication() which exits via header().
-                if ($this->isBrowserRequest($request) && !$this->isPath($request, 'background')) {
-                    $result = AuthenticationManager::getAuthenticationProvider()->validateUserSessionIsActive(true);
-                    if ($result->nextStepURL !== null) {
-                        return (new Response())->withStatus(302)->withHeader('Location', $result->nextStepURL);
-                    }
-                }
-            } else {
-                $logger = LoggerUtils::getAppLogger();
-                $logger->warning('No authenticated user or session', [
-                    'path' => $request->getUri()->getPath(),
-                    'method' => $request->getMethod()
-                ]);
-
-                // Check if this is a browser request - redirect to login instead of JSON error
-                if ($this->isBrowserRequest($request)) {
-                    return $this->redirectToLogin($request);
-                }
-
-                $response = new Response();
-                $errorBody = json_encode(['error' => gettext('No logged in user'), 'code' => 401]);
-                $response->getBody()->write($errorBody);
-                return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
             }
         }
 
         return $handler->handle($request);
+    }
+
+    private function requiredStepResponse(
+        ServerRequestInterface $request,
+        string $nextStepURL,
+        bool $isPrimaryAuthenticationComplete
+    ): ResponseInterface
+    {
+        if ($this->isBrowserRequest($request)) {
+            return (new Response())->withStatus(302)->withHeader('Location', $nextStepURL);
+        }
+
+        $status = $isPrimaryAuthenticationComplete ? 403 : 401;
+        $message = $isPrimaryAuthenticationComplete
+            ? gettext('Complete the required account security step before continuing')
+            : gettext('Additional authentication is required');
+        $response = new Response();
+        $response->getBody()->write(json_encode(['error' => $message, 'code' => $status]));
+
+        return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Allow only the exact HTTP actions needed to complete the active step.
+     * Recovery-code rotation and 2FA removal are intentionally absent.
+     */
+    private function isRequiredStepRequestAllowed(ServerRequestInterface $request, string $nextStepURL): bool
+    {
+        $rootPath = rtrim(SystemURLs::getRootPath(), '/');
+        $requiredStepPath = parse_url($nextStepURL, PHP_URL_PATH);
+        $requestSignature = strtoupper($request->getMethod()) . ' ' . $request->getUri()->getPath();
+
+        $allowedRequests = match ($requiredStepPath) {
+            $rootPath . '/session/two-factor' => [
+                'GET ' . $rootPath . '/session/two-factor',
+                'POST ' . $rootPath . '/session/two-factor',
+            ],
+            $rootPath . '/v2/user/current/changepassword' => [
+                'GET ' . $rootPath . '/v2/user/current/changepassword',
+                'POST ' . $rootPath . '/v2/user/current/changepassword',
+            ],
+            $rootPath . '/v2/user/current/manage2fa' => [
+                'GET ' . $rootPath . '/v2/user/current/manage2fa',
+                'GET ' . $rootPath . '/v2/user/current/enroll2fa',
+                'GET ' . $rootPath . '/api/user/current/2fa-status',
+                'POST ' . $rootPath . '/api/user/current/reauthenticate',
+                'POST ' . $rootPath . '/api/user/current/refresh2fasecret',
+                'POST ' . $rootPath . '/api/user/current/cancel2faenrollment',
+                'POST ' . $rootPath . '/api/user/current/test2FAEnrollmentCode',
+            ],
+            default => [],
+        };
+
+        return in_array($requestSignature, $allowedRequests, true);
     }
 
     /**
@@ -129,11 +179,16 @@ class AuthMiddleware implements MiddlewareInterface
      */
     private function isAuthFlowExemptPath(ServerRequestInterface $request): bool
     {
+        $rootPath = rtrim(SystemURLs::getRootPath(), '/');
         $path = $request->getUri()->getPath();
+        $requestSignature = strtoupper($request->getMethod()) . ' ' . $path;
 
-        return str_contains($path, '/user/current/changepassword')
-            || str_contains($path, '/user/current/manage2fa')
-            || str_contains($path, '/user/current/enroll2fa');
+        return in_array($requestSignature, [
+            'GET ' . $rootPath . '/v2/user/current/changepassword',
+            'POST ' . $rootPath . '/v2/user/current/changepassword',
+            'GET ' . $rootPath . '/v2/user/current/manage2fa',
+            'GET ' . $rootPath . '/v2/user/current/enroll2fa',
+        ], true);
     }
 
     private function isPath(ServerRequestInterface $request, string $pathPart): bool

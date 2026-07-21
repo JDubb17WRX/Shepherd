@@ -16,72 +16,82 @@
         -Server
     }
 
-    # Liveness only proves that the web process can answer requests. It must
-    # remain independent of MariaDB so the orchestrator can distinguish a
-    # crashed container from an unavailable dependency.
-    handle /shepherd/livez {
-        header Content-Type "application/json; charset=utf-8"
-        header Cache-Control "no-store"
-        respond `{"status":"alive"}` 200
-    }
+    @dotfiles path_regexp hidden ^/shepherd/(?:.*/)?\.
+    @protected path /shepherd/Include/* /shepherd/logs/* /shepherd/tmp_attach/*
+    # Uploaded person/family photos must be served through authenticated API routes.
+    # Caddy does not honor the deny rules in the directories' .htaccess files.
+    # See: GHSA-r286-h493-ppwj
+    @privateMedia path_regexp privateMedia (?i)^/shepherd/Images/(?:Person|Family)(?:/|$)
+    @pluginPhp path_regexp pluginphp ^/shepherd/plugins/(community|core)/.+\.(php|phar|phtml|pht|php[3-9])$
 
-    # Readiness is handled by a small deployment probe that checks the
-    # application database/schema and writable persistent paths. It does not
-    # bootstrap ChurchCRM, create a session, or expose dependency details.
-    handle /shepherd/healthz {
-        rewrite * /shepherd/healthz.php
-        php_server
-    }
-    handle /shepherd/healthz.php {
+    # `route` preserves literal handler order. Without it, Caddy's directive
+    # sorting places `handle` before top-level `respond` directives.
+    route {
+        # Liveness only proves that the web process can answer requests. It must
+        # remain independent of MariaDB so the orchestrator can distinguish a
+        # crashed container from an unavailable dependency.
+        handle /shepherd/livez {
+            header Content-Type "application/json; charset=utf-8"
+            header Cache-Control "no-store"
+            respond `{"status":"alive"}` 200
+        }
+
+        # Readiness is handled by a small deployment probe that checks the
+        # application database/schema and writable persistent paths. It does not
+        # bootstrap ChurchCRM, create a session, or expose dependency details.
+        handle /shepherd/healthz {
+            rewrite * /shepherd/healthz.php
+            php_server
+        }
+        handle /shepherd/healthz.php {
+            respond 404
+        }
+
+        respond @dotfiles 404
+        respond @protected 404
+        respond @privateMedia 404
+        respond @pluginPhp 404
+
+        handle /shepherd/session/* {
+            try_files {path} /shepherd/session/index.php
+            php_server
+        }
+        handle /shepherd/api/* {
+            try_files {path} /shepherd/api/index.php
+            php_server
+        }
+        handle /shepherd/v2/* {
+            try_files {path} /shepherd/v2/index.php
+            php_server
+        }
+        handle /shepherd/admin/* {
+            try_files {path} /shepherd/admin/index.php
+            php_server
+        }
+        handle /shepherd/finance/* {
+            try_files {path} /shepherd/finance/index.php
+            php_server
+        }
+        handle /shepherd/kiosk/* {
+            try_files {path} /shepherd/kiosk/index.php
+            php_server
+        }
+        handle /shepherd/plugins/* {
+            try_files {path} /shepherd/plugins/index.php
+            php_server
+        }
+        handle /shepherd/external/* {
+            try_files {path} /shepherd/external/index.php
+            php_server
+        }
+        handle /shepherd/setup/* {
+            try_files {path} /shepherd/setup/index.php
+            php_server
+        }
+        handle /shepherd/* {
+            try_files {path} {path}/ /shepherd/index.php
+            php_server
+        }
         respond 404
     }
-
-    @dotfiles path_regexp hidden ^/shepherd/(?:.*/)?\.
-    respond @dotfiles 404
-    @protected path /shepherd/Include/* /shepherd/logs/* /shepherd/tmp_attach/*
-    respond @protected 404
-    @pluginPhp path_regexp pluginphp ^/shepherd/plugins/(community|core)/.+\.(php|phar|phtml|pht|php[3-9])$
-    respond @pluginPhp 404
-
-    handle /shepherd/session/* {
-        try_files {path} /shepherd/session/index.php
-        php_server
-    }
-    handle /shepherd/api/* {
-        try_files {path} /shepherd/api/index.php
-        php_server
-    }
-    handle /shepherd/v2/* {
-        try_files {path} /shepherd/v2/index.php
-        php_server
-    }
-    handle /shepherd/admin/* {
-        try_files {path} /shepherd/admin/index.php
-        php_server
-    }
-    handle /shepherd/finance/* {
-        try_files {path} /shepherd/finance/index.php
-        php_server
-    }
-    handle /shepherd/kiosk/* {
-        try_files {path} /shepherd/kiosk/index.php
-        php_server
-    }
-    handle /shepherd/plugins/* {
-        try_files {path} /shepherd/plugins/index.php
-        php_server
-    }
-    handle /shepherd/external/* {
-        try_files {path} /shepherd/external/index.php
-        php_server
-    }
-    handle /shepherd/setup/* {
-        try_files {path} /shepherd/setup/index.php
-        php_server
-    }
-    handle /shepherd/* {
-        try_files {path} {path}/ /shepherd/index.php
-        php_server
-    }
-    respond 404
 }

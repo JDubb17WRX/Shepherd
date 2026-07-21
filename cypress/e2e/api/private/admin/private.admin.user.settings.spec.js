@@ -21,7 +21,7 @@ describe("API Private Admin User", () => {
         );
     });
 
-    it("DisableTwoFactor", () => {
+    it("Allows API-key automation without browser CSRF or local step-up", () => {
         cy.makePrivateAdminAPICall(
             "POST",
             "/admin/api/user/99/disableTwoFactor",

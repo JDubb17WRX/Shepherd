@@ -30,6 +30,13 @@ describe('01 - Setup Wizard', () => {
 
     // New password set during the forced change step
     const newAdminPassword = Cypress.env('admin.new.password') || 'AdminP@ss1234!';
+    const adminTwoFactorRuntimeKey = 'newSystemAdminTwoFactorSecret';
+
+    const loginAsEnrolledAdmin = (password) => cy.task('getRuntimeValue', adminTwoFactorRuntimeKey)
+        .then((twoFactorSecret) => {
+            expect(twoFactorSecret, 'fresh-install admin 2FA secret').to.be.a('string').and.not.be.empty;
+            return cy.loginWithTwoFactor(adminCredentials.username, password, twoFactorSecret);
+        });
 
     describe('Fresh Installation', () => {
         it('should display the setup wizard on first visit', () => {
@@ -136,7 +143,7 @@ describe('01 - Setup Wizard', () => {
             cy.contains('Password Change Required').should('be.visible');
         });
 
-        it('should complete forced password change and redirect to church-info', () => {
+        it('should complete forced password change and mandatory 2FA enrollment', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
@@ -148,7 +155,16 @@ describe('01 - Setup Wizard', () => {
             cy.get('#NewPassword2').type(newAdminPassword);
             cy.get('button[type=submit]').click();
 
-            // ChurchInfoRequiredMiddleware redirects admin to church-info when sChurchName is empty
+            cy.url({ timeout: 15000 }).should('include', '/v2/user/current/manage2fa');
+            cy.enrollCurrentUserInTwoFactor().then((twoFactorSecret) => {
+                cy.task('setRuntimeValue', {
+                    key: adminTwoFactorRuntimeKey,
+                    value: twoFactorSecret,
+                });
+            });
+
+            // Once the account security steps are complete, first-run setup is next.
+            cy.visit('/admin/system/church-info');
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
 
             // Store new password in Cypress env so 02-demo-import.spec.js can read it
@@ -158,18 +174,14 @@ describe('01 - Setup Wizard', () => {
 
     describe('Church Info Setup', () => {
         it('should redirect to church-info after login when church name is not set', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginAsEnrolledAdmin(newAdminPassword);
 
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
             cy.contains('Church Information').should('be.visible');
         });
 
         it('should fill and save church information to complete first-run setup', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginAsEnrolledAdmin(newAdminPassword);
 
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
 
@@ -205,9 +217,7 @@ describe('01 - Setup Wizard', () => {
         // church info has been saved, so normal login lands on the dashboard.
 
         it('should login with new password and reach the dashboard', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginAsEnrolledAdmin(newAdminPassword);
 
             // Should redirect away from login
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
@@ -217,9 +227,7 @@ describe('01 - Setup Wizard', () => {
         });
 
         it('should show admin dashboard after church info is configured', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginAsEnrolledAdmin(newAdminPassword);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.url().then((url) => {
@@ -231,9 +239,7 @@ describe('01 - Setup Wizard', () => {
         });
 
         it('should verify system is empty (no people/families)', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginAsEnrolledAdmin(newAdminPassword);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             // Check people API - should return mostly empty (only admin user)
@@ -254,9 +260,7 @@ describe('01 - Setup Wizard', () => {
             // Cypress.env() does not persist across spec files, so specs 02-04
             // cannot know the password set here. Reset to the default 'changeme'
             // so all downstream specs can login with the well-known credentials.
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginAsEnrolledAdmin(newAdminPassword);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.visit('/v2/user/current/changepassword');
@@ -273,9 +277,7 @@ describe('01 - Setup Wizard', () => {
         // returns false. All UI that depends on sending email must hide or warn.
 
         const loginAsAdmin = () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(adminCredentials.username);
-            cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
+            loginAsEnrolledAdmin(adminCredentials.password);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
         };
 

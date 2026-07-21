@@ -50,8 +50,18 @@ declare namespace Cypress {
       sessionName: string,
       username: string,
       password: string,
-      options?: { forceLogin?: boolean }
+      options?: { forceLogin?: boolean; twoFactorSecret?: string | null }
     ): Chainable<void>;
+
+    /** Log in and complete a TOTP challenge when a test secret is provided. */
+    loginWithTwoFactor(
+      username: string,
+      password: string,
+      twoFactorSecret?: string | null
+    ): Chainable<void>;
+
+    /** Complete mandatory 2FA enrollment and yield the Base32 secret. */
+    enrollCurrentUserInTwoFactor(): Chainable<string>;
 
     /**
      * Ensure an admin session is active (optionally forcing a fresh login)
