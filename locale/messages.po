@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-19 19:58+0000\n"
+"POT-Creation-Date: 2026-07-21 23:50+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -296,6 +296,9 @@ msgstr ""
 msgid "A pledge is a commitment to give. It is not tied to a deposit slip."
 msgstr ""
 
+msgid "A six-digit enrollment code is required."
+msgstr ""
+
 msgid "A specific occurrence (e.g. \"Preschool — Apr 12\"). Inherits defaults from the type and is linked to the class group via the audience. This is what volunteers take attendance against."
 msgstr ""
 
@@ -369,6 +372,9 @@ msgstr ""
 msgid "Account Recovery"
 msgstr ""
 
+msgid "Account Requests"
+msgstr ""
+
 msgid "Account Unlocked"
 msgstr ""
 
@@ -379,6 +385,9 @@ msgid "Account locked due to too many failed login attempts"
 msgstr ""
 
 msgid "Account options"
+msgstr ""
+
+msgid "Account security state changed. Please sign in again."
 msgstr ""
 
 msgid "Account status"
@@ -634,6 +643,9 @@ msgstr ""
 msgid "Additional Information"
 msgstr ""
 
+msgid "Additional authentication is required"
+msgstr ""
+
 msgid "Address"
 msgstr ""
 
@@ -825,9 +837,6 @@ msgid "All people and family records"
 msgstr ""
 
 msgid "All people in your cart are already in a family. No one can be assigned."
-msgstr ""
-
-msgid "All rights reserved"
 msgstr ""
 
 msgid "All roles"
@@ -2384,9 +2393,6 @@ msgstr ""
 msgid "Communication"
 msgstr ""
 
-msgid "Community Management Platform"
-msgstr ""
-
 msgid "Community Plugins"
 msgstr ""
 
@@ -2405,6 +2411,15 @@ msgid "Comparing timezones..."
 msgstr ""
 
 msgid "Complete"
+msgstr ""
+
+msgid "Complete all password fields."
+msgstr ""
+
+msgid "Complete both password fields."
+msgstr ""
+
+msgid "Complete the required account security step before continuing"
 msgstr ""
 
 msgid "Complete these in any order to get ChurchCRM ready for your congregation."
@@ -2501,13 +2516,22 @@ msgstr ""
 msgid "Confirm Volunteer Opportunity Deletion"
 msgstr ""
 
+msgid "Confirm Your Password"
+msgstr ""
+
 msgid "Confirm data labels"
 msgstr ""
 
 msgid "Confirm with a code from your authenticator app"
 msgstr ""
 
+msgid "Confirm your current password to manage this API credential."
+msgstr ""
+
 msgid "Confirm your new password"
+msgstr ""
+
+msgid "Confirm your own password before changing another user's credentials."
 msgstr ""
 
 #. Context: countries
@@ -2649,9 +2673,6 @@ msgid "Copy to Group"
 msgstr ""
 
 msgid "Copy to clipboard"
-msgstr ""
-
-msgid "Copyright"
 msgstr ""
 
 msgid "Core Plugins"
@@ -2882,6 +2903,9 @@ msgid "Current database"
 msgstr ""
 
 msgid "Current fiscal year"
+msgstr ""
+
+msgid "Current password is required."
 msgstr ""
 
 msgid "Current person"
@@ -3988,6 +4012,9 @@ msgstr ""
 msgid "Enter Winners"
 msgstr ""
 
+msgid "Enter a password that meets the configured minimum length and is no more than 72 bytes."
+msgstr ""
+
 msgid "Enter a search term"
 msgstr ""
 
@@ -4005,9 +4032,6 @@ msgid "Enter family name"
 msgstr ""
 
 msgid "Enter group name"
-msgstr ""
-
-msgid "Enter new user password. Administratively set passwords are not subject to length or complexity requirements"
 msgstr ""
 
 msgid "Enter note text here..."
@@ -4034,6 +4058,9 @@ msgstr ""
 msgid "Enter the 6-digit code from your authenticator app to complete login"
 msgstr ""
 
+msgid "Enter your current administrator password."
+msgstr ""
+
 msgid "Enter your current password"
 msgstr ""
 
@@ -4047,9 +4074,6 @@ msgid "Enter your login name and we will email you a link to reset your password
 msgstr ""
 
 msgid "Enter your new password"
-msgstr ""
-
-msgid "Enter your password"
 msgstr ""
 
 msgid "Enter your username and password as usual"
@@ -4387,9 +4411,6 @@ msgid "Failed to add to cart"
 msgstr ""
 
 msgid "Failed to apply upgrade. Please check the server logs for details."
-msgstr ""
-
-msgid "Failed to cancel enrollment. Please try again."
 msgstr ""
 
 msgid "Failed to clear plugin quarantine"
@@ -5078,6 +5099,9 @@ msgid ""
 "- All input is validated and sanitized"
 msgstr ""
 
+msgid "For your security, enter your current password before changing two-factor authentication settings."
+msgstr ""
+
 msgid "Force Import"
 msgstr ""
 
@@ -5654,6 +5678,9 @@ msgstr ""
 msgid "Here"
 msgstr ""
 
+msgid "Hidden until revealed"
+msgstr ""
+
 msgid "Hide Age"
 msgstr ""
 
@@ -6162,6 +6189,9 @@ msgid "Invalid import request"
 msgstr ""
 
 msgid "Invalid login or password"
+msgstr ""
+
+msgid "Invalid password reset request."
 msgstr ""
 
 msgid "Invalid person ID"
@@ -6700,9 +6730,6 @@ msgid "Login already in use, please select a different login!"
 msgstr ""
 
 msgid "Login must be at least 3 characters!"
-msgstr ""
-
-msgid "Login to your account"
 msgstr ""
 
 msgid "Long Date Format"
@@ -8663,6 +8690,15 @@ msgstr ""
 msgid "Please confirm the password reset of this user"
 msgstr ""
 
+msgid "Please confirm your current password before changing account security settings."
+msgstr ""
+
+msgid "Please confirm your current password before managing API credentials."
+msgstr ""
+
+msgid "Please confirm your current password before performing this administrative security action."
+msgstr ""
+
 msgid "Please confirm your family information:"
 msgstr ""
 
@@ -9217,7 +9253,7 @@ msgstr ""
 msgid "Regenerate"
 msgstr ""
 
-msgid "Register"
+msgid "Regenerate this API key and invalidate the current key?"
 msgstr ""
 
 msgid "Register New Device"
@@ -9448,6 +9484,9 @@ msgstr ""
 
 #. Context: query_qry
 msgid "Returns person records which are assigned the given property."
+msgstr ""
+
+msgid "Reveal"
 msgstr ""
 
 msgid "Review"
@@ -10175,6 +10214,9 @@ msgstr ""
 msgid "Sign In"
 msgstr ""
 
+msgid "Sign Up"
+msgstr ""
+
 msgid "Sign in"
 msgstr ""
 
@@ -10749,6 +10791,9 @@ msgstr ""
 msgid "That name already exists."
 msgstr ""
 
+msgid "The API key changed. Reload the page and try again."
+msgstr ""
+
 msgid "The ChurchCRM maintainers have not reviewed it. You are responsible for the security and behaviour of anything you install here. Prefer the Browse Approved flow whenever possible."
 msgstr ""
 
@@ -10776,6 +10821,9 @@ msgstr ""
 msgid "The church administrator has not enabled external calendar sharing. Please contact them if you believe this is in error."
 msgstr ""
 
+msgid "The current password was not accepted."
+msgstr ""
+
 msgid "The database has been cleared."
 msgstr ""
 
@@ -10785,6 +10833,12 @@ msgstr ""
 
 #. Context: queryparameters_qrp
 msgid "The desired gender to search the database for."
+msgstr ""
+
+msgid "The enrollment code expired. Scan the new QR code and try again."
+msgstr ""
+
+msgid "The enrollment was closed, but its server-side draft could not be cleared."
 msgstr ""
 
 #. Context: queryparameters_qrp
@@ -10810,6 +10864,9 @@ msgid "The minimum age for which you want records returned."
 msgstr ""
 
 msgid "The month that starts your organization's fiscal year"
+msgstr ""
+
+msgid "The new passwords do not match."
 msgstr ""
 
 msgid "The note you are trying to edit no longer exists."
@@ -10878,6 +10935,9 @@ msgid "The selected group was not found. Please select a valid group."
 msgstr ""
 
 msgid "The selected person was not found."
+msgstr ""
+
+msgid "The signed-in session is no longer valid."
 msgstr ""
 
 msgid "The start or end date in the link could not be understood. Try the base calendar link without date parameters."
@@ -10959,6 +11019,12 @@ msgstr ""
 msgid "This action cannot be undone. Make sure you have a backup of the current data if needed."
 msgstr ""
 
+msgid "This action requires a signed-in browser session or a valid API key."
+msgstr ""
+
+msgid "This action requires a signed-in browser session."
+msgstr ""
+
 msgid "This action will automatically add paddle numbers for all item donors in this fundraiser who do not yet have a buyer number assigned."
 msgstr ""
 
@@ -11002,6 +11068,9 @@ msgid "This option requires at least version 3.22 of MySQL!  Hit browser back bu
 msgstr ""
 
 msgid "This page allows you to permanently erase all data in the ChurchCRM database. This action cannot be undone."
+msgstr ""
+
+msgid "This page's security token expired. Reload the page and try again."
 msgstr ""
 
 msgid "This person already has a user account."
@@ -11454,6 +11523,18 @@ msgstr ""
 msgid "Ukrainian"
 msgstr ""
 
+msgid "Unable to confirm the current password."
+msgstr ""
+
+msgid "Unable to confirm your current administrator password."
+msgstr ""
+
+msgid "Unable to confirm your password. Please try again."
+msgstr ""
+
+msgid "Unable to confirm your password. Reload the page and try again."
+msgstr ""
+
 msgid "Unable to copy to clipboard. Please copy the URL manually."
 msgstr ""
 
@@ -11461,6 +11542,9 @@ msgid "Unable to copy to clipboard. Please copy the codes manually."
 msgstr ""
 
 msgid "Unable to display map: church address has not been geocoded yet."
+msgstr ""
+
+msgid "Unable to establish a secure session. Please try again."
 msgstr ""
 
 msgid "Unable to list web server modules (non-Apache SAPI)."
@@ -11473,6 +11557,9 @@ msgid "Unable to load state list. Please check your network connection or try ag
 msgstr ""
 
 msgid "Unable to load verification info"
+msgstr ""
+
+msgid "Unable to manage the API key"
 msgstr ""
 
 msgid "Unable to open file"
@@ -11913,9 +12000,6 @@ msgstr ""
 msgid "Verifying"
 msgstr ""
 
-msgid "Version"
-msgstr ""
-
 #, php-format
 msgid "Version %s is available. Please upgrade your installation."
 msgstr ""
@@ -12219,9 +12303,6 @@ msgid "Welcome"
 msgstr ""
 
 msgid "Welcome Back!"
-msgstr ""
-
-msgid "Welcome back! Please enter your details to continue"
 msgstr ""
 
 msgid "Welcome to"
@@ -12532,6 +12613,9 @@ msgstr ""
 msgid "Your ChurchCRM password has been changed"
 msgstr ""
 
+msgid "Your Current Administrator Password"
+msgstr ""
+
 msgid "Your GA4 Measurement ID (G-XXXXXXXXXX)"
 msgstr ""
 
@@ -12587,18 +12671,6 @@ msgid "Your database version is newer than the installed software. This usually 
 msgstr ""
 
 msgid "Your fiscal year starts in month"
-msgstr ""
-
-msgid "Your new password is too similar to your old one."
-msgstr ""
-
-msgid "Your new password must be at least"
-msgstr ""
-
-msgid "Your new password must not match your old one."
-msgstr ""
-
-msgid "Your password choice is too obvious. Please choose something else."
 msgstr ""
 
 msgid "Your password has been updated successfully."
@@ -12681,9 +12753,6 @@ msgid "but not this year"
 msgstr ""
 
 msgid "by"
-msgstr ""
-
-msgid "characters"
 msgstr ""
 
 msgid "characters in length."
@@ -12809,6 +12878,9 @@ msgstr ""
 msgid "is disabled"
 msgstr ""
 
+msgid "is required"
+msgstr ""
+
 msgid "issues"
 msgstr ""
 
@@ -12855,9 +12927,6 @@ msgid "needs to be picked up from"
 msgstr ""
 
 msgid "not found"
-msgstr ""
-
-msgid "not found or user without an email"
 msgstr ""
 
 msgid "of"
@@ -12962,6 +13031,9 @@ msgid "selected family has no coordinates"
 msgstr ""
 
 msgid "subscribers"
+msgstr ""
+
+msgid "system user API key regenerated"
 msgstr ""
 
 msgid "system user changed password"
