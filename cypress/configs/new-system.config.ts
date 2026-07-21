@@ -12,6 +12,8 @@ export default defineConfig({
     'db.password': 'changeme',
     'admin.username': 'admin',
     'admin.password': 'changeme',
+    taskDbHost: process.env.CYPRESS_TASK_DB_HOST || '127.0.0.1',
+    taskDbPort: process.env.CYPRESS_TASK_DB_PORT || '',
   },
   pageLoadTimeout: 120000,
   defaultCommandTimeout: 60000,

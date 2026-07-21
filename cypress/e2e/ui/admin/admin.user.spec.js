@@ -26,11 +26,68 @@ describe("Admin User Password", () => {
         cy.visit("admin/system/user/99/changePassword");
         cy.contains("Change Password");
         cy.contains("Amanda Black");
+        cy.get('input[name="csrf_token"]')
+            .invoke("val")
+            .then((csrfToken) => cy.request({
+                method: "POST",
+                url: "/api/user/current/reauthenticate",
+                headers: { "X-CSRF-Token": csrfToken },
+                body: { currentPassword: `${Cypress.env("admin.password")}-incorrect` },
+                failOnStatusCode: false,
+            }))
+            .its("status")
+            .should("eq", 422);
+
+        cy.reload();
+        cy.get("#CurrentPassword").should("be.visible").type("incorrect-password");
         cy.get("#NewPassword1").type("new-user-password");
         cy.get("#NewPassword2").type("new-user-password");
         cy.get("#NewPassword1").closest("form").submit();
-        cy.url().should("contain", "admin/system/user/99/changePassword");
-        cy.contains("Password Change Successful");
+        cy.contains("Unable to confirm your current administrator password.");
+        cy.contains("Password Change Successful").should("not.exist");
+
+        let sessionCookieBeforeMutation;
+        cy.getCookies()
+            .then((cookies) => {
+                const sessionCookie = cookies.find((cookie) => cookie.name.startsWith("CRM-"));
+                expect(sessionCookie, "authenticated CRM session cookie").to.exist;
+                sessionCookieBeforeMutation = sessionCookie.value;
+            })
+            .then(() => {
+                cy.get("#CurrentPassword").clear().type(Cypress.env("admin.password"));
+                cy.get("#NewPassword1").clear().type("new-user-password");
+                cy.get("#NewPassword2").clear().type("new-user-password");
+                cy.get("#NewPassword1").closest("form").submit();
+                cy.url().should("contain", "admin/system/user/99/changePassword");
+                cy.contains("Password Change Successful");
+            })
+            .then(() => cy.getCookies())
+            .then((cookies) => {
+                const sessionCookie = cookies.find((cookie) => cookie.name.startsWith("CRM-"));
+                expect(sessionCookie, "rotated CRM session cookie after password change").to.exist;
+                expect(sessionCookie.value).not.to.eq(sessionCookieBeforeMutation);
+            });
+    });
+
+    it("Rejects mismatched and overlong admin password changes", () => {
+        cy.visit("admin/system/user/99/changePassword");
+        cy.get("#NewPassword1").type("first-password");
+        cy.get("#NewPassword2").type("different-password");
+        cy.get("#NewPassword1").closest("form").submit();
+        cy.contains("The new passwords do not match.");
+        cy.contains("Password Change Successful").should("not.exist");
+
+        cy.get("#NewPassword1").clear().type("a");
+        cy.get("#NewPassword2").clear().type("a");
+        cy.get("#NewPassword1").closest("form").submit();
+        cy.contains("The new password must be at least");
+        cy.contains("Password Change Successful").should("not.exist");
+
+        cy.get("#NewPassword1").clear().type("a".repeat(73));
+        cy.get("#NewPassword2").clear().type("a".repeat(73));
+        cy.get("#NewPassword1").closest("form").submit();
+        cy.contains("The new password cannot exceed 72 bytes.");
+        cy.contains("Password Change Successful").should("not.exist");
     });
 
     it("Non-admin user denied access to change password page", () => {

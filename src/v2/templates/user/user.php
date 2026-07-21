@@ -4,6 +4,8 @@ use ChurchCRM\Authentication\AuthenticationManager;
 use ChurchCRM\dto\LocaleInfo;
 use ChurchCRM\dto\SystemConfig;
 use ChurchCRM\dto\SystemURLs;
+use ChurchCRM\model\ChurchCRM\User;
+use ChurchCRM\Utils\CSRFUtils;
 use ChurchCRM\Utils\InputUtils;
 use ChurchCRM\view\PageHeader;
 
@@ -76,7 +78,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
             $isLocked       = $user->isLocked();
             $mustChange     = $user->getNeedPasswordChange();
             $failedLogins   = $user->getFailedLogins();
-            $maxFailedLogins = SystemConfig::getIntValue('iMaxFailedLogins');
+            $maxFailedLogins = User::getEffectiveMaximumFailedLogins();
             ?>
             <?php if ($isLocked): ?>
             <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
@@ -357,16 +359,34 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
             <h3 class="card-title"><?= gettext("API Access") ?></h3>
             <p class="text-body-secondary"><?= gettext("Manage your API key for external integrations") ?></p>
 
-            <div class="row mb-3">
+            <div
+              class="row mb-3"
+              id="apiKeyControls"
+              data-csrf-token="<?= InputUtils::escapeAttribute(CSRFUtils::generateToken('api_key_management')) ?>"
+            >
               <label class="col-sm-3 col-form-label"><?= gettext("API Key") ?></label>
               <div class="col-sm-9">
                 <div class="input-group">
-                  <input id="apiKey" type="text" class="form-control font-monospace" value="<?= InputUtils::escapeAttribute($user->getApiKey()) ?>" readonly>
+                  <input id="apiKey" type="password" class="form-control font-monospace" value="" placeholder="<?= gettext("Hidden until revealed") ?>" autocomplete="off" readonly>
+                  <button id="revealApiKey" class="btn btn-outline-secondary" type="button" title="<?= gettext("Reveal") ?>">
+                    <i class="ti ti-eye me-1"></i><?= gettext("Reveal") ?>
+                  </button>
                   <button id="regenApiKey" class="btn btn-warning" type="button" title="<?= gettext("Regenerate") ?>">
                     <i class="ti ti-refresh me-1"></i><?= gettext("Regenerate") ?>
                   </button>
                 </div>
                 <small class="form-hint"><?= gettext("Use this key to authenticate API requests. Regenerating will invalidate the current key.") ?></small>
+
+                <div id="apiKeyReauthentication" class="border rounded p-3 mt-3 d-none">
+                  <p class="text-body-secondary mb-2"><?= gettext("Confirm your current password to manage this API credential.") ?></p>
+                  <div id="apiKeyReauthenticationError" class="alert alert-danger d-none" role="alert"></div>
+                  <label for="apiKeyCurrentPassword" class="form-label"><?= gettext("Current Password") ?></label>
+                  <div class="input-group">
+                    <input id="apiKeyCurrentPassword" type="password" class="form-control" autocomplete="current-password" maxlength="1024">
+                    <button id="confirmApiKeyReauthentication" type="button" class="btn btn-primary"><?= gettext("Continue") ?></button>
+                    <button id="cancelApiKeyReauthentication" type="button" class="btn btn-outline-secondary"><?= gettext("Cancel") ?></button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -374,7 +394,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
 
             <h4 class="mb-3"><?= gettext("Usage") ?></h4>
             <p class="text-body-secondary"><?= gettext("Include your API key in requests using the x-api-key header:") ?></p>
-            <pre class="p-3 bg-light rounded"><code>curl -H "x-api-key: <?= InputUtils::escapeHTML(substr($user->getApiKey(), 0, 8)) ?>..." \
+            <pre class="p-3 bg-light rounded"><code>curl -H "x-api-key: &lt;your-api-key&gt;" \
      <?= SystemURLs::getURL() ?>/api/person/1</code></pre>
           </div>
 

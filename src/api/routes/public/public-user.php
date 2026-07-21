@@ -2,7 +2,7 @@
 
 use ChurchCRM\Emails\users\LockedEmail;
 use ChurchCRM\Emails\users\ResetPasswordTokenEmail;
-use ChurchCRM\model\ChurchCRM\Token;
+use ChurchCRM\model\ChurchCRM\User;
 use ChurchCRM\model\ChurchCRM\UserQuery;
 use ChurchCRM\Slim\SlimUtils;
 use ChurchCRM\Utils\LoggerUtils;
@@ -70,32 +70,40 @@ function userLogin(Request $request, Response $response, array $args): Response
         throw new HttpUnauthorizedException($request, $genericError);
     }
 
-    // Check account lockout before attempting password validation
-    // Use same generic error to prevent username enumeration via locked-account message
-    if ($user->isLocked()) {
+    $password = $body['password'] ?? '';
+    $primaryAuthentication = $user->authenticatePrimaryPassword($password);
+    $authenticatedRecoveryCodes = $primaryAuthentication['recoveryCodes'];
+    if ($primaryAuthentication['isLocked']) {
+        if ($primaryAuthentication['accountBecameLocked']) {
+            $logger->warning('API login: account locked after too many failures', ['username' => $user->getUserName()]);
+            if (!empty($user->getEmail())) {
+                $lockedEmail = new LockedEmail($user);
+                $lockedEmail->send();
+            }
+        }
+
         $logger->warning('API login attempt for locked account', ['username' => $user->getUserName()]);
         throw new HttpUnauthorizedException($request, $genericError);
     }
 
-    $password = $body['password'] ?? '';
-    if (!$user->isPasswordValid($password)) {
-        // Increment failed login counter
-        $user->setFailedLogins($user->getFailedLogins() + 1);
-        $user->save();
-
-        // Send locked email if account just became locked
-        if ($user->isLocked() && !empty($user->getEmail())) {
-            $logger->warning('API login: account locked after too many failures', ['username' => $user->getUserName()]);
-            $lockedEmail = new LockedEmail($user);
-            $lockedEmail->send();
-        }
+    if (!$primaryAuthentication['isPasswordValid']) {
 
         $logger->warning('API login: invalid password', ['username' => $user->getUserName()]);
         throw new HttpUnauthorizedException($request, $genericError);
     }
 
+    if (!$user->isApiAuthenticationEligible($primaryAuthentication['twoFactorSecret'] !== null)) {
+        $logger->warning('API login rejected because required account security steps are incomplete', ['username' => $user->getUserName()]);
+        throw new HttpUnauthorizedException($request, $genericError);
+    }
+
     // Check 2FA enrollment BEFORE resetting failed logins (only reset on full auth)
-    if ($user->is2FactorAuthEnabled()) {
+    if ($primaryAuthentication['twoFactorSecret'] !== null) {
+        if ($user->isTwoFactorAuthRateLimited()) {
+            $logger->warning('API login rejected while two-factor rate limit is active', ['username' => $user->getUserName()]);
+            throw new HttpUnauthorizedException($request, $genericError);
+        }
+
         $otp = $body['otp'] ?? null;
 
         if (empty($otp)) {
@@ -103,24 +111,48 @@ function userLogin(Request $request, Response $response, array $args): Response
             return SlimUtils::renderJSON($response, ['requiresOTP' => true], 202);
         }
 
-        // Validate OTP or recovery code
-        $otpValid = $user->isTwoFACodeValid($otp);
-        $recoveryValid = !$otpValid && $user->isTwoFaRecoveryCodeValid($otp);
-
-        if (!$otpValid && !$recoveryValid) {
+        $factorAuthenticationResult = $user->authenticateTwoFactorCode(
+            $otp,
+            $primaryAuthentication['passwordHash'],
+            $primaryAuthentication['twoFactorSecret']
+        );
+        if ($factorAuthenticationResult === User::TWO_FACTOR_AUTHENTICATION_RATE_LIMITED) {
+            $logger->warning('API login rejected after reaching the two-factor attempt limit', ['username' => $user->getUserName()]);
+            throw new HttpUnauthorizedException($request, $genericError);
+        }
+        if ($factorAuthenticationResult === User::TWO_FACTOR_AUTHENTICATION_REVOKED) {
+            $logger->warning('API login rejected after primary authentication was revoked', ['username' => $user->getUserName()]);
+            throw new HttpUnauthorizedException($request, $genericError);
+        }
+        if (!in_array($factorAuthenticationResult, [
+            User::TWO_FACTOR_AUTHENTICATION_TOTP,
+            User::TWO_FACTOR_AUTHENTICATION_RECOVERY,
+        ], true)) {
             $logger->warning('API login: invalid 2FA code', ['username' => $user->getUserName()]);
             throw new HttpUnauthorizedException($request, $genericError);
         }
+        if ($factorAuthenticationResult === User::TWO_FACTOR_AUTHENTICATION_RECOVERY) {
+            $authenticatedRecoveryCodes = $user->getTwoFactorAuthRecoveryCodes();
+        }
 
-        // isTwoFaRecoveryCodeValid() already calls $user->save() internally when
-        // a recovery code is consumed — no additional save needed here.
+        // Factor validation atomically persists TOTP replay state or recovery-code
+        // consumption before this request can complete authentication.
     }
 
-    // Full authentication complete — reset failed login counter
-    $user->setFailedLogins(0);
-    $user->save();
+    // Re-check lock state while atomically finalizing authentication. This
+    // prevents a concurrent failed password request from being overwritten.
+    if (!$user->finalizeSuccessfulAuthentication(
+        $primaryAuthentication['passwordHash'],
+        $primaryAuthentication['twoFactorSecret'],
+        $authenticatedRecoveryCodes
+    )) {
+        $logger->warning('API login rejected because the account locked before authentication completed', ['username' => $user->getUserName()]);
+        throw new HttpUnauthorizedException($request, $genericError);
+    }
 
-    return SlimUtils::renderJSON($response, ['apiKey' => $user->getApiKey()]);
+    return SlimUtils::renderJSON($response, ['apiKey' => $user->getApiKey()])
+        ->withHeader('Cache-Control', 'no-store, private')
+        ->withHeader('Pragma', 'no-cache');
 }
 
 /**
@@ -151,8 +183,18 @@ function passwordResetRequest(Request $request, Response $response, array $args)
 {
     $logger = LoggerUtils::getAppLogger();
 
-    $body = json_decode($request->getBody(), true, 512, JSON_THROW_ON_ERROR);
-    $userName = trim($body['userName'] ?? '');
+    try {
+        $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
+    } catch (\JsonException $exception) {
+        throw new HttpBadRequestException($request, gettext('Invalid password reset request.'));
+    }
+    if (!is_array($body)
+        || !isset($body['userName'])
+        || !is_string($body['userName'])
+        || strlen($body['userName']) > 255) {
+        throw new HttpBadRequestException($request, gettext('Invalid password reset request.'));
+    }
+    $userName = trim($body['userName']);
 
     if (empty($userName)) {
         throw new HttpBadRequestException($request, gettext('Login Name is required'));
@@ -165,9 +207,7 @@ function passwordResetRequest(Request $request, Response $response, array $args)
         return SlimUtils::renderJSON($response, ['success' => true]);
     }
 
-    $token = new Token();
-    $token->build('password', $user->getId());
-    $token->save();
+    $token = $user->issuePasswordResetToken();
 
     $email = new ResetPasswordTokenEmail($user, $token->getToken());
     if (!$email->send()) {

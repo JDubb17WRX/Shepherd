@@ -118,12 +118,30 @@ describe("Standard User Settings Page", () => {
         cy.get("#user-locale-setting option[value='en_US']").should("exist");
     });
 
-    it("Navigates to API Access tab and shows API key", () => {
+    it("Keeps the API key out of HTML and reveals it only through the protected action", () => {
         cy.visit("/v2/user/3");
         cy.get('#settingsNav a[href="#tab-api"]').click();
         cy.get("#tab-api").should("be.visible");
 
-        cy.get("#apiKey").should("exist");
+        cy.get("body").invoke("html").should("not.contain", Cypress.env("user.api.key"));
+        cy.get("#apiKey")
+            .should("have.attr", "type", "password")
+            .and("have.value", "");
+        cy.request({
+            method: "POST",
+            url: "/api/user/3/apikey/reveal",
+            failOnStatusCode: false,
+        }).its("status").should("eq", 403);
+        cy.get("#revealApiKey").should("exist").click();
+        cy.get("body").then(($body) => {
+            if ($body.find("#apiKeyReauthentication:visible").length) {
+                cy.get("#apiKeyCurrentPassword").type(Cypress.env("standard.password"));
+                cy.get("#confirmApiKeyReauthentication").click();
+            }
+        });
+        cy.get("#apiKey", { timeout: 10000 })
+            .should("have.attr", "type", "text")
+            .and("have.value", Cypress.env("user.api.key"));
         cy.get("#regenApiKey").should("exist");
         cy.get("#tab-api").contains("x-api-key");
     });

@@ -16,16 +16,15 @@ class APITokenAuthentication implements IAuthenticationProvider
 
     public function __serialize(): array
     {
-        // Explicitly serialize only the essential properties that need to persist across requests
-        return [
-            'currentUser' => $this->currentUser,
-        ];
+        // API-token identity is valid only for the request carrying the token.
+        // Keep the live object usable by the current handler, but never persist
+        // its User into the PHP session for a later token-less request.
+        return [];
     }
 
     public function __unserialize(array $data): void
     {
-        // Restore the properties from serialized data
-        $this->currentUser = $data['currentUser'] ?? null;
+        $this->currentUser = null;
     }
 
     public function getCurrentUser(): ?User
@@ -41,12 +40,14 @@ class APITokenAuthentication implements IAuthenticationProvider
         $authenticationResult = new AuthenticationResult();
         $authenticationResult->isAuthenticated = false;
         $authenticationResult->preventRedirect = true;
-        $this->currentUser = UserQuery::create()->findOneByApiKey($AuthenticationRequest->APIToken);
+        $candidateUser = UserQuery::create()->findOneByApiKey($AuthenticationRequest->APIToken);
 
-        if (!empty($this->currentUser)) {
+        if ($candidateUser instanceof User && $candidateUser->isApiAuthenticationEligible()) {
+            $this->currentUser = $candidateUser;
             LoggerUtils::getAuthLogger()->debug(gettext('User authenticated via API Key: ') . $this->currentUser->getName());
             $authenticationResult->isAuthenticated = true;
         } else {
+            $this->currentUser = null;
             LoggerUtils::getAuthLogger()->warning(gettext('Unsuccessful API Key authentication attempt'));
         }
 

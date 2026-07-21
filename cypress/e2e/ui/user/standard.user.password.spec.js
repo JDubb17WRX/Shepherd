@@ -31,6 +31,16 @@ describe("Standard User Password", () => {
         cy.contains("Incorrect password supplied for current user");
     });
 
+    it("Rejects passwords longer than bcrypt's 72-byte limit", () => {
+        cy.visit("v2/user/current/changepassword");
+        cy.get("#OldPassword").type("basicjoe");
+        cy.get("#NewPassword1").type("a".repeat(73));
+        cy.get("#NewPassword2").type("a".repeat(73));
+        cy.get("#passwordChangeForm").submit();
+        cy.url().should("contain", "/v2/user/current/changepassword");
+        cy.contains("Your new password cannot exceed 72 bytes.");
+    });
+
     it("Change with simple password", () => {
         cy.visit("v2/user/current/changepassword");
         cy.get("#OldPassword").type("basicjoe");
