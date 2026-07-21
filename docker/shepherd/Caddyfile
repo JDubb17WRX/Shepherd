@@ -1,0 +1,69 @@
+{
+    auto_https off
+    frankenphp
+    order php_server before file_server
+}
+
+:8080 {
+    root * /var/www/html
+    encode zstd gzip
+
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        Content-Security-Policy "frame-ancestors 'self'"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    respond /shepherd/healthz 200
+
+    @dotfiles path_regexp hidden ^/shepherd/(?:.*/)?\.
+    respond @dotfiles 404
+    @protected path /shepherd/Include/* /shepherd/logs/* /shepherd/tmp_attach/*
+    respond @protected 404
+    @pluginPhp path_regexp pluginphp ^/shepherd/plugins/(community|core)/.+\.(php|phar|phtml|pht|php[3-9])$
+    respond @pluginPhp 404
+
+    handle /shepherd/session/* {
+        try_files {path} /shepherd/session/index.php
+        php_server
+    }
+    handle /shepherd/api/* {
+        try_files {path} /shepherd/api/index.php
+        php_server
+    }
+    handle /shepherd/v2/* {
+        try_files {path} /shepherd/v2/index.php
+        php_server
+    }
+    handle /shepherd/admin/* {
+        try_files {path} /shepherd/admin/index.php
+        php_server
+    }
+    handle /shepherd/finance/* {
+        try_files {path} /shepherd/finance/index.php
+        php_server
+    }
+    handle /shepherd/kiosk/* {
+        try_files {path} /shepherd/kiosk/index.php
+        php_server
+    }
+    handle /shepherd/plugins/* {
+        try_files {path} /shepherd/plugins/index.php
+        php_server
+    }
+    handle /shepherd/external/* {
+        try_files {path} /shepherd/external/index.php
+        php_server
+    }
+    handle /shepherd/setup/* {
+        try_files {path} /shepherd/setup/index.php
+        php_server
+    }
+    handle /shepherd/* {
+        try_files {path} {path}/ /shepherd/index.php
+        php_server
+    }
+    respond 404
+}

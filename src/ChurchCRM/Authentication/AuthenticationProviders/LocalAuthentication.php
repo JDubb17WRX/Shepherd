@@ -152,7 +152,7 @@ class LocalAuthentication implements IAuthenticationProvider
                 $authenticationResult->nextStepURL = SystemURLs::getRootPath() . '/session/two-factor';
                 $this->bPendingTwoFactorAuth = true;
                 LoggerUtils::getAuthLogger()->info('User partially authenticated, pending 2FA', $logCtx);
-            } elseif (SystemConfig::getBooleanValue('bRequire2FA') && !$this->currentUser->is2FactorAuthEnabled()) {
+            } elseif ((SystemConfig::getBooleanValue('bRequire2FA') || $this->currentUser->isAdmin()) && !$this->currentUser->is2FactorAuthEnabled()) {
                 // Allow login but force enrollment — user will be redirected on every request until enrolled
                 $this->prepareSuccessfulLoginOperations();
                 $authenticationResult->isAuthenticated = true;
@@ -252,7 +252,7 @@ class LocalAuthentication implements IAuthenticationProvider
         $enrollmentURL = SystemURLs::getRootPath() . '/v2/user/current/manage2fa';
         $isOnEnrollmentPage = str_contains($_SERVER['REQUEST_URI'], '/v2/user/current/manage2fa')
             || str_contains($_SERVER['REQUEST_URI'], '/v2/user/current/enroll2fa');
-        if (SystemConfig::getBooleanValue('bRequire2FA') && !$this->currentUser->is2FactorAuthEnabled() && !$isOnEnrollmentPage) {
+        if ((SystemConfig::getBooleanValue('bRequire2FA') || $this->currentUser->isAdmin()) && !$this->currentUser->is2FactorAuthEnabled() && !$isOnEnrollmentPage) {
             LoggerUtils::getAuthLogger()->info('User must enroll in mandatory 2FA before accessing system', $logCtx);
             $authenticationResult->nextStepURL = $enrollmentURL;
         }

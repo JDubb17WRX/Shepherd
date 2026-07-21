@@ -1,0 +1,23 @@
+name: Shepherd image
+
+on:
+  pull_request:
+  push:
+    branches: [shepherd-7.5.0]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image and lint PHP
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/shepherd/Dockerfile
+          push: false
+          tags: shepherd:test

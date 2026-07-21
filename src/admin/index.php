@@ -26,5 +26,6 @@ require __DIR__ . '/routes/api/import.php';
 require __DIR__ . '/routes/import.php';
 require __DIR__ . '/routes/export.php';
 require __DIR__ . '/routes/system.php';
+require __DIR__ . '/routes/shepherd-signups.php';
 
 $app->run();

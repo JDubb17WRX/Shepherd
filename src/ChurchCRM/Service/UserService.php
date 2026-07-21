@@ -231,10 +231,11 @@ class UserService
      * @param int    $personId Person this account belongs to
      * @param array  $perms    Normalized perms from normalizeAccessMode()
      * @param string $userName Desired login name
+     * @param bool   $sendWelcomeEmail Whether to send the upstream random-password welcome message
      * @return User The newly created user
      * @throws \RuntimeException on validation failure (duplicate username, too short)
      */
-    public function createUser(int $personId, array $perms, string $userName): User
+    public function createUser(int $personId, array $perms, string $userName, bool $sendWelcomeEmail = true): User
     {
         if ($personId <= 0) {
             throw new \RuntimeException(gettext('A valid person must be selected.'));
@@ -292,7 +293,7 @@ class UserService
             throw $e;
         }
 
-        if (SystemConfig::isEmailEnabled()) {
+        if ($sendWelcomeEmail && SystemConfig::isEmailEnabled()) {
             $email = new NewAccountEmail($newUser, $rawPassword);
             if (!$email->send()) {
                 LoggerUtils::getAppLogger()->warning(
