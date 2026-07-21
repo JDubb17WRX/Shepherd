@@ -3,7 +3,7 @@ name: Shepherd image
 on:
   pull_request:
   push:
-    branches: [shepherd-7.5.0]
+    branches: [master]
 
 permissions:
   contents: read
@@ -13,11 +13,51 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: docker/setup-buildx-action@v3
+      - name: Check private-media routing contract
+        run: node --test docker/shepherd/Caddyfile.test.mjs
       - name: Build production image and lint PHP
         uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/shepherd/Dockerfile
+          load: true
           push: false
           tags: shepherd:test
+      - name: Smoke-test private-media denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --name shepherd-route-test --publish 127.0.0.1:18080:8080 shepherd:test
+          trap 'docker rm --force shepherd-route-test >/dev/null 2>&1 || true' EXIT
+
+          healthy=false
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:18080/shepherd/healthz >/dev/null; then
+              healthy=true
+              break
+            fi
+            sleep 1
+          done
+          test "$healthy" = true
+
+          docker exec shepherd-route-test sh -c 'printf private > /var/www/html/shepherd/Images/Person/qa-private.jpg'
+          docker exec shepherd-route-test sh -c 'printf private > /var/www/html/shepherd/Images/Family/qa-private.jpg'
+
+          assert_private_media_denied() {
+            status="$(curl --location --max-redirs 5 --path-as-is --silent --output /dev/null --write-out '%{http_code}' "$1")"
+            case "$status" in
+              400|404) ;;
+              *) echo "Private media request returned HTTP $status: $1" >&2; exit 1 ;;
+            esac
+          }
+
+          assert_private_media_denied http://127.0.0.1:18080/shepherd/Images/Person/qa-private.jpg
+          assert_private_media_denied http://127.0.0.1:18080/shepherd/Images/Family/qa-private.jpg
+          assert_private_media_denied http://127.0.0.1:18080/shepherd/Images//Person/qa-private.jpg
+          assert_private_media_denied http://127.0.0.1:18080/shepherd/public/../Images/Person/qa-private.jpg
+          assert_private_media_denied http://127.0.0.1:18080/shepherd/Images/Person%2Fqa-private.jpg
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18080/shepherd/healthz)" = 200

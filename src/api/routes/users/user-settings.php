@@ -7,6 +7,9 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteCollectorProxy;
 
 $app->group('/user/{userId:[0-9]+}/setting', function (RouteCollectorProxy $group): void {
+    $isEditableSettingName = static fn (string $settingName): bool => preg_match('/\A[A-Za-z0-9._-]+\z/D', $settingName) === 1
+        && !str_starts_with(strtolower($settingName), 'security.');
+
     /**
      * @OA\Get(
      *     path="/user/{userId}/setting/{settingName}",
@@ -20,9 +23,13 @@ $app->group('/user/{userId:[0-9]+}/setting', function (RouteCollectorProxy $grou
      *     )
      * )
      */
-    $group->get('/{settingName}', function (Request $request, Response $response, array $args): Response {
+    $group->get('/{settingName}', function (Request $request, Response $response, array $args) use ($isEditableSettingName): Response {
         $user = $request->getAttribute('user');
         $settingName = $args['settingName'];
+        if (!$isEditableSettingName($settingName)) {
+            return SlimUtils::renderErrorJSON($response, gettext('Access denied'), [], 403);
+        }
+
         $setting = $user->getSetting($settingName);
         $value = '';
         if ($setting) {
@@ -48,9 +55,12 @@ $app->group('/user/{userId:[0-9]+}/setting', function (RouteCollectorProxy $grou
      *     )
      * )
      */
-    $group->post('/{settingName}', function (Request $request, Response $response, array $args): Response {
+    $group->post('/{settingName}', function (Request $request, Response $response, array $args) use ($isEditableSettingName): Response {
         $user = $request->getAttribute('user');
         $settingName = $args['settingName'];
+        if (!$isEditableSettingName($settingName)) {
+            return SlimUtils::renderErrorJSON($response, gettext('Access denied'), [], 403);
+        }
 
         $input = $request->getParsedBody();
         $user->setSetting($settingName, $input['value']);

@@ -1,7 +1,7 @@
 import { defineConfig } from 'cypress'
-import { verifyDownloadTasks } from 'cy-verify-downloads';
 
 import base from './base.config'
+import { setupCommonNodeEvents } from './_shared'
 export default defineConfig({
   chromeWebSecurity: false,
   video: false,
@@ -28,6 +28,9 @@ export default defineConfig({
     'editrecords.api.key': 'judithMatthewsEditRecordsNoNotesApiKey1234',
     'admin.username': 'admin',
     'admin.password': 'changeme',
+    'admin.2fa.secret': 'JBSWY3DPEBLW64TMMQ======',
+    taskDbHost: process.env.CYPRESS_TASK_DB_HOST || '127.0.0.1',
+    taskDbPort: process.env.CYPRESS_TASK_DB_PORT || '',
     'standard.username': 'tony.wade@example.com',
     'standard.password': 'basicjoe',
     'nofinance.username': 'judith.matthews@example.com',
@@ -38,24 +41,7 @@ export default defineConfig({
   e2e: {
     ...base.e2e,
     setupNodeEvents(on, config) {
-      const installLogsPrinter = require('cypress-terminal-report/src/installLogsPrinter');
-      installLogsPrinter(on, {
-        outputRoot: 'cypress/logs',
-        outputTarget: {
-          'cypress-terminal-report.txt': 'txt',
-          'cypress-terminal-report.json': 'json'
-        },
-        printLogsToConsole: 'onFail',
-        printLogsToFile: 'always'
-      });
-      on('task', verifyDownloadTasks);
-      on('before:browser:launch', (browser, launchOptions) => {
-        if (browser.name === 'chrome') {
-          launchOptions.args.push('--disable-dev-shm-usage');
-        }
-        return launchOptions;
-      });
-      return config;
+      return setupCommonNodeEvents(on, config);
     },
     baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost/',
   },

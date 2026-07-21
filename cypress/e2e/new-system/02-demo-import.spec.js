@@ -16,15 +16,17 @@ describe('02 - Demo Data Import', () => {
         username: 'admin',
         password: 'changeme'
     };
+    const adminTwoFactorRuntimeKey = 'newSystemAdminTwoFactorSecret';
 
     // Helper function to login.
     // Spec 01 resets the admin password back to 'changeme' before finishing,
     // so we can always use the default credentials here.
     const loginAsAdmin = () => {
-        cy.visit('/login');
-        cy.get('input[name=User]').type(adminCredentials.username);
-        cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
-        cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
+        cy.task('getRuntimeValue', adminTwoFactorRuntimeKey).then((twoFactorSecret) => {
+            expect(twoFactorSecret, 'fresh-install admin 2FA secret').to.be.a('string').and.not.be.empty;
+            cy.loginWithTwoFactor(adminCredentials.username, adminCredentials.password, twoFactorSecret);
+            cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
+        });
     };
 
     describe('Import Demo Data via Admin UI', () => {

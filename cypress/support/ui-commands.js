@@ -1,4 +1,72 @@
 // ***********************************************
+
+/**
+ * Log in and complete the second-factor page when a test secret is supplied.
+ */
+Cypress.Commands.add('loginWithTwoFactor', (username, password, twoFactorSecret = null) => {
+    if (twoFactorSecret) {
+        // Test-only DB task prevents TOTP replay state from making independent
+        // Cypress specs wait for the next 30-second window.
+        cy.task('resetTwoFactorReplay', { username }).should('eq', 1);
+    }
+
+    cy.visit('/login');
+    cy.get('input[name=User]').type(username);
+    cy.get('input[name=Password]').type(password + '{enter}');
+    cy.url({ timeout: 15000 }).then((url) => {
+        if (!url.includes('/session/two-factor')) return;
+        if (!twoFactorSecret) {
+            throw new Error(`Two-factor secret required to finish login for ${username}`);
+        }
+
+        cy.task('generateTotp', { secret: twoFactorSecret }, { log: false })
+            .then((code) => {
+                cy.get('#TwoFACode').clear().type(code);
+                cy.get('form[name="TwoFAForm"]').submit();
+            });
+        cy.url({ timeout: 15000 }).should('not.include', '/session/two-factor');
+    });
+});
+
+/**
+ * Complete mandatory 2FA enrollment for the currently authenticated user and
+ * yield the Base32 secret so later tests can generate login codes.
+ */
+Cypress.Commands.add('enrollCurrentUserInTwoFactor', () => {
+    cy.visit('/v2/user/current/manage2fa');
+    return cy.get('#two-factor-enrollment-app')
+        .invoke('attr', 'data-csrf-token')
+        .then((csrfToken) => {
+            expect(csrfToken).to.match(/^[a-f0-9]{64}$/);
+
+            return cy.request({
+                method: 'POST',
+                url: '/api/user/current/refresh2fasecret',
+                headers: { 'X-CSRF-Token': csrfToken },
+                log: false,
+            }).then((provisionResponse) => {
+                expect(provisionResponse.status).to.eq(200);
+                expect(provisionResponse.headers['cache-control']).to.include('no-store');
+                const secret = provisionResponse.body.TwoFASecret;
+                expect(secret).to.be.a('string').and.not.be.empty;
+
+                return cy.task('generateTotp', { secret }, { log: false })
+                    .then((enrollmentCode) => cy.request({
+                        method: 'POST',
+                        url: '/api/user/current/test2FAEnrollmentCode',
+                        headers: { 'X-CSRF-Token': csrfToken },
+                        body: { enrollmentCode },
+                        log: false,
+                    }))
+                    .then((confirmationResponse) => {
+                        expect(confirmationResponse.status).to.eq(200);
+                        expect(confirmationResponse.body).to.have.property('IsEnrollmentCodeValid', true);
+
+                        return secret;
+                    });
+            });
+        });
+});
 // This example commands.js shows you how to
 // create various custom commands and overwrite
 // existing commands.
@@ -17,20 +85,19 @@
  * @param {{ forceLogin?: boolean }} options - Additional behaviour flags
  */
 Cypress.Commands.add('setupLoginSession', (sessionName, username, password, options = {}) => {
-    const { forceLogin = false } = options;
+    const { forceLogin = false, twoFactorSecret = null } = options;
     const uniqueSuffix = forceLogin ? `-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` : '';
     const effectiveSessionName = `${sessionName}${uniqueSuffix}`;
 
     cy.session(
         effectiveSessionName,
         () => {
-            // Perform the login
-            cy.visit('/login');
-            cy.get('input[name=User]').type(username);
-            cy.get('input[name=Password]').type(password + '{enter}');
-            // Wait for redirect away from session/login pages
-            // ChurchCRM's login page is /session/begin, not /login
-            cy.url().should('not.include', '/session/begin');
+            cy.loginWithTwoFactor(username, password, twoFactorSecret);
+            cy.url()
+                .should('not.include', '/session/begin')
+                .and('not.include', '/session/two-factor')
+                .and('not.include', '/v2/user/current/manage2fa')
+                .and('not.include', '/v2/user/current/changepassword');
         },
         {
             // Validate session by checking for a CRM cookie
@@ -38,6 +105,11 @@ Cypress.Commands.add('setupLoginSession', (sessionName, username, password, opti
                 cy.getCookies().should('satisfy', (cookies) => {
                     return cookies.some(cookie => cookie.name.startsWith('CRM-'));
                 });
+                cy.request({
+                    method: 'GET',
+                    url: '/api/persons/roles',
+                    failOnStatusCode: false,
+                }).its('status').should('eq', 200);
             }
         }
     );
@@ -58,10 +130,11 @@ Cypress.Commands.add('setupLoginSession', (sessionName, username, password, opti
 Cypress.Commands.add('setupAdminSession', (options = {}) => {
     const username = Cypress.env('admin.username');
     const password = Cypress.env('admin.password');
+    const twoFactorSecret = Cypress.env('admin.2fa.secret');
     if (!username || !password) {
         throw new Error('Admin credentials not configured in cypress/configs/docker.config.ts (or cypress/configs/new-system.config.ts) env: admin.username and admin.password required');
     }
-    cy.setupLoginSession('admin-session', username, password, options);
+    cy.setupLoginSession('admin-session', username, password, { ...options, twoFactorSecret });
 });
 
 /**
@@ -484,4 +557,3 @@ Cypress.Commands.add('waitForNotification', (expectedText, options = {}) => {
         .should('be.visible')
         .should('contain', expectedText);
 });
-

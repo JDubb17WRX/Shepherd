@@ -56,6 +56,14 @@ describe('Upgrade via Restore', () => {
     // Effective password for all Step 3 verification logins: the forced-change value when
     // the source requires it, otherwise the original restored password (silent migration).
     const verifyPassword = forcesPasswordChange ? postUpgradePassword : upgradeAdminPass;
+    const setupAdminTwoFactorRuntimeKey = 'upgradeSetupAdminTwoFactorSecret';
+    const upgradedAdminTwoFactorRuntimeKey = 'upgradedAdminTwoFactorSecret';
+
+    const loginWithRuntimeTwoFactor = (runtimeKey, username, password) => cy.task('getRuntimeValue', runtimeKey)
+        .then((twoFactorSecret) => {
+            expect(twoFactorSecret, `${username} 2FA secret`).to.be.a('string').and.not.be.empty;
+            return cy.loginWithTwoFactor(username, password, twoFactorSecret);
+        });
 
     describe('Step 1: Fresh Install via Setup Wizard', () => {
         it('should complete setup wizard', () => {
@@ -99,13 +107,19 @@ describe('Upgrade via Restore', () => {
             cy.get('#NewPassword2').type(newAdminPassword);
             cy.get('button[type=submit]').click();
 
+            cy.url({ timeout: 15000 }).should('include', '/v2/user/current/manage2fa');
+            cy.enrollCurrentUserInTwoFactor().then((twoFactorSecret) => {
+                cy.task('setRuntimeValue', {
+                    key: setupAdminTwoFactorRuntimeKey,
+                    value: twoFactorSecret,
+                });
+            });
+            cy.visit('/admin/system/church-info');
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
         });
 
         it('should fill church info to complete first-run setup', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(setupAdmin.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginWithRuntimeTwoFactor(setupAdminTwoFactorRuntimeKey, setupAdmin.username, newAdminPassword);
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
 
             cy.get('#sChurchCountry', { timeout: 10000 }).siblings('.ts-wrapper').should('exist');
@@ -126,9 +140,7 @@ describe('Upgrade via Restore', () => {
         });
 
         it('should verify fresh install is working', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(setupAdmin.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginWithRuntimeTwoFactor(setupAdminTwoFactorRuntimeKey, setupAdmin.username, newAdminPassword);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
             cy.get('.page, .page-wrapper, .navbar').should('exist');
         });
@@ -141,9 +153,7 @@ describe('Upgrade via Restore', () => {
         });
 
         it('should navigate to restore page', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(setupAdmin.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginWithRuntimeTwoFactor(setupAdminTwoFactorRuntimeKey, setupAdmin.username, newAdminPassword);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.visit('/admin/system/restore');
@@ -151,9 +161,7 @@ describe('Upgrade via Restore', () => {
         });
 
         it('should restore the old SQL file and auto-upgrade', () => {
-            cy.visit('/login');
-            cy.get('input[name=User]').type(setupAdmin.username);
-            cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            loginWithRuntimeTwoFactor(setupAdminTwoFactorRuntimeKey, setupAdmin.username, newAdminPassword);
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.visit('/admin/system/restore');
@@ -170,6 +178,10 @@ describe('Upgrade via Restore', () => {
 
             // Success modal — may take a while for ChurchInfo (30+ migrations)
             cy.get('#restoreSuccessModal', { timeout: 180000 }).should('be.visible');
+            cy.task('setRuntimeValue', {
+                key: upgradedAdminTwoFactorRuntimeKey,
+                value: null,
+            });
 
             // Wait for page to redirect to login after restore completes
             cy.url({ timeout: 30000 }).should('satisfy', (url) => {
@@ -202,13 +214,35 @@ describe('Upgrade via Restore', () => {
         });
     });
 
+    describe('Step 2.6: Enroll Restored Admin in Mandatory 2FA', () => {
+        it('should enroll the upgraded admin after any required password change', () => {
+            cy.task('getRuntimeValue', upgradedAdminTwoFactorRuntimeKey).then((existingSecret) => {
+                if (existingSecret) return;
+
+                cy.visit('/login');
+                cy.get('input[name=User]').type(upgradeAdminUser);
+                cy.get('input[name=Password]').type(`${verifyPassword}{enter}`);
+                cy.url({ timeout: 30000 }).should('include', '/v2/user/current/manage2fa');
+                cy.enrollCurrentUserInTwoFactor().then((twoFactorSecret) => {
+                    cy.task('setRuntimeValue', {
+                        key: upgradedAdminTwoFactorRuntimeKey,
+                        value: twoFactorSecret,
+                    });
+                });
+            });
+        });
+    });
+
     describe('Step 3: Verify Upgraded System', () => {
         // Establish (and cache) a login session with the upgraded admin credentials.
         // Uses the post-forced-change password for MD5-migration sources, or the original
         // restored password for sources with silent migration (e.g. ChurchCRM 6.0.0).
         // cy.setupLoginSession() validates the session cookie so stale caches are detected.
         beforeEach(() => {
-            cy.setupLoginSession('upgraded-admin', upgradeAdminUser, verifyPassword);
+            cy.task('getRuntimeValue', upgradedAdminTwoFactorRuntimeKey).then((twoFactorSecret) => {
+                expect(twoFactorSecret, 'upgraded admin 2FA secret').to.be.a('string').and.not.be.empty;
+                cy.setupLoginSession('upgraded-admin', upgradeAdminUser, verifyPassword, { twoFactorSecret });
+            });
         });
 
         it('should show the login page after upgrade', () => {
@@ -222,9 +256,7 @@ describe('Upgrade via Restore', () => {
         it('should login with the upgraded admin credentials', () => {
             cy.clearCookies();
             cy.clearLocalStorage();
-            cy.visit('/login');
-            cy.get('input[name=User]').type(upgradeAdminUser);
-            cy.get('input[name=Password]').type(verifyPassword + '{enter}');
+            loginWithRuntimeTwoFactor(upgradedAdminTwoFactorRuntimeKey, upgradeAdminUser, verifyPassword);
             // After a successful upgrade, admin credentials must work (post-change for MD5,
             // original restored password for SHA-256 silent migration).
             cy.url({ timeout: 30000 }).should('not.include', '/session/begin');

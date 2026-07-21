@@ -7,10 +7,13 @@ use ChurchCRM\Authentication\Exceptions\PasswordChangeException;
 use ChurchCRM\dto\SystemConfig;
 use ChurchCRM\Utils\KeyManagerUtils;
 use ChurchCRM\model\ChurchCRM\Base\User as BaseUser;
+use ChurchCRM\Utils\DateTimeUtils;
+use ChurchCRM\Utils\LoggerUtils;
 use ChurchCRM\Utils\MiscUtils;
 use Defuse\Crypto\Crypto;
 use PragmaRX\Google2FA\Google2FA;
 use Propel\Runtime\Connection\ConnectionInterface;
+use Propel\Runtime\Propel;
 
 /**
  * Skeleton subclass for representing a row from the 'user_usr' table.
@@ -23,7 +26,18 @@ use Propel\Runtime\Connection\ConnectionInterface;
  */
 class User extends BaseUser
 {
-    private $provisional2FAKey;
+    public const TWO_FACTOR_AUTHENTICATION_TOTP = 'totp';
+    public const TWO_FACTOR_AUTHENTICATION_RECOVERY = 'recovery';
+    public const TWO_FACTOR_AUTHENTICATION_INVALID = 'invalid';
+    public const TWO_FACTOR_AUTHENTICATION_REVOKED = 'revoked';
+    public const TWO_FACTOR_AUTHENTICATION_RATE_LIMITED = 'rate_limited';
+
+    private const TWO_FACTOR_FAILURE_SETTING = 'security.2fa.failures';
+    private const TWO_FACTOR_FAILURE_WINDOW_SECONDS = 600;
+    private const MAX_TWO_FACTOR_FAILURES = 10;
+    private const MAX_BCRYPT_PASSWORD_BYTES = 72;
+
+    private ?string $provisional2FAKey = null;
 
     public function getId()
     {
@@ -402,35 +416,66 @@ class User extends BaseUser
      */
     public function isPasswordValid(string $password): bool
     {
-        $storedHash = $this->getPassword();
+        $verification = $this->verifyPasswordHash($password, $this->getPassword());
+        if (!$verification['isValid']) {
+            return false;
+        }
 
-        // Check if this is a bcrypt hash (starts with $2y$)
+        if ($verification['upgradedHash'] !== null) {
+            $this->setPassword($verification['upgradedHash']);
+            if ($verification['forcePasswordChange']) {
+                $this->setNeedPasswordChange(true);
+            }
+            $this->save();
+        }
+
+        return true;
+    }
+
+    /**
+     * @return array{isValid: bool, upgradedHash: ?string, forcePasswordChange: bool}
+     */
+    private function verifyPasswordHash(string $password, string $storedHash): array
+    {
+        // bcrypt ignores bytes after 72; reject overlong input so two distinct
+        // passwords can never authenticate as the same credential.
+        if (strlen($password) > self::MAX_BCRYPT_PASSWORD_BYTES) {
+            return [
+                'isValid' => false,
+                'upgradedHash' => null,
+                'forcePasswordChange' => false,
+            ];
+        }
+
         if ($this->isBcryptHash($storedHash)) {
-            return password_verify($password, $storedHash);
+            return [
+                'isValid' => password_verify($password, $storedHash),
+                'upgradedHash' => null,
+                'forcePasswordChange' => false,
+            ];
         }
 
-        // Legacy MD5 check — pre-6.x / ChurchInfo 1.x stored passwords as unsalted
-        // md5(password). MD5 is cryptographically weak and unsalted MD5 plaintexts are
-        // in public rainbow tables, so we accept it here only to let migrated accounts
-        // log in once, immediately re-hash to bcrypt, and force a new password — the
-        // weak plaintext must not remain in use just because the hash got stronger.
         if ($this->isMd5Hash($storedHash) && hash_equals($storedHash, md5($password))) {
-            $this->setPassword($this->hashPassword($password));
-            $this->setNeedPasswordChange(true);
-            $this->save();
-            return true;
+            return [
+                'isValid' => true,
+                'upgradedHash' => $this->hashPassword($password),
+                'forcePasswordChange' => true,
+            ];
         }
 
-        // Legacy SHA-256 check for migration period
-        $legacyHash = $this->legacyHashPassword($password);
-        if (hash_equals($storedHash, $legacyHash)) {
-            // Upgrade to bcrypt on successful login
-            $this->setPassword($this->hashPassword($password));
-            $this->save();
-            return true;
+        if (hash_equals($storedHash, $this->legacyHashPassword($password))) {
+            return [
+                'isValid' => true,
+                'upgradedHash' => $this->hashPassword($password),
+                'forcePasswordChange' => false,
+            ];
         }
 
-        return false;
+        return [
+            'isValid' => false,
+            'upgradedHash' => null,
+            'forcePasswordChange' => false,
+        ];
     }
 
     /**
@@ -439,6 +484,10 @@ class User extends BaseUser
      */
     public function hashPassword(string $password): string
     {
+        if (strlen($password) > self::MAX_BCRYPT_PASSWORD_BYTES) {
+            throw new \InvalidArgumentException('Passwords cannot exceed 72 bytes when using bcrypt');
+        }
+
         return password_hash($password, PASSWORD_DEFAULT);
     }
 
@@ -477,17 +526,378 @@ class User extends BaseUser
 
     public function isLocked(): bool
     {
-        return SystemConfig::getIntValue('iMaxFailedLogins') > 0 && $this->getFailedLogins() >= SystemConfig::getIntValue('iMaxFailedLogins');
+        $maximumFailedLogins = self::getEffectiveMaximumFailedLogins();
+
+        return $maximumFailedLogins > 0 && $this->getFailedLogins() >= $maximumFailedLogins;
+    }
+
+    /** The backing column is an unsigned TINYINT and cannot count past 255. */
+    public static function getEffectiveMaximumFailedLogins(): int
+    {
+        $configuredMaximum = SystemConfig::getIntValue('iMaxFailedLogins');
+
+        return $configuredMaximum > 0 ? min($configuredMaximum, 255) : 0;
+    }
+
+    /**
+     * Serialize the lock check, password verification, and failure update for
+     * one primary-authentication attempt. Requests that enter after the lock
+     * threshold is reached never perform password verification.
+     *
+     * @return array{isPasswordValid: bool, isLocked: bool, accountBecameLocked: bool, passwordHash: ?string, twoFactorSecret: ?string, recoveryCodes: ?string}
+     */
+    public function authenticatePrimaryPassword(string $password): array
+    {
+        $maximumFailedLogins = self::getEffectiveMaximumFailedLogins();
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $selectStatement = $connection->prepare(
+                'SELECT usr_Password, usr_NeedPasswordChange, usr_FailedLogins, usr_TwoFactorAuthSecret, usr_TwoFactorAuthRecoveryCodes FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $selectStatement->execute([$this->getPersonId()]);
+            $storedUser = $selectStatement->fetch(\PDO::FETCH_ASSOC);
+            if ($storedUser === false) {
+                $connection->rollBack();
+                $transactionActive = false;
+
+                return [
+                    'isPasswordValid' => false,
+                    'isLocked' => true,
+                    'accountBecameLocked' => false,
+                    'passwordHash' => null,
+                    'twoFactorSecret' => null,
+                    'recoveryCodes' => null,
+                ];
+            }
+
+            $previousFailedLogins = (int) $storedUser['usr_FailedLogins'];
+            if ($maximumFailedLogins > 0 && $previousFailedLogins >= $maximumFailedLogins) {
+                $connection->commit();
+                $transactionActive = false;
+                $this->setFailedLogins($previousFailedLogins);
+
+                return [
+                    'isPasswordValid' => false,
+                    'isLocked' => true,
+                    'accountBecameLocked' => false,
+                    'passwordHash' => null,
+                    'twoFactorSecret' => null,
+                    'recoveryCodes' => null,
+                ];
+            }
+
+            $verification = $this->verifyPasswordHash($password, $storedUser['usr_Password']);
+            if ($verification['isValid']) {
+                $needPasswordChange = (bool) $storedUser['usr_NeedPasswordChange'] || $verification['forcePasswordChange'];
+                if ($verification['upgradedHash'] !== null) {
+                    $upgradeStatement = $connection->prepare(
+                        'UPDATE user_usr SET usr_Password = ?, usr_NeedPasswordChange = ? WHERE usr_per_ID = ?'
+                    );
+                    $upgradeStatement->execute([
+                        $verification['upgradedHash'],
+                        (int) $needPasswordChange,
+                        $this->getPersonId(),
+                    ]);
+                }
+                $connection->commit();
+                $transactionActive = false;
+
+                $this->setPassword($verification['upgradedHash'] ?? $storedUser['usr_Password']);
+                $this->setNeedPasswordChange($needPasswordChange);
+                $this->setFailedLogins($previousFailedLogins);
+
+                return [
+                    'isPasswordValid' => true,
+                    'isLocked' => false,
+                    'accountBecameLocked' => false,
+                    'passwordHash' => $verification['upgradedHash'] ?? $storedUser['usr_Password'],
+                    'twoFactorSecret' => $storedUser['usr_TwoFactorAuthSecret'],
+                    'recoveryCodes' => $storedUser['usr_TwoFactorAuthRecoveryCodes'],
+                ];
+            }
+
+            // usr_FailedLogins is an unsigned TINYINT; cap instead of overflowing.
+            $updatedFailedLogins = min($previousFailedLogins + 1, 255);
+            $updateStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_FailedLogins = ? WHERE usr_per_ID = ?'
+            );
+            $updateStatement->execute([$updatedFailedLogins, $this->getPersonId()]);
+            $connection->commit();
+            $transactionActive = false;
+            $this->setFailedLogins($updatedFailedLogins);
+
+            $accountBecameLocked = $maximumFailedLogins > 0
+                && $previousFailedLogins < $maximumFailedLogins
+                && $updatedFailedLogins >= $maximumFailedLogins;
+
+            return [
+                'isPasswordValid' => false,
+                'isLocked' => $accountBecameLocked,
+                'accountBecameLocked' => $accountBecameLocked,
+                'passwordHash' => null,
+                'twoFactorSecret' => null,
+                'recoveryCodes' => null,
+            ];
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /**
+     * Atomically finish a successful authentication without overwriting a lock
+     * that another primary attempt committed after password/factor validation.
+     */
+    public function finalizeSuccessfulAuthentication(
+        string $expectedPasswordHash,
+        ?string $expectedTwoFactorSecret,
+        ?string $expectedRecoveryCodes,
+        ?string $lastLogin = null
+    ): bool
+    {
+        $maximumFailedLogins = self::getEffectiveMaximumFailedLogins();
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $selectStatement = $connection->prepare(
+                'SELECT usr_Password, usr_FailedLogins, usr_TwoFactorAuthSecret, usr_TwoFactorAuthRecoveryCodes FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $selectStatement->execute([$this->getPersonId()]);
+            $storedUser = $selectStatement->fetch(\PDO::FETCH_ASSOC);
+            if ($storedUser === false) {
+                $connection->rollBack();
+                $transactionActive = false;
+
+                return false;
+            }
+
+            if (!hash_equals($storedUser['usr_Password'], $expectedPasswordHash)) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return false;
+            }
+
+            $storedTwoFactorSecret = $storedUser['usr_TwoFactorAuthSecret'];
+            $twoFactorStateMatches = $storedTwoFactorSecret === null
+                ? $expectedTwoFactorSecret === null
+                : $expectedTwoFactorSecret !== null && hash_equals($storedTwoFactorSecret, $expectedTwoFactorSecret);
+            if (!$twoFactorStateMatches) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return false;
+            }
+
+            $storedRecoveryCodes = $storedUser['usr_TwoFactorAuthRecoveryCodes'];
+            $recoveryStateMatches = $storedRecoveryCodes === null
+                ? $expectedRecoveryCodes === null
+                : $expectedRecoveryCodes !== null && hash_equals($storedRecoveryCodes, $expectedRecoveryCodes);
+            if (!$recoveryStateMatches) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return false;
+            }
+
+            $failedLogins = (int) $storedUser['usr_FailedLogins'];
+            if ($maximumFailedLogins > 0 && $failedLogins >= $maximumFailedLogins) {
+                $connection->commit();
+                $transactionActive = false;
+                $this->setFailedLogins($failedLogins);
+
+                return false;
+            }
+
+            if ($lastLogin === null) {
+                $updateStatement = $connection->prepare(
+                    'UPDATE user_usr SET usr_FailedLogins = 0 WHERE usr_per_ID = ?'
+                );
+                $updateStatement->execute([$this->getPersonId()]);
+            } else {
+                $updateStatement = $connection->prepare(
+                    'UPDATE user_usr SET usr_LastLogin = ?, usr_LoginCount = LEAST(usr_LoginCount + 1, 65535), usr_FailedLogins = 0 WHERE usr_per_ID = ?'
+                );
+                $updateStatement->execute([$lastLogin, $this->getPersonId()]);
+            }
+            $clearFactorFailuresStatement = $connection->prepare(
+                'DELETE FROM user_settings WHERE user_id = ? AND setting_name = ?'
+            );
+            $clearFactorFailuresStatement->execute([$this->getPersonId(), self::TWO_FACTOR_FAILURE_SETTING]);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        // Clear any dirty legacy-hash or stale counter fields on this Propel
+        // object so a later save cannot overwrite concurrent authentication state.
+        $this->reload();
+
+        return true;
     }
 
     public function resetPasswordToRandom(): string
     {
         $password = User::randomPassword();
-        $this->updatePassword($password);
-        $this->setNeedPasswordChange(true);
-        $this->setFailedLogins(0);
+        $passwordHash = $this->hashPassword($password);
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_per_ID FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            if ($lockStatement->fetchColumn() === false) {
+                throw new \RuntimeException('Unable to reset password for a missing user');
+            }
+
+            $resetPasswordStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_Password = ?, usr_NeedPasswordChange = 1, usr_FailedLogins = 0, usr_apiKey = NULL WHERE usr_per_ID = ?'
+            );
+            $resetPasswordStatement->execute([$passwordHash, $this->getPersonId()]);
+            $clearFactorFailuresStatement = $connection->prepare(
+                'DELETE FROM user_settings WHERE user_id = ? AND setting_name = ?'
+            );
+            $clearFactorFailuresStatement->execute([$this->getPersonId(), self::TWO_FACTOR_FAILURE_SETTING]);
+            $this->deletePasswordResetTokens($connection);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
 
         return $password;
+    }
+
+    /**
+     * Issue a reset token while holding the same user-row lock used by token
+     * consumption. This prevents a newly-issued token from slipping between
+     * validation and account-wide sibling invalidation.
+     */
+    public function issuePasswordResetToken(): Token
+    {
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_per_ID FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            if ($lockStatement->fetchColumn() === false) {
+                throw new \RuntimeException('Unable to issue a reset token for a missing user');
+            }
+
+            // Only the newest delivered reset link remains usable.
+            $this->deletePasswordResetTokens($connection);
+            $token = new Token();
+            $token->build('password', $this->getPersonId());
+            $token->save($connection);
+            $connection->commit();
+            $transactionActive = false;
+
+            return $token;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /**
+     * Atomically claim an exact, live reset token, invalidate every sibling,
+     * and rotate the account credentials under one user-row lock.
+     */
+    public function resetPasswordWithToken(string $tokenValue): ?string
+    {
+        if ($tokenValue === '') {
+            return null;
+        }
+
+        // Generate and hash before the transaction so local entropy/hash
+        // failures do not consume a valid reset link.
+        $password = self::randomPassword();
+        $passwordHash = $this->hashPassword($password);
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_per_ID FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            if ($lockStatement->fetchColumn() === false) {
+                throw new \RuntimeException('Unable to reset password for a missing user');
+            }
+
+            $tokenStatement = $connection->prepare(
+                "SELECT token FROM tokens
+                 WHERE token = ? AND type = 'password' AND reference_id = ?
+                   AND remainingUses > 0 AND valid_until_date > ?
+                 FOR UPDATE"
+            );
+            $tokenStatement->execute([
+                $tokenValue,
+                $this->getPersonId(),
+                DateTimeUtils::getToday()->format('Y-m-d H:i:s'),
+            ]);
+            if ($tokenStatement->fetchColumn() === false) {
+                $connection->rollBack();
+                $transactionActive = false;
+
+                return null;
+            }
+
+            $this->deletePasswordResetTokens($connection);
+            $resetPasswordStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_Password = ?, usr_NeedPasswordChange = 1, usr_FailedLogins = 0, usr_apiKey = NULL WHERE usr_per_ID = ?'
+            );
+            $resetPasswordStatement->execute([$passwordHash, $this->getPersonId()]);
+            $clearFactorFailuresStatement = $connection->prepare(
+                'DELETE FROM user_settings WHERE user_id = ? AND setting_name = ?'
+            );
+            $clearFactorFailuresStatement->execute([$this->getPersonId(), self::TWO_FACTOR_FAILURE_SETTING]);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
+
+        return $password;
+    }
+
+    private function deletePasswordResetTokens(ConnectionInterface $connection): void
+    {
+        $deleteTokensStatement = $connection->prepare(
+            "DELETE FROM tokens WHERE type = 'password' AND reference_id = ?"
+        );
+        $deleteTokensStatement->execute([$this->getPersonId()]);
     }
 
     public static function randomPassword(): string
@@ -506,6 +916,52 @@ class User extends BaseUser
     public static function randomApiKey(): string
     {
         return MiscUtils::randomToken();
+    }
+
+    /** Atomically rotate an API key only if the caller observed current state. */
+    public function regenerateApiKeyIfCurrent(?string $expectedApiKey): ?string
+    {
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_apiKey FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            $storedApiKey = $lockStatement->fetchColumn();
+            if ($storedApiKey === false) {
+                throw new \RuntimeException('Unable to rotate API key for a missing user');
+            }
+
+            $stateMatches = $storedApiKey === null
+                ? $expectedApiKey === null
+                : $expectedApiKey !== null && hash_equals($storedApiKey, $expectedApiKey);
+            if (!$stateMatches) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return null;
+            }
+
+            $newApiKey = self::randomApiKey();
+            $updateStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_apiKey = ? WHERE usr_per_ID = ?'
+            );
+            $updateStatement->execute([$newApiKey, $this->getPersonId()]);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
+
+        return $newApiKey;
     }
 
     public function postInsert(ConnectionInterface $con = null): void
@@ -543,6 +999,9 @@ class User extends BaseUser
                 break;
             case 'password-changed-admin':
                 $note->setText(gettext('system user password changed by admin'));
+                break;
+            case 'api-key-regen':
+                $note->setText(gettext('system user API key regenerated'));
                 break;
             case 'login-reset':
                 $note->setText(gettext('system user login reset'));
@@ -692,51 +1151,135 @@ class User extends BaseUser
         return $key;
     }
 
-    public function confirmProvisional2FACode(string $twoFACode): bool
+    public function clearProvisional2FAKey(): void
     {
+        $this->provisional2FAKey = null;
+    }
+
+    public function confirmProvisional2FACode(
+        string $twoFACode,
+        string $expectedPasswordHash,
+        ?string $expectedTwoFactorSecret
+    ): ?string
+    {
+        if ($this->provisional2FAKey === null || $this->provisional2FAKey === '') {
+            return null;
+        }
+
         $google2fa = new Google2FA();
         $window = 2;
-        $pw = Crypto::decryptWithPassword($this->provisional2FAKey, KeyManagerUtils::getTwoFASecretKey());
-        $isKeyValid = $google2fa->verifyKey($pw, $twoFACode, $window);
-        if ($isKeyValid) {
-            $this->setTwoFactorAuthSecret($this->provisional2FAKey);
-            $this->save();
-
-            return true;
-        }
-
-        return $isKeyValid;
-    }
-
-    public function remove2FAKey(): void
-    {
-        $this->setTwoFactorAuthSecret(null);
-        $this->save();
-    }
-
-    public function getDecryptedTwoFactorAuthSecret(): string
-    {
-        return Crypto::decryptWithPassword($this->getTwoFactorAuthSecret(), KeyManagerUtils::getTwoFASecretKey());
-    }
-
-    private function getDecryptedTwoFactorAuthRecoveryCodes(): array
-    {
-        $encrypted = $this->getTwoFactorAuthRecoveryCodes();
-        if (empty($encrypted)) {
-            return [];
-        }
         try {
-            return explode(',', Crypto::decryptWithPassword($encrypted, KeyManagerUtils::getTwoFASecretKey()));
-        } catch (\Exception $e) {
-            return [];
+            $pw = Crypto::decryptWithPassword($this->provisional2FAKey, KeyManagerUtils::getTwoFASecretKey());
+        } catch (\Throwable $exception) {
+            $this->clearProvisional2FAKey();
+
+            return null;
         }
+        $acceptedTimestamp = $google2fa->verifyKeyNewer($pw, $twoFACode, 0, $window);
+        if ($acceptedTimestamp !== false) {
+            $confirmedSecret = $this->provisional2FAKey;
+            $stateWasReplaced = $this->replaceTwoFactorAuthenticationState(
+                $confirmedSecret,
+                (int) $acceptedTimestamp,
+                $expectedPasswordHash,
+                $expectedTwoFactorSecret,
+                true
+            );
+            $this->clearProvisional2FAKey();
+
+            return $stateWasReplaced ? $confirmedSecret : null;
+        }
+
+        return null;
+    }
+
+    public function remove2FAKey(
+        string $expectedPasswordHash,
+        ?string $expectedTwoFactorSecret
+    ): bool
+    {
+        return $this->replaceTwoFactorAuthenticationState(
+            null,
+            null,
+            $expectedPasswordHash,
+            $expectedTwoFactorSecret,
+            true
+        );
     }
 
     public function disableTwoFactorAuthentication(): void
     {
-        $this->setTwoFactorAuthRecoveryCodes(null);
-        $this->setTwoFactorAuthSecret(null);
-        $this->save();
+        $this->replaceTwoFactorAuthenticationState(null);
+    }
+
+    /**
+     * Replace enrollment state and clear the shared factor limiter while
+     * holding the user-row -> settings-row lock order used by factor auth.
+     * Self-service callers use compare-and-swap markers; privileged admin
+     * disablement deliberately performs an unconditional replacement.
+     */
+    private function replaceTwoFactorAuthenticationState(
+        ?string $encryptedSecret,
+        ?int $lastAcceptedTimestamp = null,
+        ?string $expectedPasswordHash = null,
+        ?string $expectedTwoFactorSecret = null,
+        bool $requireExpectedState = false
+    ): bool
+    {
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_Password, usr_TwoFactorAuthSecret FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            $storedUser = $lockStatement->fetch(\PDO::FETCH_ASSOC);
+            if ($storedUser === false) {
+                throw new \RuntimeException('Unable to update two-factor state for a missing user');
+            }
+
+            $storedSecret = $storedUser['usr_TwoFactorAuthSecret'];
+            $passwordStateMatches = $expectedPasswordHash !== null
+                && hash_equals($storedUser['usr_Password'], $expectedPasswordHash);
+            $twoFactorStateMatches = $storedSecret === null
+                ? $expectedTwoFactorSecret === null
+                : $expectedTwoFactorSecret !== null
+                    && hash_equals($storedSecret, $expectedTwoFactorSecret);
+            if ($requireExpectedState && (!$passwordStateMatches || !$twoFactorStateMatches)) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return false;
+            }
+
+            $updateStatement = $connection->prepare(
+                <<<'SQL'
+                    UPDATE user_usr
+                    SET usr_TwoFactorAuthSecret = ?,
+                        usr_TwoFactorAuthRecoveryCodes = NULL,
+                        usr_TwoFactorAuthLastKeyTimestamp = ?
+                    WHERE usr_per_ID = ?
+                    SQL
+            );
+            $updateStatement->execute([$encryptedSecret, $lastAcceptedTimestamp, $this->getPersonId()]);
+            $clearFailuresStatement = $connection->prepare(
+                'DELETE FROM user_settings WHERE user_id = ? AND setting_name = ?'
+            );
+            $clearFailuresStatement->execute([$this->getPersonId(), self::TWO_FACTOR_FAILURE_SETTING]);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
+
+        return true;
     }
 
     public function is2FactorAuthEnabled(): bool
@@ -744,8 +1287,150 @@ class User extends BaseUser
         return !empty($this->getTwoFactorAuthSecret());
     }
 
-    public function getNewTwoFARecoveryCodes(): array
+    public function isApiAuthenticationEligible(?bool $twoFactorAuthenticationEnabled = null): bool
     {
+        if ($this->isLocked() || $this->getNeedPasswordChange()) {
+            return false;
+        }
+
+        $mustEnrollInTwoFactorAuthentication = SystemConfig::getBooleanValue('bRequire2FA') || $this->isAdmin();
+
+        $twoFactorAuthenticationEnabled ??= $this->is2FactorAuthEnabled();
+
+        return !$mustEnrollInTwoFactorAuthentication || $twoFactorAuthenticationEnabled;
+    }
+
+    /**
+     * Reserve a factor attempt while the caller holds the user row lock.
+     * Returns the count written in the caller's still-open transaction.
+     */
+    private function reserveTwoFactorAuthAttempt(ConnectionInterface $connection): int
+    {
+        $statement = $connection->prepare(
+            <<<'SQL'
+                INSERT INTO user_settings (user_id, setting_name, setting_value)
+                VALUES (?, ?, CONCAT('1:', UNIX_TIMESTAMP()))
+                ON DUPLICATE KEY UPDATE setting_value = CASE
+                    WHEN setting_value IS NULL
+                        OR setting_value NOT REGEXP '^[0-9]+:[0-9]+$'
+                        OR CAST(SUBSTRING_INDEX(setting_value, ':', -1) AS UNSIGNED) > UNIX_TIMESTAMP()
+                        OR CAST(SUBSTRING_INDEX(setting_value, ':', -1) AS UNSIGNED) <= UNIX_TIMESTAMP() - CAST(? AS UNSIGNED)
+                        THEN CONCAT('1:', UNIX_TIMESTAMP())
+                    ELSE CONCAT(
+                        LEAST(CAST(SUBSTRING_INDEX(setting_value, ':', 1) AS UNSIGNED) + 1, CAST(? AS UNSIGNED)),
+                        ':',
+                        SUBSTRING_INDEX(setting_value, ':', -1)
+                    )
+                END
+                SQL
+        );
+        $statement->execute([
+            $this->getPersonId(),
+            self::TWO_FACTOR_FAILURE_SETTING,
+            self::TWO_FACTOR_FAILURE_WINDOW_SECONDS,
+            self::MAX_TWO_FACTOR_FAILURES + 1,
+        ]);
+
+        return $this->getStoredTwoFactorAuthAttemptCount($connection);
+    }
+
+    public function isTwoFactorAuthRateLimited(): bool
+    {
+        return $this->getTwoFactorAuthAttemptCount() >= self::MAX_TWO_FACTOR_FAILURES;
+    }
+
+    private function getTwoFactorAuthAttemptCount(): int
+    {
+        $connection = Propel::getConnection();
+        $statement = $connection->prepare(
+            <<<'SQL'
+                SELECT CASE
+                    WHEN setting_value IS NOT NULL
+                        AND setting_value REGEXP '^[0-9]+:[0-9]+$'
+                        AND CAST(SUBSTRING_INDEX(setting_value, ':', -1) AS UNSIGNED) <= UNIX_TIMESTAMP()
+                        AND CAST(SUBSTRING_INDEX(setting_value, ':', -1) AS UNSIGNED) > UNIX_TIMESTAMP() - CAST(? AS UNSIGNED)
+                        THEN CAST(SUBSTRING_INDEX(setting_value, ':', 1) AS UNSIGNED)
+                    ELSE 0
+                END
+                FROM user_settings
+                WHERE user_id = ?
+                    AND setting_name = ?
+                SQL
+        );
+        $statement->execute([
+            self::TWO_FACTOR_FAILURE_WINDOW_SECONDS,
+            $this->getPersonId(),
+            self::TWO_FACTOR_FAILURE_SETTING,
+        ]);
+
+        return (int) ($statement->fetchColumn() ?: 0);
+    }
+
+    /**
+     * Read the count written by reserveTwoFactorAuthAttempt without applying
+     * expiry a second time. The upsert is the single expiry-normalization point,
+     * which prevents a boundary-time cleanup from erasing a concurrent increment.
+     */
+    private function getStoredTwoFactorAuthAttemptCount(ConnectionInterface $connection): int
+    {
+        $statement = $connection->prepare(
+            <<<'SQL'
+                SELECT CAST(SUBSTRING_INDEX(setting_value, ':', 1) AS UNSIGNED)
+                FROM user_settings
+                WHERE user_id = ?
+                    AND setting_name = ?
+                SQL
+        );
+        $statement->execute([
+            $this->getPersonId(),
+            self::TWO_FACTOR_FAILURE_SETTING,
+        ]);
+
+        return (int) ($statement->fetchColumn() ?: 0);
+    }
+
+    /** Atomically clear both password and factor failure state. */
+    public function resetAuthenticationFailures(): void
+    {
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_per_ID FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            if ($lockStatement->fetchColumn() === false) {
+                throw new \RuntimeException('Unable to reset authentication failures for a missing user');
+            }
+
+            $resetPasswordFailuresStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_FailedLogins = 0 WHERE usr_per_ID = ?'
+            );
+            $resetPasswordFailuresStatement->execute([$this->getPersonId()]);
+            $clearFactorFailuresStatement = $connection->prepare(
+                'DELETE FROM user_settings WHERE user_id = ? AND setting_name = ?'
+            );
+            $clearFactorFailuresStatement->execute([$this->getPersonId(), self::TWO_FACTOR_FAILURE_SETTING]);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
+    }
+
+    public function getNewTwoFARecoveryCodes(
+        string $expectedPasswordHash,
+        ?string $expectedTwoFactorSecret
+    ): ?array
+    {
+        $expectedRecoveryCodes = $this->getTwoFactorAuthRecoveryCodes();
         // generate 12 human-readable recovery codes formatted as xxxxxxxx-xxxxxxxx (lowercase hex, 64 bits of entropy each)
         // and store as an encrypted, comma-separated list
         $recoveryCodes = [];
@@ -755,84 +1440,277 @@ class User extends BaseUser
             $recoveryCodes[$i] = substr($hex, 0, 8) . '-' . substr($hex, 8, 8);
         }
         $recoveryCodesString = implode(',', $recoveryCodes);
-        $this->setTwoFactorAuthRecoveryCodes(Crypto::encryptWithPassword($recoveryCodesString, KeyManagerUtils::getTwoFASecretKey()));
-        $this->save();
+        $encryptedRecoveryCodes = Crypto::encryptWithPassword($recoveryCodesString, KeyManagerUtils::getTwoFASecretKey());
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_Password, usr_TwoFactorAuthSecret, usr_TwoFactorAuthRecoveryCodes FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            $storedUser = $lockStatement->fetch(\PDO::FETCH_ASSOC);
+            $storedSecret = $storedUser['usr_TwoFactorAuthSecret'] ?? null;
+            $passwordStateMatches = $storedUser !== false
+                && hash_equals($storedUser['usr_Password'], $expectedPasswordHash);
+            $twoFactorStateMatches = $storedSecret !== null
+                && $expectedTwoFactorSecret !== null
+                && hash_equals($storedSecret, $expectedTwoFactorSecret);
+            $storedRecoveryCodes = $storedUser['usr_TwoFactorAuthRecoveryCodes'] ?? null;
+            $recoveryStateMatches = $storedRecoveryCodes === null
+                ? $expectedRecoveryCodes === null
+                : $expectedRecoveryCodes !== null
+                    && hash_equals($storedRecoveryCodes, $expectedRecoveryCodes);
+            if (!$passwordStateMatches || !$twoFactorStateMatches || !$recoveryStateMatches) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return null;
+            }
+
+            $updateStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_TwoFactorAuthRecoveryCodes = ? WHERE usr_per_ID = ?'
+            );
+            $updateStatement->execute([$encryptedRecoveryCodes, $this->getPersonId()]);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
 
         return $recoveryCodes;
     }
 
-    public function isTwoFACodeValid(string $twoFACode): bool
-    {
+    /**
+     * Atomically verify the primary-auth markers, reserve the shared factor
+     * attempt, and consume either a TOTP timestamp or recovery code.
+     */
+    public function authenticateTwoFactorCode(
+        string $twoFactorCode,
+        string $expectedPasswordHash,
+        string $expectedTwoFactorSecret
+    ): string {
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
         try {
-            $google2fa = new Google2FA();
-            $window = 2;
-            $timestamp = $google2fa->verifyKeyNewer(
-                $this->getDecryptedTwoFactorAuthSecret(),
-                $twoFACode,
-                $this->getTwoFactorAuthLastKeyTimestamp(),
-                $window
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $selectStatement = $connection->prepare(
+                <<<'SQL'
+                    SELECT usr_Password, usr_FailedLogins, usr_TwoFactorAuthSecret,
+                        usr_TwoFactorAuthLastKeyTimestamp, usr_TwoFactorAuthRecoveryCodes
+                    FROM user_usr
+                    WHERE usr_per_ID = ?
+                    FOR UPDATE
+                    SQL
             );
+            $selectStatement->execute([$this->getPersonId()]);
+            $storedUser = $selectStatement->fetch(\PDO::FETCH_ASSOC);
+            $storedSecret = $storedUser['usr_TwoFactorAuthSecret'] ?? null;
+            $maximumFailedLogins = self::getEffectiveMaximumFailedLogins();
+            $accountIsLocked = $maximumFailedLogins > 0
+                && (int) ($storedUser['usr_FailedLogins'] ?? $maximumFailedLogins) >= $maximumFailedLogins;
+            if ($storedUser === false
+                || $accountIsLocked
+                || !hash_equals($storedUser['usr_Password'], $expectedPasswordHash)
+                || $storedSecret === null
+                || !hash_equals($storedSecret, $expectedTwoFactorSecret)) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return self::TWO_FACTOR_AUTHENTICATION_REVOKED;
+            }
+
+            $attemptCount = $this->reserveTwoFactorAuthAttempt($connection);
+            if ($attemptCount > self::MAX_TWO_FACTOR_FAILURES) {
+                $connection->commit();
+                $transactionActive = false;
+
+                return self::TWO_FACTOR_AUTHENTICATION_RATE_LIMITED;
+            }
+
+            if ($twoFactorCode === '') {
+                $connection->commit();
+                $transactionActive = false;
+
+                return self::TWO_FACTOR_AUTHENTICATION_INVALID;
+            }
+
+            try {
+                $google2fa = new Google2FA();
+                $timestamp = $google2fa->verifyKeyNewer(
+                    Crypto::decryptWithPassword($storedSecret, KeyManagerUtils::getTwoFASecretKey()),
+                    $twoFactorCode,
+                    $storedUser['usr_TwoFactorAuthLastKeyTimestamp'] === null
+                        ? 0
+                        : (int) $storedUser['usr_TwoFactorAuthLastKeyTimestamp'],
+                    2
+                );
+            } catch (\Throwable $validationError) {
+                // Corrupt factor data is an invalid attempt, not a reason to
+                // roll back the limiter reservation made above.
+                $timestamp = false;
+            }
             if ($timestamp !== false) {
-                $this->setTwoFactorAuthLastKeyTimestamp($timestamp);
-                $this->save();
+                $updateStatement = $connection->prepare(
+                    'UPDATE user_usr SET usr_TwoFactorAuthLastKeyTimestamp = ? WHERE usr_per_ID = ?'
+                );
+                $updateStatement->execute([$timestamp, $this->getPersonId()]);
+                $connection->commit();
+                $transactionActive = false;
 
-                return true;
+                return self::TWO_FACTOR_AUTHENTICATION_TOTP;
             }
 
-            return false;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
+            $encryptedRecoveryCodes = $storedUser['usr_TwoFactorAuthRecoveryCodes'];
+            if (!empty($encryptedRecoveryCodes)) {
+                $newFormatRegex = '/^[a-f0-9]+-?[a-f0-9]+$/i';
+                $inputIsNewFormat = (bool) preg_match($newFormatRegex, $twoFactorCode);
+                $normalizedInput = str_replace(['-', ' '], '', strtolower($twoFactorCode));
+                try {
+                    $codes = array_values(array_filter(
+                        explode(',', Crypto::decryptWithPassword($encryptedRecoveryCodes, KeyManagerUtils::getTwoFASecretKey())),
+                        static fn (string $code): bool => $code !== ''
+                    ));
+                } catch (\Throwable $validationError) {
+                    // Preserve the reserved attempt when encrypted recovery
+                    // data is malformed, and treat the submitted code as invalid.
+                    $codes = [];
+                }
+                foreach ($codes as $key => $code) {
+                    $storedIsNewFormat = (bool) preg_match($newFormatRegex, $code);
+                    $matches = $inputIsNewFormat && $storedIsNewFormat
+                        ? str_replace(['-', ' '], '', strtolower($code)) === $normalizedInput
+                        : hash_equals($code, $twoFactorCode);
+                    if ($matches) {
+                        unset($codes[$key]);
+                        try {
+                            $updatedRecoveryCodes = empty($codes)
+                                ? null
+                                : Crypto::encryptWithPassword(implode(',', $codes), KeyManagerUtils::getTwoFASecretKey());
+                        } catch (\Throwable $validationError) {
+                            $connection->commit();
+                            $transactionActive = false;
 
-    public function isTwoFaRecoveryCodeValid(string $twoFaRecoveryCode): bool
-    {
-        // checks for validity of a 2FA recovery code
-        // if the specified code was valid, the code is also removed.
-        // New-format codes (xxxxxxxx-xxxxxxxx lowercase hex) are compared with normalization:
-        // hyphens/spaces stripped and lowercased, so users can type them either way.
-        // Legacy base64 codes are compared byte-exact to preserve their original entropy
-        // and avoid case-collision edge cases.
-        $newFormatRegex = '/^[a-f0-9]+-?[a-f0-9]+$/i';
-        $inputIsNewFormat = (bool) preg_match($newFormatRegex, $twoFaRecoveryCode);
-        $normalizedInput = str_replace(['-', ' '], '', strtolower($twoFaRecoveryCode));
+                            return self::TWO_FACTOR_AUTHENTICATION_INVALID;
+                        }
+                        $updateStatement = $connection->prepare(
+                            'UPDATE user_usr SET usr_TwoFactorAuthRecoveryCodes = ? WHERE usr_per_ID = ?'
+                        );
+                        $updateStatement->execute([$updatedRecoveryCodes, $this->getPersonId()]);
+                        $connection->commit();
+                        $transactionActive = false;
+                        // Keep the in-memory marker aligned for the session that
+                        // just authenticated by consuming this recovery code.
+                        $this->reload();
 
-        $codes = $this->getDecryptedTwoFactorAuthRecoveryCodes();
-        foreach ($codes as $key => $code) {
-            $storedIsNewFormat = (bool) preg_match($newFormatRegex, $code);
-            $matches = $inputIsNewFormat && $storedIsNewFormat
-                ? str_replace(['-', ' '], '', strtolower($code)) === $normalizedInput
-                : hash_equals($code, $twoFaRecoveryCode);
-
-            if ($matches) {
-                unset($codes[$key]);
-                $recoveryCodesString = implode(',', $codes);
-                $this->setTwoFactorAuthRecoveryCodes(Crypto::encryptWithPassword($recoveryCodesString, KeyManagerUtils::getTwoFASecretKey()));
-                $this->save();
-
-                return true;
+                        return self::TWO_FACTOR_AUTHENTICATION_RECOVERY;
+                    }
+                }
             }
-        }
 
-        return false;
+            $connection->commit();
+            $transactionActive = false;
+
+            return self::TWO_FACTOR_AUTHENTICATION_INVALID;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+
+            return self::TWO_FACTOR_AUTHENTICATION_INVALID;
+        }
     }
 
     public function adminSetUserPassword(string $newPassword): void
     {
-        $this->updatePassword($newPassword);
-        $this->setNeedPasswordChange(false);
-        $this->save();
-        $this->createTimeLineNote('password-changed-admin');
+        if ($newPassword === '') {
+            throw new PasswordChangeException('New', gettext('The new password cannot be empty.'));
+        }
+        if (strlen($newPassword) > self::MAX_BCRYPT_PASSWORD_BYTES) {
+            throw new PasswordChangeException('New', gettext('The new password cannot exceed 72 bytes.'));
+        }
+        if (strlen($newPassword) < SystemConfig::getIntValue('iMinPasswordLength')) {
+            throw new PasswordChangeException(
+                'New',
+                gettext('The new password must be at least') . ' '
+                    . SystemConfig::getIntValue('iMinPasswordLength') . ' '
+                    . gettext('characters')
+            );
+        }
+        if (!$this->getIsPasswordPermissible($newPassword)) {
+            throw new PasswordChangeException('New', gettext('The new password is too obvious. Please choose something else.'));
+        }
+
+        $newPasswordHash = $this->hashPassword($newPassword);
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_per_ID FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            if ($lockStatement->fetchColumn() === false) {
+                throw new \RuntimeException('Unable to change the password for a missing user');
+            }
+
+            $updateStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_Password = ?, usr_NeedPasswordChange = 0, usr_apiKey = NULL WHERE usr_per_ID = ?'
+            );
+            $updateStatement->execute([$newPasswordHash, $this->getPersonId()]);
+            $this->deletePasswordResetTokens($connection);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
+        try {
+            $this->createTimeLineNote('password-changed-admin');
+        } catch (\Throwable $exception) {
+            // The credential commit is authoritative. Do not prevent the
+            // controller from rotating the acting administrator's session.
+            try {
+                LoggerUtils::getAppLogger()->warning('Unable to record administrator password-change timeline note', [
+                    'userId' => $this->getPersonId(),
+                    'exception' => $exception,
+                ]);
+            } catch (\Throwable $loggingError) {
+                // Continue the security-mutation completion path.
+            }
+        }
     }
 
-    public function userChangePassword($oldPassword, $newPassword): void
+    public function userChangePassword(
+        string $oldPassword,
+        string $newPassword,
+        string $expectedPasswordHash,
+        ?string $expectedTwoFactorSecret,
+        ?string $expectedRecoveryCodes
+    ): string
     {
-        if (!$this->isPasswordValid($oldPassword)) {
+        if (!$this->verifyPasswordHash($oldPassword, $expectedPasswordHash)['isValid']) {
             throw new PasswordChangeException('Old', gettext('Incorrect password supplied for current user'));
         }
 
         if (!$this->getIsPasswordPermissible($newPassword)) {
             throw new PasswordChangeException('New', gettext('Your password choice is too obvious. Please choose something else.'));
+        }
+
+        if (strlen($newPassword) > self::MAX_BCRYPT_PASSWORD_BYTES) {
+            throw new PasswordChangeException('New', gettext('Your new password cannot exceed 72 bytes.'));
         }
 
         if (strlen($newPassword) < SystemConfig::getIntValue('iMinPasswordLength')) {
@@ -847,10 +1725,70 @@ class User extends BaseUser
             throw new PasswordChangeException('New', gettext('Your new password is too similar to your old one.'));
         }
 
-        $this->updatePassword($newPassword);
-        $this->setNeedPasswordChange(false);
-        $this->save();
-        $this->createTimeLineNote('password-changed');
+        $newPasswordHash = $this->hashPassword($newPassword);
+        $connection = Propel::getWriteConnection('default');
+        $transactionActive = false;
+        try {
+            $connection->beginTransaction();
+            $transactionActive = true;
+            $lockStatement = $connection->prepare(
+                'SELECT usr_Password, usr_TwoFactorAuthSecret, usr_TwoFactorAuthRecoveryCodes FROM user_usr WHERE usr_per_ID = ? FOR UPDATE'
+            );
+            $lockStatement->execute([$this->getPersonId()]);
+            $storedUser = $lockStatement->fetch(\PDO::FETCH_ASSOC);
+            $storedSecret = $storedUser['usr_TwoFactorAuthSecret'] ?? null;
+            $passwordStateMatches = $storedUser !== false
+                && hash_equals($storedUser['usr_Password'], $expectedPasswordHash);
+            $twoFactorStateMatches = $storedSecret === null
+                ? $expectedTwoFactorSecret === null
+                : $expectedTwoFactorSecret !== null
+                    && hash_equals($storedSecret, $expectedTwoFactorSecret);
+            $storedRecoveryCodes = $storedUser['usr_TwoFactorAuthRecoveryCodes'] ?? null;
+            $recoveryStateMatches = $storedRecoveryCodes === null
+                ? $expectedRecoveryCodes === null
+                : $expectedRecoveryCodes !== null
+                    && hash_equals($storedRecoveryCodes, $expectedRecoveryCodes);
+            $oldPasswordIsCurrent = $storedUser !== false
+                && $this->verifyPasswordHash($oldPassword, $storedUser['usr_Password'])['isValid'];
+            if (!$passwordStateMatches || !$twoFactorStateMatches || !$recoveryStateMatches || !$oldPasswordIsCurrent) {
+                $connection->rollBack();
+                $transactionActive = false;
+                throw new PasswordChangeException('Old', gettext('Incorrect password supplied for current user'));
+            }
+
+            $updateStatement = $connection->prepare(
+                'UPDATE user_usr SET usr_Password = ?, usr_NeedPasswordChange = 0, usr_apiKey = NULL WHERE usr_per_ID = ?'
+            );
+            $updateStatement->execute([$newPasswordHash, $this->getPersonId()]);
+            $this->deletePasswordResetTokens($connection);
+            $connection->commit();
+            $transactionActive = false;
+        } catch (PasswordChangeException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                $connection->rollBack();
+            }
+            throw $exception;
+        }
+
+        $this->reload();
+        try {
+            $this->createTimeLineNote('password-changed');
+        } catch (\Throwable $exception) {
+            // Let the caller synchronize credential markers and rotate the
+            // acting session after the password commit.
+            try {
+                LoggerUtils::getAppLogger()->warning('Unable to record self-service password-change timeline note', [
+                    'userId' => $this->getPersonId(),
+                    'exception' => $exception,
+                ]);
+            } catch (\Throwable $loggingError) {
+                // Continue the security-mutation completion path.
+            }
+        }
+
+        return $newPasswordHash;
     }
 
     private function getIsPasswordPermissible($newPassword): bool
