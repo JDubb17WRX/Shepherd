@@ -42,13 +42,14 @@
     const link = event.target.closest("a[href]");
     if (!link || link.hasAttribute("download") || link.dataset.shepherdBypassLeave === "true") return;
     const raw = link.getAttribute("href");
-    if (!raw || raw.startsWith("#") || raw.startsWith("javascript:")) return;
+    if (!raw || raw.startsWith("#")) return;
     let url;
     try {
       url = new URL(link.href, window.location.href);
     } catch {
       return;
     }
+    if (!["http:", "https:", "mailto:", "tel:"].includes(url.protocol)) return;
     const isInternal =
       url.origin === window.location.origin && (url.pathname === prefix || url.pathname.startsWith(prefix + "/"));
     if (isInternal) return;
