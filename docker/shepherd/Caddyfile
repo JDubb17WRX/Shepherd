@@ -16,8 +16,24 @@
         -Server
     }
 
+    # Liveness only proves that the web process can answer requests. It must
+    # remain independent of MariaDB so the orchestrator can distinguish a
+    # crashed container from an unavailable dependency.
+    handle /shepherd/livez {
+        header Content-Type "application/json; charset=utf-8"
+        header Cache-Control "no-store"
+        respond `{"status":"alive"}` 200
+    }
+
+    # Readiness is handled by a small deployment probe that checks the
+    # application database/schema and writable persistent paths. It does not
+    # bootstrap ChurchCRM, create a session, or expose dependency details.
     handle /shepherd/healthz {
-        respond 200
+        rewrite * /shepherd/healthz.php
+        php_server
+    }
+    handle /shepherd/healthz.php {
+        respond 404
     }
 
     @dotfiles path_regexp hidden ^/shepherd/(?:.*/)?\.

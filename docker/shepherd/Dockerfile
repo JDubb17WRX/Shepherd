@@ -30,9 +30,11 @@ FROM php-base
 WORKDIR /var/www/html/shepherd
 COPY --from=application --chown=www-data:www-data /build/src/ ./
 COPY --chown=www-data:www-data docker/shepherd/Config.php ./Include/Config.php
+COPY --chown=www-data:www-data docker/shepherd/healthz.php ./healthz.php
 COPY docker/shepherd/Caddyfile /etc/caddy/Caddyfile
 
-RUN mkdir -p Images/Person Images/Family uploads logs tmp_attach SQL /data /config \
+RUN php -l healthz.php > /dev/null \
+    && mkdir -p Images/Person Images/Family uploads logs tmp_attach SQL /data /config \
     && chown -R www-data:www-data Images uploads logs tmp_attach SQL plugins /data /config
 
 ENV XDG_DATA_HOME=/data \

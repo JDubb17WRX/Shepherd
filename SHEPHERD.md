@@ -16,3 +16,9 @@ The application is served only at `/shepherd/` behind the same-origin Elkins Par
 Required secrets are injected through the website compose `.env`: database passwords and `SHEPHERD_AUDIT_KEY` (a random value of at least 32 bytes). SMTP settings are optional at container startup but are required before account requests can deliver verification and password-setup mail.
 
 Back up both the MariaDB volume and the persistent `Images`, `uploads`, `SQL`, `logs`, and `tmp_attach` volumes before upgrades. Test restoration regularly. A new installation uses ChurchCRM's setup flow to create its initial administrator; administrators must enroll in 2FA before using the application.
+
+## Health endpoints
+
+- `/shepherd/livez` is a dependency-free liveness check. It returns `200` when the Shepherd web process can answer requests.
+- `/shepherd/healthz` is the container readiness check. It returns `200` only when MariaDB is reachable, the `config_cfg` application table exists, and Shepherd's required persistent paths are present and writable. Otherwise it returns `503` without exposing connection details.
+- Readiness reports whether SMTP is configured, but deliberately does not open an SMTP connection on each health request. Delivery must be tested separately with Shepherd's email diagnostic and an isolated mail sink before release.

@@ -41,7 +41,7 @@ if ($_themePrimary !== '') {
 $MenuFirst = 1;
 ?>
 <!DOCTYPE html>
-<html<?= $localeInfo->isRTL() ? ' dir="rtl"' : '' ?><?= $_themeAttrs ?>>
+<html lang="<?= InputUtils::escapeAttribute($localeInfo->getHtmlLanguageTag()) ?>"<?= $localeInfo->isRTL() ? ' dir="rtl"' : '' ?><?= $_themeAttrs ?>>
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
