@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-19 19:58+0000\n"
+"POT-Creation-Date: 2026-07-21 11:23+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -367,6 +367,9 @@ msgid "Account Locked"
 msgstr ""
 
 msgid "Account Recovery"
+msgstr ""
+
+msgid "Account Requests"
 msgstr ""
 
 msgid "Account Unlocked"
@@ -825,9 +828,6 @@ msgid "All people and family records"
 msgstr ""
 
 msgid "All people in your cart are already in a family. No one can be assigned."
-msgstr ""
-
-msgid "All rights reserved"
 msgstr ""
 
 msgid "All roles"
@@ -2384,9 +2384,6 @@ msgstr ""
 msgid "Communication"
 msgstr ""
 
-msgid "Community Management Platform"
-msgstr ""
-
 msgid "Community Plugins"
 msgstr ""
 
@@ -2649,9 +2646,6 @@ msgid "Copy to Group"
 msgstr ""
 
 msgid "Copy to clipboard"
-msgstr ""
-
-msgid "Copyright"
 msgstr ""
 
 msgid "Core Plugins"
@@ -4047,9 +4041,6 @@ msgid "Enter your login name and we will email you a link to reset your password
 msgstr ""
 
 msgid "Enter your new password"
-msgstr ""
-
-msgid "Enter your password"
 msgstr ""
 
 msgid "Enter your username and password as usual"
@@ -6702,9 +6693,6 @@ msgstr ""
 msgid "Login must be at least 3 characters!"
 msgstr ""
 
-msgid "Login to your account"
-msgstr ""
-
 msgid "Long Date Format"
 msgstr ""
 
@@ -9217,9 +9205,6 @@ msgstr ""
 msgid "Regenerate"
 msgstr ""
 
-msgid "Register"
-msgstr ""
-
 msgid "Register New Device"
 msgstr ""
 
@@ -10173,6 +10158,9 @@ msgid "Sierra Leone"
 msgstr ""
 
 msgid "Sign In"
+msgstr ""
+
+msgid "Sign Up"
 msgstr ""
 
 msgid "Sign in"
@@ -11913,9 +11901,6 @@ msgstr ""
 msgid "Verifying"
 msgstr ""
 
-msgid "Version"
-msgstr ""
-
 #, php-format
 msgid "Version %s is available. Please upgrade your installation."
 msgstr ""
@@ -12219,9 +12204,6 @@ msgid "Welcome"
 msgstr ""
 
 msgid "Welcome Back!"
-msgstr ""
-
-msgid "Welcome back! Please enter your details to continue"
 msgstr ""
 
 msgid "Welcome to"
