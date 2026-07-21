@@ -16,7 +16,9 @@
         -Server
     }
 
-    respond /shepherd/healthz 200
+    handle /shepherd/healthz {
+        respond 200
+    }
 
     @dotfiles path_regexp hidden ^/shepherd/(?:.*/)?\.
     respond @dotfiles 404
