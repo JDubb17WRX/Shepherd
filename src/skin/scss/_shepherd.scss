@@ -1,0 +1,21 @@
+:root {
+    --tblr-primary: #2d5a27;
+    --tblr-primary-rgb: 45, 90, 39;
+    --shepherd-green: #2d5a27;
+    --shepherd-green-dark: #1f421b;
+    --shepherd-cream: #f7f2e6;
+    --shepherd-gold: #b7974f;
+}
+
+body { font-family: "Source Sans 3", system-ui, sans-serif; }
+h1, h2, .page-title, .login-header-church-name, .navbar-brand-text { font-family: "Cormorant Garamond", Georgia, serif; }
+.navbar-vertical { background: var(--shepherd-green-dark); }
+.navbar-vertical .navbar-brand-text,
+.navbar-vertical .nav-link,
+.navbar-vertical .nav-link-icon { color: #fff; }
+.btn-primary, .btn-sign-in { background: var(--shepherd-green); border-color: var(--shepherd-green); }
+.btn-primary:hover, .btn-sign-in:hover { background: var(--shepherd-green-dark); border-color: var(--shepherd-green-dark); }
+.page-auth { background: linear-gradient(rgba(22, 49, 20, .72), rgba(22, 49, 20, .76)), url("/images/exterior.jpg") center / cover fixed; }
+.login-card { border-top: 4px solid var(--shepherd-gold); }
+.login-header-logo img { width: 88px; height: 88px; object-fit: contain; }
+.shepherd-honeypot { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; }

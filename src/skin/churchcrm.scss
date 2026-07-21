@@ -54,6 +54,7 @@
 
 // Tabler custom styles — color overrides, DataTables/TomSelect skins
 @include meta.load-css("scss/_tabler-bridge");
+@include meta.load-css("scss/shepherd");
 
 html,
 body {
