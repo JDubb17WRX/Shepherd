@@ -2,9 +2,8 @@
   "use strict";
   const prefix = "/shepherd";
   if (window.parent === window) {
-    const route = window.location.pathname.startsWith(prefix)
-      ? window.location.pathname.slice(prefix.length) || "/"
-      : "/";
+    if (!window.location.pathname.startsWith(prefix)) return;
+    const route = window.location.pathname.slice(prefix.length) || "/";
     window.location.replace("/shepherd.html#" + route + window.location.search + window.location.hash);
     return;
   }
