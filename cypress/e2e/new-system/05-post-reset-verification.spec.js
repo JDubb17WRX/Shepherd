@@ -24,6 +24,7 @@ describe('05 - Post-Reset Verification', () => {
         username: 'admin',
         password: 'changeme'
     };
+    const adminTwoFactorRuntimeKey = 'newSystemAdminTwoFactorSecret';
 
     // Helper to manually login, handling forced password-change redirect after a DB reset.
     // Kept local to this spec because it is tightly coupled to the new-system reset flow.
@@ -31,10 +32,16 @@ describe('05 - Post-Reset Verification', () => {
         cy.clearCookies();
         cy.clearLocalStorage();
         const password = adminCredentials.password;
-        cy.visit('/login');
-        cy.get('input[name=User]', { timeout: 15000 }).type(adminCredentials.username);
-        cy.get('input[name=Password]').type(password);
-        cy.get('input[name=Password]').type('{enter}');
+        cy.task('getRuntimeValue', adminTwoFactorRuntimeKey).then((twoFactorSecret) => {
+            if (twoFactorSecret) {
+                cy.loginWithTwoFactor(adminCredentials.username, password, twoFactorSecret);
+                return;
+            }
+
+            cy.visit('/login');
+            cy.get('input[name=User]', { timeout: 15000 }).type(adminCredentials.username);
+            cy.get('input[name=Password]').type(`${password}{enter}`);
+        });
         cy.url({ timeout: 30000 }).should('not.include', '/session/begin');
 
         cy.url().then((url) => {
@@ -43,7 +50,18 @@ describe('05 - Post-Reset Verification', () => {
                 cy.get('#NewPassword1').type('Cypress@01!');
                 cy.get('#NewPassword2').type('Cypress@01!');
                 cy.get('button[type=submit]').click();
-                cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
+                cy.url({ timeout: 15000 }).should('include', '/v2/user/current/manage2fa');
+            }
+        });
+
+        cy.url().then((url) => {
+            if (url.includes('/v2/user/current/manage2fa')) {
+                cy.enrollCurrentUserInTwoFactor()
+                    .then((twoFactorSecret) => cy.task('setRuntimeValue', {
+                        key: adminTwoFactorRuntimeKey,
+                        value: twoFactorSecret,
+                    }))
+                    .then(() => cy.visit('/admin/system/church-info'));
             }
         });
 

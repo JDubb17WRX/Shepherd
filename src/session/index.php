@@ -32,6 +32,7 @@ SlimUtils::registerDefaultJsonErrorHandler($errorMiddleware);
 $app->add(new VersionMiddleware());
 
 require __DIR__ . '/routes/password-reset.php';
+require __DIR__ . '/routes/shepherd-signup.php';
 
 $app->get('/begin', 'beginSession');
 $app->post('/begin', 'beginSession');

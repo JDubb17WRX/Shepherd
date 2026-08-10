@@ -9,9 +9,8 @@ use ChurchCRM\Service\SystemService;
 
 <div class="auth-footer">
   <div>
-    <strong><?= gettext('Copyright') ?> &copy; <?= SystemService::getCopyrightDate() ?> 
-    <a href="https://churchcrm.io" target="_blank" rel="noopener noreferrer"><b>Church</b>CRM</a></strong>. 
-    <?= gettext('All rights reserved') ?>.
+    <strong>Shepherd</strong> for Elkins Park Reformed Presbyterian Church.
+    Based on <a href="https://github.com/ChurchCRM/CRM/tree/7.5.0" target="_blank" rel="noopener noreferrer">ChurchCRM 7.5.0</a> under the MIT License.
   </div>
   <div class="auth-footer-social">
     <a href="https://www.facebook.com/getChurchCRM" target="_blank" rel="noopener noreferrer" title="Facebook">
@@ -43,6 +42,7 @@ use ChurchCRM\Service\SystemService;
   <script src="<?= SystemURLs::assetVersioned('/skin/external/just-validate/just-validate.production.min.js') ?>"></script>
 
   <script src="<?= SystemURLs::assetVersioned('/skin/v2/locale-loader.min.js') ?>"></script>
+  <script src="<?= SystemURLs::assetVersioned('/skin/js/shepherd-embed.js') ?>"></script>
   <script nonce="<?= SystemURLs::getCSPNonce() ?>">
     // Load locale files dynamically
     (function() {

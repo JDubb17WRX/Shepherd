@@ -19,14 +19,7 @@ describe(
             const username = Cypress.env("admin.username");
             const password = Cypress.env("admin.password");
             cy.clearCookies();
-            // Match setupLoginSession's canonical path: /login resolves to the
-            // session/begin form but goes through the front-controller, which
-            // is the path the app's session cookie gets minted on.
-            cy.visit("/login");
-            cy.get("input[name=User]", { timeout: 10000 })
-                .should("be.visible")
-                .type(username);
-            cy.get("input[name=Password]").type(`${password}{enter}`);
+            cy.loginWithTwoFactor(username, password, Cypress.env("admin.2fa.secret"));
             cy.url().should("not.include", "/session/begin");
         };
 

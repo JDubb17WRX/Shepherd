@@ -1,22 +1,37 @@
 /// <reference types="cypress" />
 
 describe("2FA Recovery Code Generation", () => {
-    beforeEach(() => cy.setupStandardSession());
+    beforeEach(() => {
+        cy.loginWithTwoFactor("twofa_user", "changeme", "JBSWY3DPEBLW64TMMQ======");
+    });
 
     it("generates 12 unique codes in xxxxxxxx-xxxxxxxx lowercase hex format", () => {
-        cy.makePrivateUserAPICall(
+        cy.visit("/v2/user/current/manage2fa");
+        cy.get("#two-factor-enrollment-app")
+            .invoke("attr", "data-csrf-token")
+            .then((csrfToken) => cy.request({
+                method: "POST",
+                url: "/api/user/current/refresh2farecoverycodes",
+                headers: { "X-CSRF-Token": csrfToken },
+            }))
+            .then((resp) => {
+                expect(resp.headers["cache-control"]).to.include("no-store");
+                expect(resp.body).to.have.property("TwoFARecoveryCodes");
+                const codes = resp.body.TwoFARecoveryCodes;
+                expect(codes).to.have.length(12);
+                const format = /^[a-f0-9]{8}-[a-f0-9]{8}$/;
+                codes.forEach((code) => expect(code).to.match(format));
+                expect(new Set(codes).size).to.equal(12);
+            });
+    });
+
+    it("rejects API-key factor management even for an enrolled administrator", () => {
+        cy.makePrivateAdminAPICall(
             "POST",
             "/api/user/current/refresh2farecoverycodes",
             null,
-            200,
-        ).then((resp) => {
-            expect(resp.body).to.have.property("TwoFARecoveryCodes");
-            const codes = resp.body.TwoFARecoveryCodes;
-            expect(codes).to.have.length(12);
-            const format = /^[a-f0-9]{8}-[a-f0-9]{8}$/;
-            codes.forEach((code) => expect(code).to.match(format));
-            expect(new Set(codes).size).to.equal(12);
-        });
+            403,
+        );
     });
 });
 

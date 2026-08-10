@@ -38,10 +38,10 @@ describe("Cart to Family — UI", () => {
      */
     function freshAdminLogin() {
         cy.clearCookies();
-        cy.visit("/session/begin");
-        cy.get("input[name=User]").type(Cypress.env("admin.username"));
-        cy.get("input[name=Password]").type(
-            Cypress.env("admin.password") + "{enter}",
+        cy.loginWithTwoFactor(
+            Cypress.env("admin.username"),
+            Cypress.env("admin.password"),
+            Cypress.env("admin.2fa.secret"),
         );
         cy.url().should("not.include", "/session/begin");
     }

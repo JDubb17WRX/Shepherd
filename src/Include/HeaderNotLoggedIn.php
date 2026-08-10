@@ -15,7 +15,7 @@ PluginManager::init($pluginsPath);
 $localeInfo = Bootstrapper::getCurrentLocale(); // always returns a LocaleInfo object
 ?>
 <!DOCTYPE html>
-<html<?= $localeInfo->isRTL() ? ' dir="rtl"' : '' ?>>
+<html lang="<?= InputUtils::escapeAttribute($localeInfo->getHtmlLanguageTag()) ?>"<?= $localeInfo->isRTL() ? ' dir="rtl"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -32,7 +32,11 @@ $localeInfo = Bootstrapper::getCurrentLocale(); // always returns a LocaleInfo o
 
     <script src="<?= SystemURLs::assetVersioned('/skin/external/moment/moment.min.js') ?>"></script>
 
-    <title>ChurchCRM: <?= InputUtils::escapeHTML($sPageTitle) ?></title>
+    <title>Shepherd — <?= InputUtils::escapeHTML($sPageTitle) ?></title>
+    <link rel="icon" href="/images/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <?= PluginManager::getPluginHeadContent() ?>
 

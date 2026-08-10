@@ -74,6 +74,19 @@ class LocaleInfo
         return $this->locale;
     }
 
+    /**
+     * Return the active locale as a BCP 47 language tag for HTML metadata.
+     *
+     * ChurchCRM stores locales with POSIX separators (for example, en_US),
+     * while the HTML lang attribute requires hyphen-separated language tags.
+     */
+    public function getHtmlLanguageTag(): string
+    {
+        $locale = trim((string) $this->getLocale());
+
+        return $locale === '' ? 'en-US' : str_replace('_', '-', $locale);
+    }
+
     public function getShortLocale(): string
     {
         return substr($this->getLocale(), 0, 2);

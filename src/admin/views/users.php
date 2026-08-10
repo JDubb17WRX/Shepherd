@@ -6,6 +6,7 @@ use ChurchCRM\dto\SystemURLs;
 use ChurchCRM\model\ChurchCRM\Family;
 use ChurchCRM\model\ChurchCRM\Person;
 use ChurchCRM\Service\UserService;
+use ChurchCRM\Utils\CSRFUtils;
 use ChurchCRM\Utils\InputUtils;
 
 require SystemURLs::getDocumentRoot() . '/Include/Header.php';
@@ -21,7 +22,11 @@ $userSettingsConfig = $userService->getUserSettingsConfig();
 $bEmailEnabled = SystemConfig::isEmailEnabled();
 
 ?>
-<div class="container-fluid">
+<div
+    class="container-fluid"
+    id="admin-user-security-context"
+    data-csrf-token="<?= InputUtils::escapeAttribute(CSRFUtils::generateToken('admin_user_security_action')) ?>"
+>
     <?php if (!$bEmailEnabled) { ?>
     <div class="alert alert-warning d-flex align-items-center" role="alert">
         <i class="fa-solid fa-triangle-exclamation me-2 fs-3"></i>

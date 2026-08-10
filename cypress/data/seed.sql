@@ -1963,6 +1963,17 @@ INSERT INTO `user_usr` VALUES (902,'$2y$12$e3o8rmvWUYdgzUNB/AAMK.pRvT9rwsIZx4wYB
 -- Same TOTP secret (JBSWY3DPEBLW64TMMQ======) as twofa_user; starts unlocked (FailedLogins=0)
 -- so the lockout test exhausts iMaxFailedLogins with wrong OTPs and asserts the account locks.
 INSERT INTO `user_usr` VALUES (903,'$2y$12$e3o8rmvWUYdgzUNB/AAMK.pRvT9rwsIZx4wYB0brOmVPB1UL.HA5S',0,'2024-01-01 00:00:00',0,0,0,0,0,0,0,0,0,0,0,10,'skin-blue',0,0,'2016-01-01',26,0,'twofa_lockout_user',NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'def50200923f831141edcddb9e69c79f4ef68b1f0cdd9acf4223f286f2c6ab7e0f09d397cabc831fdaa5bee117f409a50090ae4ea6ff51203508d29b59869396f303d5fd3cf14fe76cf85dba9c85735750aa4f312e1ab29caa60a15bb1b76aecb4a7be50423d2867e49a69ec',NULL,NULL);
+-- The primary Admin fixture is enrolled so the broad interactive/API suite can
+-- complete the now-enforced admin second factor. A separate synthetic admin
+-- remains unenrolled for negative eligibility and enrollment-flow coverage.
+UPDATE `user_usr`
+SET `usr_TwoFactorAuthSecret` = 'def50200923f831141edcddb9e69c79f4ef68b1f0cdd9acf4223f286f2c6ab7e0f09d397cabc831fdaa5bee117f409a50090ae4ea6ff51203508d29b59869396f303d5fd3cf14fe76cf85dba9c85735750aa4f312e1ab29caa60a15bb1b76aecb4a7be50423d2867e49a69ec'
+WHERE `usr_per_ID` = 1;
+UPDATE `user_usr` SET `usr_apiKey` = 'mustChangeApiKeyForTesting123456789012345' WHERE `usr_per_ID` = 8;
+INSERT INTO `user_usr`
+  (`usr_per_ID`, `usr_Password`, `usr_NeedPasswordChange`, `usr_Admin`, `usr_UserName`, `usr_apiKey`)
+VALUES
+  (76, '$2y$12$e3o8rmvWUYdgzUNB/AAMK.pRvT9rwsIZx4wYB0brOmVPB1UL.HA5S', 0, 1, 'unenrolled.admin', 'unenrolledAdminApiKeyForTesting123456789');
 /*!40000 ALTER TABLE `user_usr` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;

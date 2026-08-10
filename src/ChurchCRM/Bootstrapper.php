@@ -475,6 +475,9 @@ class Bootstrapper
             'secure'   => $isHttps,
             'path'     => $cookiePath,
         ]);
+        // Reject attacker-supplied/uninitialized session IDs instead of
+        // accepting them as the basis for a new authenticated session.
+        ini_set('session.use_strict_mode', '1');
 
         // Initialize the session
         $sessionName = self::SESSION_PREFIX . hash("md5", SystemURLs::getDocumentRoot());

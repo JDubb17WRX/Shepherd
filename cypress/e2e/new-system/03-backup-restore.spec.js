@@ -18,15 +18,18 @@ describe('03 - Backup and Restore', () => {
         username: 'admin',
         password: 'changeme'
     };
+    const adminTwoFactorRuntimeKey = 'newSystemAdminTwoFactorSecret';
+    const seededAdminTwoFactorSecret = 'JBSWY3DPEBLW64TMMQ======';
 
     // Helper function to login, handling forced password-change redirect on first login
     const loginAsAdmin = () => {
         // Test 02 resets password back to 'changeme' after testing forced change
         const password = adminCredentials.password;
-        cy.visit('/login');
-        cy.get('input[name=User]').type(adminCredentials.username);
-        cy.get('input[name=Password]').type(password + '{enter}');
-        cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
+        cy.task('getRuntimeValue', adminTwoFactorRuntimeKey).then((twoFactorSecret) => {
+            expect(twoFactorSecret, 'admin 2FA secret').to.be.a('string').and.not.be.empty;
+            cy.loginWithTwoFactor(adminCredentials.username, password, twoFactorSecret);
+            cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
+        });
     };
 
     describe('Step 6: Create Backup', () => {
@@ -128,6 +131,10 @@ describe('03 - Backup and Restore', () => {
             // countdown. cy.url().should() with timeout auto-retries, so no
             // numeric wait is needed to cover the countdown.
             cy.get('#restoreSuccessModal', { timeout: 120000 }).should('be.visible');
+            cy.task('setRuntimeValue', {
+                key: adminTwoFactorRuntimeKey,
+                value: seededAdminTwoFactorSecret,
+            });
 
             // Should eventually redirect to login page
             cy.url({ timeout: 30000 }).should('satisfy', (url) => {

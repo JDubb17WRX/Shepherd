@@ -20,6 +20,7 @@ describe('04 - System Reset', () => {
         username: 'admin',
         password: 'changeme'
     };
+    const adminTwoFactorRuntimeKey = 'newSystemAdminTwoFactorSecret';
 
     // Helper to manually login, handling forced password-change redirect after a DB reset
     const manualLogin = () => {
@@ -28,10 +29,10 @@ describe('04 - System Reset', () => {
         // Admin password is 'changeme'. After a DB reset NeedPasswordChange=true,
         // which forces a redirect to /changepassword on first login.
         const password = adminCredentials.password;
-        cy.visit('/login');
-        cy.get('input[name=User]', { timeout: 15000 }).type(adminCredentials.username);
-        cy.get('input[name=Password]').type(password);
-        cy.get('input[name=Password]').type('{enter}');
+        cy.task('getRuntimeValue', adminTwoFactorRuntimeKey).then((twoFactorSecret) => {
+            expect(twoFactorSecret, 'admin 2FA secret').to.be.a('string').and.not.be.empty;
+            cy.loginWithTwoFactor(adminCredentials.username, password, twoFactorSecret);
+        });
         cy.url({ timeout: 30000 }).should('not.include', '/session/begin');
 
         // After a DB reset the admin has NeedPasswordChange=true; complete the forced form if needed.
@@ -126,6 +127,10 @@ describe('04 - System Reset', () => {
                 expect(response.body).to.have.property('defaultUsername', 'admin');
                 expect(response.body).to.have.property('defaultPassword', 'changeme');
 
+                cy.task('setRuntimeValue', {
+                    key: adminTwoFactorRuntimeKey,
+                    value: null,
+                });
                 cy.log('Database reset successful');
             });
         });

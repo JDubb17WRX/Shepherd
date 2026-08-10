@@ -4,7 +4,7 @@
  * @OA\Info(
  *     title="ChurchCRM Private API",
  *     version="7.0.1",
- *     description="Authenticated REST API for ChurchCRM. All endpoints require an API key passed via the x-api-key header. Obtain your API key from Profile → API Key inside the application, or via POST /public/user/login. Many endpoints require specific role permissions beyond basic authentication.",
+ *     description="Authenticated REST API for ChurchCRM. Most endpoints accept an API key passed via the x-api-key header. Browser-only account-security endpoints instead require the signed-in session, CSRF protection, and recent password authentication. Many endpoints require specific role permissions beyond basic authentication.",
  *     @OA\Contact(name="ChurchCRM", email="info@churchcrm.io", url="https://churchcrm.io"),
  *     @OA\License(name="MIT", url="https://opensource.org/licenses/MIT")
  * )
@@ -38,6 +38,13 @@
  *     in="header",
  *     name="x-api-key",
  *     description="API key obtained from Profile → API Key in ChurchCRM, or via POST /public/user/login"
+ * )
+ * @OA\SecurityScheme(
+ *     securityScheme="BrowserSessionAuth",
+ *     type="apiKey",
+ *     in="cookie",
+ *     name="CRM-*",
+ *     description="Server-issued ChurchCRM browser session cookie (the installation-specific cookie name starts with CRM-). State-changing account-security requests also require the page's X-CSRF-Token header and a recent password-authentication grant."
  * )
  *
  * @OA\Tag(name="Calendar", description="Calendar and event management")

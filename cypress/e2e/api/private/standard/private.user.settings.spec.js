@@ -129,4 +129,25 @@ describe("API Private User Settings", () => {
             401,
         );
     });
+
+    it("Rejects reads and writes to the reserved security namespace", () => {
+        cy.makePrivateAdminAPICall(
+            "POST",
+            "/api/user/27/setting/security.2fa.failures",
+            { value: null },
+            403,
+        );
+        cy.makePrivateAdminAPICall(
+            "GET",
+            "/api/user/27/setting/SeCuRiTy.2fa.failures",
+            null,
+            403,
+        );
+        cy.makePrivateAdminAPICall(
+            "POST",
+            "/api/user/27/setting/s%C3%A9curity.2fa.failures",
+            { value: "collation-bypass" },
+            403,
+        );
+    });
 });

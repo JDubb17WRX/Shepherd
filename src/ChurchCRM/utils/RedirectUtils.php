@@ -97,6 +97,51 @@ class RedirectUtils
     }
 
     /**
+     * Return whether a request represents a browser page navigation worth
+     * restoring after authentication. Asset and API requests commonly arrive
+     * while the login page is open and must never replace the intended page.
+     */
+    public static function isPostLoginNavigationRequest(string $method, string $acceptHeader): bool
+    {
+        if (!in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+            return false;
+        }
+
+        return $acceptHeader === '' || stripos($acceptHeader, 'text/html') !== false;
+    }
+
+    /**
+     * Strip the application root and validate a post-login page destination.
+     */
+    public static function stripAndValidatePostLoginPath(string $uri, string $fallback = ''): string
+    {
+        return self::validatePostLoginRedirectUrl(
+            self::stripAndValidatePath($uri, $fallback),
+            $fallback
+        );
+    }
+
+    /**
+     * Validate a post-login redirect and reject non-page resource targets.
+     */
+    public static function validatePostLoginRedirectUrl(string $url, string $fallback = 'v2/dashboard'): string
+    {
+        $safeUrl = self::validateRedirectUrl($url, $fallback);
+        $path = parse_url($safeUrl, PHP_URL_PATH) ?? '';
+
+        if (
+            preg_match('#^/(?:api|skin|images|uploads)(?:/|$)#i', $path)
+            || preg_match('/\.(?:css|js|mjs|map|json|xml|ico|png|jpe?g|gif|webp|svg|woff2?|ttf|eot)$/i', $path)
+        ) {
+            LoggerUtils::getAppLogger()->debug('Rejected non-page post-login redirect target', ['url' => $safeUrl]);
+
+            return $fallback;
+        }
+
+        return $safeUrl;
+    }
+
+    /**
      * Validates and sanitizes a redirect URL to prevent open redirect attacks.
      *
      * This method ensures the URL is safe for redirection by:

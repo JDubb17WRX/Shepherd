@@ -15,7 +15,7 @@ $isAdmin = AuthenticationManager::getCurrentUser()->isAdmin();
       <div class="container-xl">
         <div class="row text-center align-items-center flex-row-reverse">
           <div class="col-lg-auto ms-lg-auto">
-            <b><?= gettext('Version') ?></b> <?= $_SESSION['sSoftwareInstalledVersion'] ?>
+            <b>Shepherd</b> · ChurchCRM <?= $_SESSION['sSoftwareInstalledVersion'] ?>
             &nbsp;&nbsp;
             <a href="https://www.facebook.com/getChurchCRM" target="_blank" rel="noopener noreferrer" title="Facebook">
               <i class="fa-brands fa-facebook"></i>
@@ -38,9 +38,8 @@ $isAdmin = AuthenticationManager::getCurrentUser()->isAdmin();
             </a>
           </div>
           <div class="col-12 col-lg-auto mt-3 mt-lg-0">
-            <?= gettext('Copyright') ?> &copy; <?= SystemService::getCopyrightDate() ?>
-            <a href="https://churchcrm.io" target="_blank" rel="noopener noreferrer">Church<b>CRM</b></a>.
-            <?= gettext('All rights reserved') ?>.
+            Elkins Park Reformed Presbyterian Church ·
+            <a href="https://github.com/ChurchCRM/CRM/tree/7.5.0" target="_blank" rel="noopener noreferrer">ChurchCRM (MIT)</a>
           </div>
         </div>
       </div>
@@ -100,6 +99,7 @@ $isAdmin = AuthenticationManager::getCurrentUser()->isAdmin();
 <script src="<?= SystemURLs::assetVersioned('/skin/external/just-validate/just-validate.production.min.js') ?>"></script>
 
 <script src="<?= SystemURLs::assetVersioned('/skin/js/Footer.js') ?>"></script>
+<script src="<?= SystemURLs::assetVersioned('/skin/js/shepherd-embed.js') ?>"></script>
 <script src="<?= SystemURLs::assetVersioned('/skin/v2/locale-loader.min.js') ?>"></script>
 <script nonce="<?= SystemURLs::getCSPNonce() ?>">
     // Load locale files dynamically

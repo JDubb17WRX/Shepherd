@@ -193,7 +193,7 @@ class AppIntegrityService
             new Prerequisite('PHP Session', fn (): bool => function_exists('session_start')),
             new Prerequisite('PHP XML', fn (): bool => class_exists('SimpleXMLElement')),
             new Prerequisite('PHP iconv', fn (): bool => function_exists('iconv')),
-            new Prerequisite('URL Rewriting (mod_rewrite / nginx / LiteSpeed)', fn (): bool => AppIntegrityService::hasModRewrite()),
+            new Prerequisite('URL Rewriting (Apache / nginx / LiteSpeed / Caddy)', fn (): bool => AppIntegrityService::hasModRewrite()),
             new Prerequisite(
                 'GD Library for image manipulation',
                 fn (): bool =>
@@ -249,6 +249,18 @@ class AppIntegrityService
     public static function hasModRewrite(): bool
     {
         $logger = LoggerUtils::getAppLogger();
+
+        // Managed containers can declare rewrite support explicitly. This avoids a
+        // false negative on Caddy/FrankenPHP, where Apache module inspection and
+        // REDIRECT_STATUS are unavailable even though try_files routing is active.
+        $configuredRewriteSupport = getenv('CHURCHCRM_URL_REWRITING');
+        if ($configuredRewriteSupport !== false && $configuredRewriteSupport !== '') {
+            $enabled = filter_var($configuredRewriteSupport, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+            if ($enabled !== null) {
+                $logger->debug('URL rewriting detection via CHURCHCRM_URL_REWRITING: ' . ($enabled ? 'true' : 'false'));
+                return $enabled;
+            }
+        }
 
         // Strategy 1: ask Apache directly (works on mod_php / litespeed with apache compat).
         // This is the most reliable signal and requires no network call.

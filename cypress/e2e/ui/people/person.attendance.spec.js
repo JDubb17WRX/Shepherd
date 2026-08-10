@@ -34,9 +34,11 @@
 // that precedes a cy.visit() — cy.setupAdminSession() is not reliable here.
 function freshAdminLogin() {
     cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.env("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.env("admin.password") + "{enter}");
+    cy.loginWithTwoFactor(
+        Cypress.env("admin.username"),
+        Cypress.env("admin.password"),
+        Cypress.env("admin.2fa.secret"),
+    );
     // Navigating away from /session/begin alone doesn't prove authentication
     // succeeded (a 500 or an error page would also satisfy it) — confirm a
     // real CRM session cookie was actually issued, same check cy.session()'s

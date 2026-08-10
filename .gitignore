@@ -10,6 +10,7 @@
 #Exclude folders
 vendor
 node_modules
+.npm-cache/
 temp
 
 # Locale build artifacts (all intermediate build output in one place)
