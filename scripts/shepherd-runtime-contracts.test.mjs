@@ -69,3 +69,76 @@ test('both HTML shells declare an escaped BCP 47 language tag', async () => {
         assert.match(header, /\$localeInfo->isRTL\(\) \? ' dir="rtl"'/);
     }
 });
+
+test('website content editing reuses only completed local administrator sessions', async () => {
+    const [api, routes, service, repository, bootstrapper, loadConfigs, authMiddleware, caddyfile, upgrades, migration, install] = await Promise.all([
+        read('src/api/index.php'),
+        read('src/api/routes/website-content.php'),
+        read('src/ChurchCRM/Shepherd/WebsiteContentService.php'),
+        read('src/ChurchCRM/Shepherd/WebsiteContentRepository.php'),
+        read('src/ChurchCRM/Bootstrapper.php'),
+        read('src/Include/LoadConfigs.php'),
+        read('src/ChurchCRM/Slim/Middleware/AuthMiddleware.php'),
+        read('docker/shepherd/Caddyfile'),
+        read('src/mysql/upgrade.json'),
+        read('src/mysql/upgrade/7.6.1-shepherd-website-content.sql'),
+        read('src/mysql/install/Install.sql'),
+    ]);
+
+    assert.match(api, /routes\/website-content\.php/);
+    assert.match(routes, /\/public\/website-content\/\{pageKey:/);
+    assert.match(routes, /\/background\/website-content\/session/);
+    assert.match(routes, /->put\('\/\{pageKey:/);
+    assert.match(routes, /AdminRoleAuthMiddleware::class/);
+    assert.match(routes, /CSRFMiddleware\('website_content_editor'\)/);
+    assert.match(routes, /AuthenticationManager::isCompletedLocalAuthentication\(\)/);
+    assert.match(routes, /X-CSRF|CSRFToken/);
+
+    assert.match(bootstrapper, /bool \$initializeSession = true/);
+    assert.match(bootstrapper, /if \(\$initializeSession\) \{\s+self::initSession\(\);/);
+    assert.match(loadConfigs, /isPublicWebsiteContentRead/);
+    assert.match(loadConfigs, /isAnonymousEditorProbe/);
+    assert.match(loadConfigs, /sessionCookieName/);
+    assert.match(authMiddleware, /isPassiveWebsiteEditorProbe/);
+    assert.match(authMiddleware, /\? 'debug' : 'warning'/);
+
+    assert.match(service, /MAX_CONTENT_BYTES/);
+    assert.match(service, /private const PAGE_KEYS = \[/);
+    for (const page of ['home', 'services', 'contact', 'rp-history', 'privacy']) {
+        assert.match(service, new RegExp(`'${page}'`));
+    }
+    assert.match(service, /in_array\(\$pageKey, self::PAGE_KEYS, true\)/);
+    assert.match(service, /base' => \$base, 'value' => \$value/);
+    assert.match(service, /array_diff\(array_keys\(\$entry\), \['base', 'value'\]\)/);
+    assert.match(service, /strlen\(self::encodeContent\(\$normalized\)\)/);
+    assert.match(service, /revision_conflict|\['conflict' => true/);
+    assert.doesNotMatch(service, /sanitizeHTML|innerHTML/i);
+
+    assert.doesNotMatch(repository, /CREATE TABLE|ensureSchema/);
+    assert.match(repository, /SELECT revision[\s\S]*FOR UPDATE/);
+    assert.match(repository, /hash_equals\(\$currentRevision, \$expectedRevision\)/);
+    assert.match(repository, /\$savedRow = \$snapshot->fetch\(PDO::FETCH_ASSOC\)/);
+    assert.match(repository, /commit\(\);\s+return \$savedRow/);
+
+    assert.match(upgrades, /7\.6\.1-shepherd-website-content\.sql/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS `shepherd_website_content`/);
+    assert.match(install, /CREATE TABLE `shepherd_website_content`/);
+    assert.match(caddyfile, /request_body @websiteContentUpdate[\s\S]*max_size 2100000/);
+});
+
+test('logout invalidates server state and expires the scoped browser cookie', async () => {
+    const authenticationManager = await read('src/ChurchCRM/Authentication/AuthenticationManager.php');
+
+    assert.match(authenticationManager, /session_destroy\(\)/);
+    assert.match(authenticationManager, /setcookie\(session_name\(\), '', \[/);
+    assert.match(authenticationManager, /'path' => \$cookieParameters\['path'\]/);
+    assert.match(authenticationManager, /unset\(\$_COOKIE\[session_name\(\)\]\)/);
+});
+
+test('kiosk bearer cookies are secure on proxied HTTPS requests', async () => {
+    const kiosk = await read('src/kiosk/index.php');
+
+    assert.match(kiosk, /HTTP_X_FORWARDED_PROTO/);
+    assert.equal((kiosk.match(/'secure'\s*=>\s*\$isHttps/g) || []).length, 2);
+    assert.equal((kiosk.match(/setcookie\('kioskCookie'/g) || []).length, 2);
+});

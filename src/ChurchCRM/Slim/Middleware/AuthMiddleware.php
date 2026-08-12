@@ -90,7 +90,10 @@ class AuthMiddleware implements MiddlewareInterface
                     }
                 } else {
                     $logger = LoggerUtils::getAppLogger();
-                    $logger->warning('No authenticated user or session', [
+                    $isPassiveWebsiteEditorProbe = $request->getMethod() === 'GET'
+                        && $request->getUri()->getPath() === SystemURLs::getRootPath() . '/api/background/website-content/session';
+                    $logMethod = $isPassiveWebsiteEditorProbe ? 'debug' : 'warning';
+                    $logger->{$logMethod}('No authenticated user or session', [
                         'path' => $request->getUri()->getPath(),
                         'method' => $request->getMethod()
                     ]);

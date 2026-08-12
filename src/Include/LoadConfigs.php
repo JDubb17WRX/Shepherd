@@ -52,7 +52,31 @@ $bLockURL = false;
 // Enable this line to debug the bootstrapper process (database connections, etc).
 // this makes a lot of log noise, so don't leave it on for normal production use.
 //$debugBootstrapper = true;
-Bootstrapper::init($sSERVERNAME, $dbPort, $sUSER, $sPASSWORD, $sDATABASE, $sRootPath, $bLockURL, $URL);
+$requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$requestPath = rawurldecode((string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? ''));
+$rootPathPattern = preg_quote(rtrim($sRootPath, '/'), '#');
+$isPublicWebsiteContentRead = $requestMethod === 'GET'
+    && preg_match("#^{$rootPathPattern}/api/public/website-content/[a-z0-9][a-z0-9-]{0,63}/?$#D", $requestPath) === 1;
+$editorSessionPath = rtrim($sRootPath, '/') . '/api/background/website-content/session';
+$sessionCookieName = 'CRM-' . md5(dirname(__DIR__));
+$isAnonymousEditorProbe = $requestMethod === 'GET'
+    && $requestPath === $editorSessionPath
+    && !array_key_exists($sessionCookieName, $_COOKIE);
+
+// Public copy and signed-out capability checks must not create a Shepherd session.
+// An existing scoped cookie still enables the authenticated editor probe normally.
+$initializeSession = !$isPublicWebsiteContentRead && !$isAnonymousEditorProbe;
+Bootstrapper::init(
+    $sSERVERNAME,
+    $dbPort,
+    $sUSER,
+    $sPASSWORD,
+    $sDATABASE,
+    $sRootPath,
+    $bLockURL,
+    $URL,
+    $initializeSession
+);
 EnvironmentBootstrap::apply();
 
 // Initialize KeyManager with 2FA secret from SystemConfig

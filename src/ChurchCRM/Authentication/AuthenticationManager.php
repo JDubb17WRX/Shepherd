@@ -225,6 +225,26 @@ class AuthenticationManager
                     }
                 }
             }
+            try {
+                $cookieParameters = session_get_cookie_params();
+                setcookie(session_name(), '', [
+                    'expires' => time() - 3600,
+                    'path' => $cookieParameters['path'] ?: '/',
+                    'domain' => $cookieParameters['domain'],
+                    'secure' => $cookieParameters['secure'],
+                    'httponly' => $cookieParameters['httponly'],
+                    'samesite' => $cookieParameters['samesite'] ?: 'Lax',
+                ]);
+                unset($_COOKIE[session_name()]);
+            } catch (\Throwable $error) {
+                if ($logger !== null) {
+                    try {
+                        $logger->warning('Error expiring PHP session cookie', array_merge($logCtx, ['exception' => $error]));
+                    } catch (\Throwable $loggingError) {
+                        // Logout has already invalidated server-side session storage.
+                    }
+                }
+            }
             if ($logger !== null) {
                 try {
                     $logger->info('Ended Local session for user', $logCtx);

@@ -80,6 +80,25 @@ test("returns 404 before the Shepherd catch-all can serve private media", () => 
   assert.ok(responseIndex < catchAllIndex, "the deny response must precede the catch-all");
 });
 
+test("protects database backups and all persisted uploads", () => {
+  const protectedPaths = caddyfile.match(/@protected path[^\n]*/u)?.[0] || "";
+  for (const path of [
+    "/shepherd/Include",
+    "/shepherd/logs",
+    "/shepherd/tmp_attach",
+    "/shepherd/SQL",
+    "/shepherd/uploads",
+  ]) {
+    assert.match(protectedPaths, new RegExp(`${path}(?:\\s|$)`, "u"));
+    assert.match(protectedPaths, new RegExp(`${path.replaceAll("/", "\\/")}\\/\\*`, "u"));
+  }
+  assert.match(caddyfile, /respond @protected 404/u);
+  assert.ok(
+    caddyfile.indexOf("respond @protected 404") < caddyfile.indexOf("handle /shepherd/* {"),
+    "persisted paths must be denied before the Shepherd catch-all",
+  );
+});
+
 test("declares configured Caddy rewriting to the prerequisite check", () => {
   assert.match(dockerfile, /CHURCHCRM_URL_REWRITING=1/u);
   assert.match(integrityService, /getenv\('CHURCHCRM_URL_REWRITING'\)/u);
