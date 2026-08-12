@@ -513,7 +513,9 @@ class LocalAuthentication implements IAuthenticationProvider
         $this->isPrimaryAuthenticationComplete = true;
         $this->bPendingTwoFactorAuth = false;
         CSRFUtils::regenerateToken();
-        $this->issueSecurityActionAuthentication();
+        // A normal login does not authorize sensitive account mutations. The
+        // user must re-enter the current password for a short-lived grant.
+        $this->clearSecurityActionAuthentication();
 
         $_SESSION['bManageGroups'] = $this->currentUser->isManageGroupsEnabled();
         $_SESSION['bFinance'] = $this->currentUser->isFinanceEnabled();

@@ -16,20 +16,9 @@
  *   POST /people/report/verify/email (CSRF-protected)  → email PDFs + redirect
  */
 describe("Confirmation Reports - MVC Routes", () => {
-    /**
-     * Direct form login — clears existing cookies and authenticates as admin
-     * via the real ChurchCRM login page (/session/begin). More reliable than
-     * cy.setupAdminSession() for pages that require specific role flags
-     * (MenuOptions), because it guarantees a fresh PHP session without any
-     * contamination from prior tests.
-     * Pattern follows cypress/e2e/ui/people/standard.cart-to-family.spec.js.
-     */
+    /** Start an isolated admin session and complete mandatory 2FA. */
     function freshAdminLogin() {
-        cy.clearCookies();
-        cy.visit("/session/begin");
-        cy.get("input[name=User]").type(Cypress.env("admin.username"));
-        cy.get("input[name=Password]").type(Cypress.env("admin.password") + "{enter}");
-        cy.url().should("not.include", "/session/begin");
+        cy.setupAdminSession({ forceLogin: true });
     }
 
     beforeEach(() => {

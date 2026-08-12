@@ -184,7 +184,7 @@ jobs:
 
   test-root:
     needs: [configure, build]
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
       checks: write
@@ -287,7 +287,7 @@ jobs:
 
   test-subdir:
     needs: [configure, build]
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
       checks: write

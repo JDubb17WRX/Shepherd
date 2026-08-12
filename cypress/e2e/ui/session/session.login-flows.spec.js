@@ -85,12 +85,24 @@ describe("Session Login Flows", () => {
             login("twofa_user", "changeme");
             cy.url({ timeout: 10000 }).should("include", "/session/two-factor");
 
-            for (let attempt = 0; attempt < 5; attempt += 1) {
-                requestWithCurrentSession("POST", "/api/public/user/login", {
-                    userName: "twofa_user",
-                    password: "wrong_password",
-                }).its("status").should("eq", 401);
-            }
+            cy.window().then(async (win) => {
+                const endpoint = new URL(
+                    "api/public/user/login",
+                    Cypress.config("baseUrl"),
+                ).toString();
+                for (let attempt = 0; attempt < 5; attempt += 1) {
+                    const response = await win.fetch(endpoint, {
+                        method: "POST",
+                        credentials: "omit",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({
+                            userName: "twofa_user",
+                            password: "wrong_password",
+                        }),
+                    });
+                    expect(response.status).to.eq(401);
+                }
+            });
 
             submitCurrentTotp();
             cy.url({ timeout: 10000 }).should("include", "/session/begin");
