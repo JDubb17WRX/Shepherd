@@ -17,8 +17,7 @@
     }
 
     @dotfiles path_regexp hidden ^/shepherd/(?:.*/)?\.
-    @protected path /shepherd/Include/* /shepherd/logs/* /shepherd/tmp_attach/* /shepherd/SQL/*
-    @uploadedScripts path_regexp uploadedScripts (?i)^/shepherd/uploads/.*\.(?:php|phar|phtml|pht|php[3-9])$
+    @protected path /shepherd/Include /shepherd/Include/* /shepherd/logs /shepherd/logs/* /shepherd/tmp_attach /shepherd/tmp_attach/* /shepherd/SQL /shepherd/SQL/* /shepherd/uploads /shepherd/uploads/*
     # Uploaded person/family photos must be served through authenticated API routes.
     # Caddy does not honor the deny rules in the directories' .htaccess files.
     # See: GHSA-r286-h493-ppwj
@@ -54,7 +53,6 @@
 
         respond @dotfiles 404
         respond @protected 404
-        respond @uploadedScripts 404
         respond @privateMedia 404
         respond @pluginPhp 404
 

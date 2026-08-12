@@ -80,10 +80,19 @@ test("returns 404 before the Shepherd catch-all can serve private media", () => 
   assert.ok(responseIndex < catchAllIndex, "the deny response must precede the catch-all");
 });
 
-test("protects database backups and executable uploads", () => {
-  assert.match(caddyfile, /@protected path[^\n]*\/shepherd\/SQL\/\*/u);
-  assert.match(caddyfile, /@uploadedScripts path_regexp uploadedScripts/u);
-  assert.match(caddyfile, /respond @uploadedScripts 404/u);
+test("protects database backups and all persisted uploads", () => {
+  const protectedPaths = caddyfile.match(/@protected path[^\n]*/u)?.[0] || "";
+  for (const path of [
+    "/shepherd/Include",
+    "/shepherd/logs",
+    "/shepherd/tmp_attach",
+    "/shepherd/SQL",
+    "/shepherd/uploads",
+  ]) {
+    assert.match(protectedPaths, new RegExp(`${path}(?:\\s|$)`, "u"));
+    assert.match(protectedPaths, new RegExp(`${path.replaceAll("/", "\\/")}\\/\\*`, "u"));
+  }
+  assert.match(caddyfile, /respond @protected 404/u);
 });
 
 test("declares configured Caddy rewriting to the prerequisite check", () => {
