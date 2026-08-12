@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const fullScan = process.argv.includes('--all');
 
@@ -17,7 +17,7 @@ const signaturesPath = path.join(srcDir, 'admin/data/signatures.json');
 if (!fs.existsSync(signaturesPath)) {
     console.log('ℹ️  signatures.json not found — generating now...\n');
     try {
-        execSync(`node "${path.join(__dirname, 'generate-signatures-node.js')}"`, {
+        execFileSync(process.execPath, [path.join(__dirname, 'generate-signatures-node.js')], {
             stdio: 'inherit',
             encoding: 'utf8'
         });
@@ -50,7 +50,7 @@ if (!fullScan) {
     const repoRoot = path.join(__dirname, '..');
     const runGit = (args) => {
         try {
-            return execSync(`git ${args}`, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+            return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
                 .split('\n')
                 .map((l) => l.trim())
                 .filter(Boolean);
@@ -60,12 +60,12 @@ if (!fullScan) {
     };
 
     const mergeBase =
-        runGit('merge-base HEAD origin/master')?.[0] || runGit('merge-base HEAD master')?.[0] || null;
+        runGit(['merge-base', 'HEAD', 'origin/master'])?.[0] || runGit(['merge-base', 'HEAD', 'master'])?.[0] || null;
 
     const changedLists = [
-        mergeBase ? runGit(`diff --name-only ${mergeBase} HEAD`) : null,
-        runGit('diff --name-only HEAD'),
-        runGit('ls-files --others --exclude-standard'),
+        mergeBase ? runGit(['diff', '--name-only', mergeBase, 'HEAD']) : null,
+        runGit(['diff', '--name-only', 'HEAD']),
+        runGit(['ls-files', '--others', '--exclude-standard']),
     ];
 
     if (changedLists.every((l) => l === null)) {
@@ -99,7 +99,7 @@ for (const filePath of phpFiles) {
 
     try {
         // Run php -l on the file
-        execSync(`php -l "${filePath}"`, {
+        execFileSync('php', ['-l', filePath], {
             stdio: 'pipe',
             encoding: 'utf8'
         });

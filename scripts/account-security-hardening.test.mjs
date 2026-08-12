@@ -46,6 +46,9 @@ const publicUserApiSource = source("src/api/routes/public/public-user.php");
 const twoFactorClientSource = source("webpack/two-factor-enrollment.js");
 const apiKeyClientSource = source("src/skin/js/user.js");
 const adminUserClientSource = source("src/skin/js/users.js");
+const propertyTypeDeleteSource = source("src/PropertyTypeDelete.php");
+const whyCameEditorSource = source("src/WhyCameEditor.php");
+const phpSyntaxValidatorSource = source("scripts/validate-php-syntax.js");
 
 test("post-login redirects preserve page navigation and reject asset or API requests", () => {
     assert.match(redirectUtilsSource, /isPostLoginNavigationRequest/);
@@ -55,6 +58,23 @@ test("post-login redirects preserve page navigation and reject asset or API requ
     assert.match(authenticationManagerSource, /RedirectUtils::stripAndValidatePostLoginPath/);
     assert.match(authenticationManagerSource, /RedirectUtils::validatePostLoginRedirectUrl/);
     assert.match(authMiddlewareSource, /RedirectUtils::stripAndValidatePostLoginPath/);
+});
+
+test("legacy destructive and editor forms require POST CSRF protection", () => {
+    assert.match(propertyTypeDeleteSource, /isset\(\$_POST\['Confirmed'\]\)/);
+    assert.match(propertyTypeDeleteSource, /CSRFUtils::verifyRequest\(\$_POST, 'propertyTypeDelete'\)/);
+    assert.match(propertyTypeDeleteSource, /method="post" action="PropertyTypeDelete\.php"/);
+    assert.match(propertyTypeDeleteSource, /CSRFUtils::getTokenInputField\('propertyTypeDelete'\)/);
+    assert.doesNotMatch(propertyTypeDeleteSource, /\$_GET\['Confirmed'\]/);
+
+    assert.match(whyCameEditorSource, /CSRFUtils::verifyRequest\(\$_POST, 'whyCameEditor'\)/);
+    assert.match(whyCameEditorSource, /CSRFUtils::getTokenInputField\('whyCameEditor'\)/);
+});
+
+test("PHP syntax validation invokes tools without shell interpolation", () => {
+    assert.match(phpSyntaxValidatorSource, /execFileSync\('git', args/);
+    assert.match(phpSyntaxValidatorSource, /execFileSync\('php', \['-l', filePath\]/);
+    assert.doesNotMatch(phpSyntaxValidatorSource, /execSync|exec\(/);
 });
 
 test("logout teardown remains fail-closed when logging fails", () => {

@@ -38,6 +38,11 @@ $aBreadcrumbs = PageHeader::breadcrumbs([
 ]);
 require_once __DIR__ . '/Include/Header.php';
 
+$pledgeDetailsAction = 'PledgeDetails.php?' . http_build_query([
+    'PledgeID' => $iPledgeID,
+    'linkBack' => $linkBack,
+]);
+
 $resArr = mysqli_fetch_array($rsResultRec);
 if ($resArr) {
     extract($resArr);
@@ -48,7 +53,7 @@ if ($resArr) {
 
 <div class="card">
   <div class="card-body">
-    <form method="post" action="PledgeDetails.php?<?= 'PledgeID=' . $iPledgeID . '&linkBack=' . InputUtils::escapeAttribute($linkBack) ?>" name="PledgeDelete">
+    <form method="post" action="<?= InputUtils::escapeAttribute($pledgeDetailsAction) ?>" name="PledgeDelete">
       <input type="submit" class="btn btn-secondary" value="<?= gettext('Back') ?>" name="Back">
     </form>
   </div>
