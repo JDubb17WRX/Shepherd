@@ -1,6 +1,6 @@
 # Shepherd
 
-Shepherd is the Elkins Park Reformed Presbyterian Church management portal. It is a branded fork of [ChurchCRM 7.6.0](https://github.com/ChurchCRM/CRM/tree/7.6.0), licensed under the MIT License. The upstream `LICENSE` file and attribution are intentionally retained.
+Shepherd 7.6.1 is the Elkins Park Reformed Presbyterian Church management portal. It is a branded fork based on [ChurchCRM 7.6.0](https://github.com/ChurchCRM/CRM/tree/7.6.0), licensed under the MIT License. The upstream `LICENSE` file and attribution are intentionally retained.
 
 ## Upstream baseline and updates
 
@@ -22,3 +22,18 @@ Back up both the MariaDB volume and the persistent `Images`, `uploads`, `SQL`, `
 - `/shepherd/livez` is a dependency-free liveness check. It returns `200` when the Shepherd web process can answer requests.
 - `/shepherd/healthz` is the container readiness check. It returns `200` only when MariaDB is reachable, the `config_cfg` application table exists, and Shepherd's required persistent paths are present and writable. Otherwise it returns `503` without exposing connection details.
 - Readiness reports whether SMTP is configured, but deliberately does not open an SMTP connection on each health request. Delivery must be tested separately with Shepherd's email diagnostic and an isolated mail sink before release.
+
+## Public website text editing
+
+Public pages can read published plain-text overrides from
+`/shepherd/api/public/website-content/{page}`. A passive capability request at
+`/shepherd/api/background/website-content/session` returns a CSRF token only for an
+Administrator with a completed local browser login. Updates use
+`PUT /shepherd/api/website-content/{page}` and require that same browser session,
+Administrator authorization, CSRF validation, and the latest document revision.
+
+Content is stored in the versioned `shepherd_website_content` MariaDB table created by
+the 7.6.1 database migration (and by the fresh-install schema). Values
+contain only a static base string and a replacement string; the public site applies them
+with `textContent`, never HTML. Conflicting revisions return `409`, and API-key-only
+authentication is explicitly rejected so website editing always uses Shepherd's login.
