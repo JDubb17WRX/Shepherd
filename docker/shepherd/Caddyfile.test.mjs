@@ -85,3 +85,13 @@ test("declares configured Caddy rewriting to the prerequisite check", () => {
   assert.match(integrityService, /getenv\('CHURCHCRM_URL_REWRITING'\)/u);
   assert.match(integrityService, /Apache \/ nginx \/ LiteSpeed \/ Caddy/u);
 });
+
+test("keeps liveness independent from database-backed readiness", () => {
+  assert.match(caddyfile, /handle \/shepherd\/livez\s*\{/u);
+  assert.match(caddyfile, /respond `\{"status":"alive"\}` 200/u);
+  assert.match(caddyfile, /handle \/shepherd\/healthz\s*\{[\s\S]*?healthz\.php/u);
+
+  const workflow = readFileSync(new URL("../../.github/workflows/shepherd-image.yml", import.meta.url), "utf8");
+  assert.match(workflow, /curl[^\n]*\/shepherd\/livez/u);
+  assert.doesNotMatch(workflow, /curl[^\n]*\/shepherd\/healthz/u);
+});
