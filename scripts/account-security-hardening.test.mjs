@@ -36,6 +36,7 @@ const localAuthenticationSource = source(
 );
 const authenticationManagerSource = source("src/ChurchCRM/Authentication/AuthenticationManager.php");
 const authMiddlewareSource = source("src/ChurchCRM/Slim/Middleware/AuthMiddleware.php");
+const slimUtilsSource = source("src/ChurchCRM/Slim/SlimUtils.php");
 const redirectUtilsSource = source("src/ChurchCRM/utils/RedirectUtils.php");
 const userModelSource = source("src/ChurchCRM/model/ChurchCRM/User.php");
 const currentUserApiSource = source("src/api/routes/users/user-current.php");
@@ -315,6 +316,13 @@ test("admin password changes validate both confirmation fields before updating t
 });
 
 test("security clients distinguish step-up, invalid-session, and expired-CSRF responses", () => {
+    assert.match(slimUtilsSource, /\?int \$status = null/);
+    assert.match(slimUtilsSource, /\$status \?\? \$response->getStatusCode\(\)/);
+    assert.match(
+        authenticationManagerSource,
+        /case LocalTwoFactorTokenRequest::class:[\s\S]*catch \(\\Exception \$e\)[\s\S]*RedirectUtils::redirect\(self::getSessionBeginURL\(\)\)/,
+    );
+
     const twoFactorFailureHandler = between(
         twoFactorClientSource,
         "function handleSecurityActionFailure",

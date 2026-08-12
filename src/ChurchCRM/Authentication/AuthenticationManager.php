@@ -256,7 +256,7 @@ class AuthenticationManager
                         "Tried to supply two factor authentication code, but didn't have an existing session.  This shouldn't ever happen",
                         ['exception' => $e]
                     );
-                    throw $e;
+                    RedirectUtils::redirect(self::getSessionBeginURL());
                 }
                 break;
             default:
