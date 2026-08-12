@@ -75,7 +75,7 @@ require_once __DIR__ . '/Include/Header.php';
         <div class="d-flex justify-content-center gap-2">
             <form method="post" action="PropertyTypeDelete.php" class="d-inline">
                 <input type="hidden" name="Confirmed" value="Yes">
-                <input type="hidden" name="PropertyTypeID" value="<?= (int) $iPropertyTypeID ?>">
+                <input type="hidden" name="PropertyTypeID" value="<?= htmlspecialchars((string) (int) $iPropertyTypeID, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                 <?= CSRFUtils::getTokenInputField('propertyTypeDelete') ?>
                 <button type="submit" class="btn btn-danger"><?= gettext('Yes, delete') ?></button>
             </form>

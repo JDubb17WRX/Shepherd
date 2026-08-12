@@ -98,7 +98,7 @@ $whyCameAction = 'WhyCameEditor.php?' . http_build_query([
     </h5>
   </div>
   <div class="card-body">
-    <form method="post" action="<?= InputUtils::escapeAttribute($whyCameAction) ?>" name="WhyCameEditor">
+    <form method="post" action="<?= htmlspecialchars($whyCameAction, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" name="WhyCameEditor">
       <?= CSRFUtils::getTokenInputField('whyCameEditor') ?>
       <div class="mb-3">
         <label class="form-label"><?= gettext('Why did you come to the church?') ?></label>
