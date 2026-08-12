@@ -133,13 +133,13 @@ describe("Standard User Settings Page", () => {
             url: "/api/user/3/apikey/reveal",
             failOnStatusCode: false,
         }).its("status").should("eq", 403);
+        cy.intercept("POST", "**/api/user/3/apikey/reveal").as("revealApiKey");
         cy.get("#revealApiKey").should("exist").click();
-        cy.get("body").then(($body) => {
-            if ($body.find("#apiKeyReauthentication:visible").length) {
-                cy.get("#apiKeyCurrentPassword").type(Cypress.env("standard.password"));
-                cy.get("#confirmApiKeyReauthentication").click();
-            }
-        });
+        cy.wait("@revealApiKey").its("response.statusCode").should("eq", 428);
+        cy.get("#apiKeyReauthentication").should("be.visible");
+        cy.get("#apiKeyCurrentPassword").type(Cypress.env("standard.password"));
+        cy.get("#confirmApiKeyReauthentication").click();
+        cy.wait("@revealApiKey").its("response.statusCode").should("eq", 200);
         cy.get("#apiKey", { timeout: 10000 })
             .should("have.attr", "type", "text")
             .and("have.value", Cypress.env("user.api.key"));
