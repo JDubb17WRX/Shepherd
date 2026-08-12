@@ -92,9 +92,8 @@ test("logout teardown remains fail-closed when logging fails", () => {
         "session_destroy()",
         "RedirectUtils::redirect(self::getSessionBeginURL())",
     ]);
-    assert.equal(
-        (endSession.match(/catch \(\\Throwable \$loggingError\)/g) ?? []).length,
-        4,
+    assert.ok(
+        (endSession.match(/catch \(\\Throwable \$loggingError\)/g) ?? []).length >= 5,
         "every logout log write must be isolated from teardown and redirect handling",
     );
 });
