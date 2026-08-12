@@ -35,6 +35,10 @@ describe('Administrator website content API', () => {
         cy.request({ url: sessionUrl, failOnStatusCode: false }).then((response) => {
             expect(response.status).to.eq(401);
         });
+        cy.request('/api/public/website-content/privacy').then((response) => {
+            expect(response.status).to.eq(200);
+            expect(response.body.page).to.eq('privacy');
+        });
     });
 
     it('rejects non-administrators and administrator API keys', () => {

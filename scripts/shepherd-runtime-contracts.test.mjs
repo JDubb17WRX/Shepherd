@@ -93,7 +93,7 @@ test('website content editing reuses only completed local administrator sessions
 
     assert.match(service, /MAX_CONTENT_BYTES/);
     assert.match(service, /private const PAGE_KEYS = \[/);
-    for (const page of ['home', 'services', 'contact', 'rp-history']) {
+    for (const page of ['home', 'services', 'contact', 'rp-history', 'privacy']) {
         assert.match(service, new RegExp(`'${page}'`));
     }
     assert.match(service, /in_array\(\$pageKey, self::PAGE_KEYS, true\)/);

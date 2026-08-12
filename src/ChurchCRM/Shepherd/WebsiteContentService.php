@@ -21,6 +21,7 @@ final class WebsiteContentService
         'rp-history',
         'links',
         'contact',
+        'privacy',
     ];
     private const MAX_ENTRIES = 5000;
     private const MAX_KEY_LENGTH = 512;
