@@ -36,7 +36,7 @@ jobs:
 
           healthy=false
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:18080/shepherd/healthz >/dev/null; then
+            if curl --fail --silent http://127.0.0.1:18080/shepherd/livez >/dev/null; then
               healthy=true
               break
             fi
@@ -60,4 +60,4 @@ jobs:
           assert_private_media_denied http://127.0.0.1:18080/shepherd/Images//Person/qa-private.jpg
           assert_private_media_denied http://127.0.0.1:18080/shepherd/public/../Images/Person/qa-private.jpg
           assert_private_media_denied http://127.0.0.1:18080/shepherd/Images/Person%2Fqa-private.jpg
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18080/shepherd/healthz)" = 200
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18080/shepherd/livez)" = 200
