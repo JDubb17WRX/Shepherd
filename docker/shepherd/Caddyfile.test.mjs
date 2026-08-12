@@ -80,6 +80,12 @@ test("returns 404 before the Shepherd catch-all can serve private media", () => 
   assert.ok(responseIndex < catchAllIndex, "the deny response must precede the catch-all");
 });
 
+test("protects database backups and executable uploads", () => {
+  assert.match(caddyfile, /@protected path[^\n]*\/shepherd\/SQL\/\*/u);
+  assert.match(caddyfile, /@uploadedScripts path_regexp uploadedScripts/u);
+  assert.match(caddyfile, /respond @uploadedScripts 404/u);
+});
+
 test("declares configured Caddy rewriting to the prerequisite check", () => {
   assert.match(dockerfile, /CHURCHCRM_URL_REWRITING=1/u);
   assert.match(integrityService, /getenv\('CHURCHCRM_URL_REWRITING'\)/u);

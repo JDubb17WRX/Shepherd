@@ -71,13 +71,14 @@ test('both HTML shells declare an escaped BCP 47 language tag', async () => {
 });
 
 test('website content editing reuses only completed local administrator sessions', async () => {
-    const [api, routes, service, repository, bootstrapper, loadConfigs, caddyfile, upgrades, migration, install] = await Promise.all([
+    const [api, routes, service, repository, bootstrapper, loadConfigs, authMiddleware, caddyfile, upgrades, migration, install] = await Promise.all([
         read('src/api/index.php'),
         read('src/api/routes/website-content.php'),
         read('src/ChurchCRM/Shepherd/WebsiteContentService.php'),
         read('src/ChurchCRM/Shepherd/WebsiteContentRepository.php'),
         read('src/ChurchCRM/Bootstrapper.php'),
         read('src/Include/LoadConfigs.php'),
+        read('src/ChurchCRM/Slim/Middleware/AuthMiddleware.php'),
         read('docker/shepherd/Caddyfile'),
         read('src/mysql/upgrade.json'),
         read('src/mysql/upgrade/7.6.1-shepherd-website-content.sql'),
@@ -98,6 +99,8 @@ test('website content editing reuses only completed local administrator sessions
     assert.match(loadConfigs, /isPublicWebsiteContentRead/);
     assert.match(loadConfigs, /isAnonymousEditorProbe/);
     assert.match(loadConfigs, /sessionCookieName/);
+    assert.match(authMiddleware, /isPassiveWebsiteEditorProbe/);
+    assert.match(authMiddleware, /\? 'debug' : 'warning'/);
 
     assert.match(service, /MAX_CONTENT_BYTES/);
     assert.match(service, /private const PAGE_KEYS = \[/);
