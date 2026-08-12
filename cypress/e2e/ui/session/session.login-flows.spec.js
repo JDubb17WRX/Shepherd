@@ -30,7 +30,7 @@ function requestWithCurrentSession(method, url, body, csrfToken = null) {
 }
 
 function submitCurrentTotp() {
-    cy.task("generateTotp", { secret: "JBSWY3DPEBLW64TMMQ======" }, { log: false })
+    cy.task("generateTotp", { secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP" }, { log: false })
         .then((code) => {
             cy.get("#TwoFACode").clear().type(code);
             cy.get('form[name="TwoFAForm"]').submit();

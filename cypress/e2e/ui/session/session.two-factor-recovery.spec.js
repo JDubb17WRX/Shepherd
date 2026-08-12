@@ -2,7 +2,7 @@
 
 describe("2FA Recovery Code Generation", () => {
     beforeEach(() => {
-        cy.loginWithTwoFactor("twofa_user", "changeme", "JBSWY3DPEBLW64TMMQ======");
+        cy.loginWithTwoFactor("twofa_user", "changeme", "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP");
     });
 
     it("generates 12 unique codes in xxxxxxxx-xxxxxxxx lowercase hex format", () => {

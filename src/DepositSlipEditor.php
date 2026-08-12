@@ -12,11 +12,6 @@ use ChurchCRM\Utils\CurrencyFormatter;
 use ChurchCRM\Utils\InputUtils;
 use ChurchCRM\Utils\RedirectUtils;
 
-// Security: User must have finance permission or be the one who created this deposit
-if (!(AuthenticationManager::getCurrentUser()->isFinanceEnabled() || AuthenticationManager::getCurrentUser()->getId() === $thisDeposit->getEnteredby())) {
-    RedirectUtils::securityRedirect('Finance');
-}
-
 $iDepositSlipID = 0;
 $thisDeposit = 0;
 
@@ -42,6 +37,11 @@ if ($iDepositSlipID) {
 
 if ($noDeposit) {
     RedirectUtils::redirect('finance/deposit/search');
+}
+
+// Security: User must have finance permission or be the one who created this deposit
+if (!(AuthenticationManager::getCurrentUser()->isFinanceEnabled() || AuthenticationManager::getCurrentUser()->getId() === $thisDeposit->getEnteredby())) {
+    RedirectUtils::securityRedirect('Finance');
 }
 
 $sPageTitle = $thisDeposit->getType() . ' ' . gettext('Deposit Slip Number') . ': ' . $iDepositSlipID;

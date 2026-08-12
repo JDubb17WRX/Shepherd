@@ -71,33 +71,32 @@ describe("Mobile UX — Logged-Out Pages", () => {
     });
 });
 
-describe("Mobile UX — Family Registration", () => {
+describe("Mobile UX — Shepherd Account Request", () => {
     beforeEach(() => {
         cy.viewport(...MOBILE_VIEWPORT);
     });
 
-    it("family register page fits mobile viewport and fields stack", () => {
-        cy.visit("/external/register/");
-        cy.get("#registration-stepper").should("be.visible");
-        cy.get("#familyName").should("be.visible");
-        cy.get("#familyAddress1").should("be.visible");
+    it("account-request page fits mobile viewport and fields stack", () => {
+        cy.visit("/session/signup");
+        cy.contains("h2", "Request an account").should("be.visible");
+        cy.get("#first-name").should("be.visible");
+        cy.get("#last-name").should("be.visible");
         assertNoHorizontalOverflow();
     });
 
-    it("family register form inputs use 16px font (iOS zoom prevention)", () => {
-        cy.visit("/external/register/");
-        cy.get("#familyName").then(($el) => {
+    it("account-request inputs use 16px font (iOS zoom prevention)", () => {
+        cy.visit("/session/signup");
+        cy.get("#first-name").then(($el) => {
             const fontSize = parseFloat($el.css("font-size"));
             expect(fontSize, "input font-size").to.be.gte(16);
         });
     });
 
-    it("family register step nav buttons take full width on mobile", () => {
-        cy.visit("/external/register/");
-        cy.get("#family-info-next").then(($btn) => {
+    it("account-request submit button takes full width on mobile", () => {
+        cy.visit("/session/signup");
+        cy.get("button.btn-sign-in").then(($btn) => {
             const btnWidth = $btn.outerWidth();
             const parentWidth = $btn.parent().innerWidth();
-            // Stacked buttons should be at least ~90% of parent width
             expect(btnWidth / parentWidth, "button width ratio").to.be.gte(0.9);
         });
     });

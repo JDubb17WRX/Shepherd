@@ -63,7 +63,10 @@ if (empty(SystemConfig::getValue('sChurchName'))) {
     }
 }
 
-if ($shortName === '' || strtolower($shortName) === 'index.php') {
+// `/login` historically resolved through the legacy magic-path fallback. Keep
+// that compatibility route so the saved post-login destination reaches the
+// dashboard instead of the not-found page after authentication completes.
+if ($shortName === '' || in_array(strtolower(rtrim($shortName, '/')), ['index.php', 'login'], true)) {
     RedirectUtils::redirect('v2/dashboard');
 } elseif (($_idx_safeShortPath = PathUtils::resolveSafeRequirePath($shortName)) !== null) {
     require $_idx_safeShortPath;

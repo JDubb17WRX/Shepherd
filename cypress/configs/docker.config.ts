@@ -29,7 +29,7 @@ export default defineConfig({
     'menuoptions.api.key': 'menuOptionsOnlyApiKeyForTesting12345678901',
     'admin.username': 'admin',
     'admin.password': 'changeme',
-    'admin.2fa.secret': 'JBSWY3DPEBLW64TMMQ======',
+    'admin.2fa.secret': 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
     taskDbHost: process.env.CYPRESS_TASK_DB_HOST || '127.0.0.1',
     taskDbPort: process.env.CYPRESS_TASK_DB_PORT || '',
     'standard.username': 'tony.wade@example.com',
