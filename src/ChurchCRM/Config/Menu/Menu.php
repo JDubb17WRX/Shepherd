@@ -45,7 +45,7 @@ class Menu
             'Events'       => self::getEventsMenu($currentUser->isAddEventEnabled(), $canViewEvents),
             'Deposits'     => self::getDepositsMenu($isAdmin, $currentUser->isFinanceEnabled()),
             'Fundraiser'   => self::getFundraisersMenu($currentUser->isManageFundraisersEnabled()),
-            'Reports'      => self::getReportsMenu(),
+            'Reports'      => self::getReportsMenu($isAdmin),
         ];
         
         // Backward compatibility: plugins that declare parent 'Email' still attach to Communication
@@ -53,7 +53,13 @@ class Menu
             $menus['Email'] = $menus['Communication'];
         }
 
-        // Add plugin menu items to their parent menus
+        // Admin menu is always last (at bottom of nav)
+        if ($isAdmin) {
+            $menus['Admin'] = self::getAdminMenu($isAdmin);
+        }
+
+        // Add plugin menu items to their parent menus (must run after Admin menu is set,
+        // so plugins can attach submenu items to the Admin menu)
         self::addPluginMenuItems($menus);
 
         // Remove the backward-compat alias so it doesn't appear as a duplicate menu
@@ -61,12 +67,14 @@ class Menu
         
         // Allow plugins to add top-level menus via the MENU_BUILDING hook
         $menus = HookManager::applyFilters(Hooks::MENU_BUILDING, $menus);
-        
-        // Admin menu is always last (at bottom of nav)
-        if ($isAdmin) {
-            $menus['Admin'] = self::getAdminMenu($isAdmin);
+
+        // Ensure Admin is always last (at bottom of nav) by moving it to the end
+        if ($isAdmin && isset($menus['Admin'])) {
+            $admin = $menus['Admin'];
+            unset($menus['Admin']);
+            $menus['Admin'] = $admin;
         }
-        
+
         return $menus;
 
     }
@@ -88,10 +96,10 @@ class Menu
     {
         $peopleMenu = new MenuItem(gettext('People'), '', true, 'fa-people-group');
         $peopleMenu->addSubMenu(new MenuItem(gettext('Dashboard'), 'people/dashboard', true, 'fa-gauge'));
-        $peopleMenu->addSubMenu(new MenuItem(gettext('Add New') . ' ' . gettext('Person'), 'PersonEditor.php', $isAddRecordsEnabled, 'fa-user-plus'));
+        $peopleMenu->addSubMenu(new MenuItem(gettext('Add New Person'), 'PersonEditor.php', $isAddRecordsEnabled, 'fa-user-plus'));
         $peopleMenu->addSubMenu(new MenuItem(gettext('Person Listing'), 'people/list', true, 'fa-person-half-dress'));
         $peopleMenu->addSubMenu(new MenuItem(gettext('Photo Directory'), 'people/photos', true, 'fa-images'));
-        $peopleMenu->addSubMenu(new MenuItem(gettext('Add New') . ' ' . gettext('Family'), 'FamilyEditor.php', $isAddRecordsEnabled, 'fa-people-roof'));
+        $peopleMenu->addSubMenu(new MenuItem(gettext('Add New Family'), 'FamilyEditor.php', $isAddRecordsEnabled, 'fa-people-roof'));
         $peopleMenu->addSubMenu(new MenuItem(gettext('Family Listing'), 'people/family', true, 'fa-people-roof'));
         $peopleMenu->addSubMenu(new MenuItem(gettext('Family Map'), 'v2/map', true, 'fa-map'));
 
@@ -276,7 +284,7 @@ class Menu
         // $isFinanceEnabled already includes admin bypass and checks bEnabledFinance
         $depositsMenu = new MenuItem(gettext('Finance'), '', $isFinanceEnabled, 'fa-cash-register');
         $depositsMenu->addSubMenu(new MenuItem(gettext('Dashboard'), 'finance/', $isFinanceEnabled, 'fa-gauge'));
-        $depositsMenu->addSubMenu(new MenuItem(gettext('View All Deposits'), 'FindDepositSlip.php', $isFinanceEnabled, 'fa-list'));
+        $depositsMenu->addSubMenu(new MenuItem(gettext('View All Deposits'), 'finance/deposit/search', $isFinanceEnabled, 'fa-list'));
         $depositsMenu->addSubMenu(new MenuItem(gettext('Deposit Reports'), 'finance/reports', $isFinanceEnabled, 'fa-file-invoice'));
         $depositsMenu->addSubMenu(new MenuItem(gettext('Pledge Dashboard'), 'finance/pledge/dashboard', $isFinanceEnabled, 'fa-handshake'));
         $depositsMenu->addSubMenu(new MenuItem(gettext('Edit Deposit Slip'), 'DepositSlipEditor.php?DepositSlipID=' . $_SESSION['iCurrentDeposit'], $isFinanceEnabled, 'fa-pen-to-square'));
@@ -317,10 +325,11 @@ class Menu
         return $fundraiserMenu;
     }
 
-    private static function getReportsMenu(): MenuItem
+    private static function getReportsMenu(bool $isAdmin): MenuItem
     {
         // Query Menu is the only entry, so link straight to it rather than nesting a single child.
-        return new MenuItem(gettext('Data/Reports'), 'QueryList.php', true, 'fa-database');
+        // GHSA-6rgg-mrx3-92w7: QueryList.php now requires isAdmin(); hide from non-admins.
+        return new MenuItem(gettext('Data/Reports'), 'QueryList.php', $isAdmin, 'fa-database');
     }
 
     private static function addGroupSubMenus($menuName, $groupId, string $viewURl, ?array $groupsByType = null): ?MenuItem

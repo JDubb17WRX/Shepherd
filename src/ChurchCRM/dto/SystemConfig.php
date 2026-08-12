@@ -116,6 +116,18 @@ class   SystemConfig
         ];
     }
 
+    public static function getTelemetryLevelChoices(): array
+    {
+        return [
+            'Choices' => [
+                gettext('None (disabled)') . ':none',
+                gettext('Errors — server errors and JS exceptions') . ':errors',
+                gettext('Warnings — warnings, errors, and JS exceptions') . ':warnings',
+                gettext('Full — all of the above plus page views') . ':full',
+            ],
+        ];
+    }
+
     private static function buildConfigs(): array
     {
         return [
@@ -134,7 +146,7 @@ class   SystemConfig
             'sDefaultCity'                         => new ConfigItem('sDefaultCity', 'text', '', gettext('Default City')),
             'sDefaultState'                        => new ConfigItem('sDefaultState', 'text', '', gettext('Default State - Must be 2-letter abbreviation!')),
             'sDefaultCountry'                      => new ConfigItem('sDefaultCountry', 'choice', '', '', '', json_encode(['Choices' => Countries::getNames()], JSON_THROW_ON_ERROR)),
-            'sToEmailAddress'                      => new ConfigItem('sToEmailAddress', 'text', '', gettext('Default account for receiving a copy of all emails')),
+            'sToEmailAddress'                      => new ConfigItem('sToEmailAddress', 'text', '', gettext('Church email address automatically added as a removable recipient when composing emails from CRM')),
             'iSMTPTimeout'                         => new ConfigItem('iSMTPTimeout', 'number', '10', gettext('SMTP Server timeout in sec')),
             'sSMTPHost'                            => new ConfigItem('sSMTPHost', 'text', '', gettext('SMTP Server Address (mail.server.com:25)')),
             'bSMTPAuth'                            => new ConfigItem('bSMTPAuth', 'boolean', '0', gettext('Enable if your SMTP server requires a username and password')),
@@ -198,8 +210,6 @@ class   SystemConfig
             'sConfirm5'                            => new ConfigItem('sConfirm5', 'text', '', gettext('Verbage for the database information confirmation and correction report')),
             'sConfirm6'                            => new ConfigItem('sConfirm6', 'text', '', gettext('Verbage for the database information confirmation and correction report')),
             'sConfirmSigner'                       => new ConfigItem('sConfirmSigner', 'text', '', gettext('Database information confirmation and correction report signer')),
-            'sPledgeSummary1'                      => new ConfigItem('sPledgeSummary1', 'text', 'Summary of pledges and payments for the fiscal year', gettext('Verbage for the pledge summary report')),
-            'sPledgeSummary2'                      => new ConfigItem('sPledgeSummary2', 'text', ' as of', gettext('Verbage for the pledge summary report')),
             'sDirectoryDisclaimer1'                => new ConfigItem('sDirectoryDisclaimer1', 'text', "Every effort was made to ensure the accuracy of this directory.  If there are any errors or omissions, please contact the church office.\n\nThis directory is for the use of the people of", gettext('Verbage for the directory report')),
             'sDirectoryDisclaimer2'                => new ConfigItem('sDirectoryDisclaimer2', 'text', ', and the information contained in it may not be used for business or commercial purposes.', gettext('Verbage for the directory report')),
             'bDirLetterHead'                       => new ConfigItem('bDirLetterHead', 'text', '../Images/church_letterhead.jpg', gettext('Church Letterhead path and file')),
@@ -220,6 +230,7 @@ class   SystemConfig
             'sChurchWebSite'                       => new ConfigItem('sChurchWebSite', 'text', '', ''),
             'sChurchLogoURL'                       => new ConfigItem('sChurchLogoURL', 'text', '', gettext('Absolute http(s) URL of the church logo shown in email templates (and re-used elsewhere in the future). For best rendering across email clients, use a wide banner image at roughly a 3.5:1 aspect ratio (for example 350×100 px), PNG or JPG, served over HTTPS. Leave blank or enter an invalid value to fall back to the default ChurchCRM logo.')),
             'bEnableExternalCalendarAPI'           => new ConfigItem('bEnableExternalCalendarAPI', 'boolean', '0', gettext('Allow unauthenticated reads of events from the external calendar API')),
+            'sCalendarEmbedOrigins'                => new ConfigItem('sCalendarEmbedOrigins', 'text', '*', gettext('Space-separated list of origins allowed to embed the public external calendar page in an <iframe> (CSP frame-ancestors). Default "*" allows any origin. Restrict to specific origins for tighter security, e.g. "https://mysite.org https://embed.example.com".')),
             
             'sNewPersonNotificationRecipientIDs'   => new ConfigItem('sNewPersonNotificationRecipientIDs', 'text', '', gettext('Comma Separated list of PersonIDs of people to notify when a new family or person is added')),
             'bSearchIncludePersons'                => new ConfigItem('bSearchIncludePersons', 'boolean', '1', gettext('Search People')),
@@ -248,6 +259,8 @@ class   SystemConfig
             'bEnabledEvents'                       => new ConfigItem('bEnabledEvents', 'boolean', '1', gettext('Show or hide the Events section in the main navigation menu')),
             'bEnabledFundraiser'                   => new ConfigItem('bEnabledFundraiser', 'boolean', '1', gettext('Enable Fundraiser menu.')),
             'bEnabledEmail'                        => new ConfigItem('bEnabledEmail', 'boolean', '1', gettext('Enable email sending from ChurchCRM. Required for password reset, notifications, and email links.')),
+            'bEnableBirthdayEmails'                => new ConfigItem('bEnableBirthdayEmails', 'boolean', '0', gettext('Automatically send a birthday greeting email to people on their birthday')),
+            'sLastBirthdayEmailRunDate'            => new ConfigItem('sLastBirthdayEmailRunDate', 'text', '', gettext('Internal: last date birthday emails were sent (YYYY-MM-DD). Do not edit manually.')),
             'sEmailPreheader'                      => new ConfigItem('sEmailPreheader', 'text', '', gettext('Optional short summary shown as inbox preview text beside the subject line. Leave blank to let the email client auto-generate from the body. Per-email types (password reset, new member, verification) set their own preheader; this is a fallback.')),
             'sGreeterCustomMsg1'                   => new ConfigItem('sGreeterCustomMsg1', 'text', '', gettext('Custom message for church greeter email 1, max 255 characters')),
             'sGreeterCustomMsg2'                   => new ConfigItem('sGreeterCustomMsg2', 'text', '', gettext('Custom message for church greeter email 2, max 255 characters')),
@@ -262,20 +275,23 @@ class   SystemConfig
             'bSendUserDeletedEmail'                => new ConfigItem('bSendUserDeletedEmail', 'boolean', '0', gettext('Send an email notifying users when their account has been deleted')),
             'sInactiveClassification'              => new ConfigItem('sInactiveClassification', 'text', '', gettext('Comma separated list of classifications that should appear as inactive')),
             'sDefaultZip'                          => new ConfigItem('sDefaultZip', 'text', '', gettext('Default Zip')),
-            'sSystemID'                            => new ConfigItem('sSystemID', 'text', '')
+            'sSystemID'                            => new ConfigItem('sSystemID', 'text', ''),
+            // Telemetry — collection level and internal state (sTelemetryAskedVersion excluded from UI)
+            'sTelemetryLevel'                      => new ConfigItem('sTelemetryLevel', 'choice', 'none', gettext('Anonymous telemetry level. Controls how much anonymous diagnostic data is shared with the ChurchCRM team. No church names, member data, or personal information is ever sent.'), '', json_encode(self::getTelemetryLevelChoices(), JSON_THROW_ON_ERROR)),
+            'sTelemetryAskedVersion'               => new ConfigItem('sTelemetryAskedVersion', 'text', ''),
         ];
     }
 
     private static function buildCategories(): array
     {
         return [
-            gettext('New Members & Greeting') => ['sNewPersonNotificationRecipientIDs', 'IncludeDataInNewPersonNotifications', 'sGreeterCustomMsg1', 'sGreeterCustomMsg2'],    
+            gettext('New Members & Greeting') => ['sNewPersonNotificationRecipientIDs', 'IncludeDataInNewPersonNotifications', 'sGreeterCustomMsg1', 'sGreeterCustomMsg2', 'bEnableBirthdayEmails'],
             gettext('People')              => ['sDirClassifications', 'iPersonNameStyle', 'iPersonInitialStyle', 'bHidePersonAddress', 'bHideFriendDate', 'bHideWeddingDate', 'bForceUppercaseZip', 'sInactiveClassification'],
             gettext('Families')            => ['sDirRoleHead', 'sDirRoleSpouse', 'sDirRoleChild', 'sDefaultCity', 'sDefaultState', 'sDefaultZip', 'sDefaultCountry', 'bHideFamilyNewsletter'],
-            gettext('Report Settings')    => ['sQBDTSettings', 'leftX', 'incrementY', 'sTaxReport1', 'sTaxReport2', 'sTaxReport3', 'sTaxSigner', 'sReminder1', 'sReminderSigner', 'sReminderNoPledge', 'sReminderNoPayments', 'sConfirm1', 'sConfirm2', 'sConfirm3', 'sConfirm4', 'sConfirm5', 'sConfirm6', 'sDear', 'sConfirmSincerely', 'sConfirmSigner', 'sPledgeSummary1', 'sPledgeSummary2', 'sDirectoryDisclaimer1', 'sDirectoryDisclaimer2', 'bDirLetterHead', 'sZeroGivers', 'sZeroGivers2', 'sZeroGivers3', 'iPDFOutputType'],
             gettext('Financial Settings') => ['bEnabledFinance', 'bEnabledFundraiser', 'sDepositSlipType', 'iChecksPerDepositForm', 'bDisplayBillCounts', 'bUseScannedChecks', 'bEnableNonDeductible', 'iFYMonth', 'bUseDonationEnvelopes', 'aFinanceQueries', 'sCurrencySymbol', 'sCurrencyPosition', 'sThousandsSeparator', 'sDecimalSeparator'],
             gettext('Quick Search')       => ['bSearchIncludePersons', 'bSearchIncludePersonsMax', 'bSearchIncludeAddresses', 'bSearchIncludeAddressesMax', 'bSearchIncludeFamilies', 'bSearchIncludeFamiliesMax', 'bSearchIncludeFamilyHOH', 'bSearchIncludeFamilyHOHMax', 'bSearchIncludeGroups', 'bSearchIncludeGroupsMax', 'bSearchIncludeDeposits', 'bSearchIncludeDepositsMax', 'bSearchIncludePayments', 'bSearchIncludePaymentsMax', 'bSearchIncludeFamilyCustomProperties', 'bSearchIncludeCalendarEvents', 'bSearchIncludeCalendarEventsMax'],
-            gettext('Confession')         => ['iPersonConfessionFatherCustomField', 'iPersonConfessionDateCustomField']
+            gettext('Confession')         => ['iPersonConfessionFatherCustomField', 'iPersonConfessionDateCustomField'],
+            gettext('Report Settings')    => ['sQBDTSettings', 'leftX', 'incrementY', 'sTaxReport1', 'sTaxReport2', 'sTaxReport3', 'sTaxSigner', 'sReminder1', 'sReminderSigner', 'sReminderNoPledge', 'sReminderNoPayments', 'sConfirm1', 'sConfirm2', 'sConfirm3', 'sConfirm4', 'sConfirm5', 'sConfirm6', 'sDear', 'sConfirmSincerely', 'sConfirmSigner', 'sDirectoryDisclaimer1', 'sDirectoryDisclaimer2', 'bDirLetterHead', 'sZeroGivers', 'sZeroGivers2', 'sZeroGivers3', 'iPDFOutputType'],
         ];
     }
 

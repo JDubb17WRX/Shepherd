@@ -9,11 +9,13 @@ use ChurchCRM\dto\SystemURLs;
 use ChurchCRM\dto\ChurchMetaData;
 use ChurchCRM\model\ChurchCRM\Person;
 use ChurchCRM\Plugin\PluginManager;
-use ChurchCRM\view\MenuRenderer;
-use ChurchCRM\Service\SystemService;
 use ChurchCRM\Service\NotificationService;
+use ChurchCRM\Service\SystemService;
+use ChurchCRM\Service\TelemetryService;
+use ChurchCRM\Utils\CurrencyFormatter;
 use ChurchCRM\Utils\DateTimeUtils;
 use ChurchCRM\Utils\InputUtils;
+use ChurchCRM\view\MenuRenderer;
 
 $localeInfo = Bootstrapper::getCurrentLocale();
 
@@ -28,9 +30,11 @@ PluginManager::init($pluginsPath);
 
 // Resolve theme attributes from user settings
 $_themeUser = AuthenticationManager::getCurrentUser();
+$_themeMode = $_themeUser->getThemeMode(); // 'auto' | 'default' | 'dark'
 $_themeAttrs = '';
-$_themeStyle = $_themeUser->getSettingValue('ui.style');
-if ($_themeStyle === 'dark') {
+// Explicit dark: stamp data-bs-theme on <html> server-side for FOWT-safe rendering
+// without JS. Auto mode is handled by the inline <head> script below.
+if ($_themeMode === 'dark') {
     $_themeAttrs .= ' data-bs-theme="dark"';
 }
 $_themePrimary = $_themeUser->getSettingValue('ui.theme.primary');
@@ -45,8 +49,60 @@ $MenuFirst = 1;
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Theme controller: must run synchronously before page paint to prevent flash-of-wrong-theme. -->
+  <script nonce="<?= SystemURLs::getCSPNonce() ?>">
+    (function () {
+      // Ensure window.CRM exists; body script will Object.assign more properties later.
+      window.CRM = window.CRM || {};
+
+      var mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var _listening = false;
+
+      function _applyDark() {
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+      }
+      function _applyLight() {
+        document.documentElement.removeAttribute('data-bs-theme');
+      }
+      function _onChange(e) {
+        if (e.matches) { _applyDark(); } else { _applyLight(); }
+      }
+      // Delegate to _onChange so both paths share the same dark/light logic.
+      // Falls back to light when matchMedia is unavailable (mql === null).
+      function _applySystem() {
+        _onChange({ matches: mql ? mql.matches : false });
+      }
+
+      /**
+       * Apply a theme mode and manage the matchMedia listener lifecycle.
+       * mode: 'auto' | 'default' | 'dark'
+       * Called once on page load (below) and by user.js when the user toggles the setting.
+       */
+      window.CRM.theme = {
+        setMode: function (mode) {
+          if (mode === 'auto') {
+            _applySystem();
+            if (mql && !_listening) {
+              mql.addEventListener('change', _onChange);
+              _listening = true;
+            }
+          } else {
+            if (_listening) {
+              mql.removeEventListener('change', _onChange);
+              _listening = false;
+            }
+            if (mode === 'dark') { _applyDark(); } else { _applyLight(); }
+          }
+        }
+      };
+
+      // Apply the server-resolved theme mode immediately (FOWT prevention).
+      window.CRM.theme.setMode(<?= json_encode($_themeMode) ?>);
+    }());
+  </script>
   <?php require_once __DIR__ . '/Header-HTML-Scripts.php'; ?>
   <?= PluginManager::getPluginHeadContent() ?>
+
 </head>
 
 <body class="antialiased">
@@ -123,6 +179,9 @@ $MenuFirst = 1;
           comm: {
             smtpConfigured: <?= json_encode(SystemConfig::hasValidMailServerSettings()) ?>,
             vonageEnabled: <?= json_encode(PluginManager::getPlugin('vonage')?->isConfigured() ?? false) ?>,
+            // Church default "to" address (sToEmailAddress); exposed only to email-enabled
+            // users. The email composer offers it as a removable default recipient.
+            defaultEmailToAddress: <?= AuthenticationManager::getCurrentUser()->isEmailEnabled() ? SystemConfig::getValueForJs('sToEmailAddress') : json_encode('') ?>,
           },
           // Plugin configs from active plugins (via getClientConfig())
           plugins: <?= json_encode(PluginManager::getPluginsClientConfig(), JSON_FORCE_OBJECT) ?>,
@@ -166,8 +225,29 @@ $MenuFirst = 1;
               addRecords: <?= json_encode($currentUser->isAddRecordsEnabled()) ?>,
               editRecords: <?= json_encode($currentUser->isEditRecordsEnabled()) ?>,
           },
-          PageName:<?= json_encode($_SERVER['REQUEST_URI'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>
+          PageName:<?= json_encode($_SERVER['REQUEST_URI'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>,
+          telemetry: <?= json_encode([
+              'level'      => TelemetryService::getLevel(),
+              'key'        => TelemetryService::isEnabled() ? TelemetryService::POSTHOG_KEY : '',
+              'endpoint'   => TelemetryService::POSTHOG_ENDPOINT,
+              'distinctID' => SystemConfig::getValue('sSystemID'),
+          ]) ?>,
+          currency: <?= json_encode(CurrencyFormatter::toArray(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>
       });
+      // Attach format() to window.CRM.currency so JS callers (DataTables, Chart.js)
+      // can render localised money via window.CRM.currency.format(amount [, decimals]).
+      window.CRM.currency.format = function (amount, decimals) {
+          if (decimals === undefined) decimals = 2;
+          var val = parseFloat(amount);
+          if (isNaN(val)) return '';          // match PHP empty-string fallback for non-numeric input
+          var parts = val.toFixed(decimals).split('.');
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, this.thousand);
+          var formatted = parts[0] + (decimals > 0 ? this.decimal + parts[1] : '');
+          var sym = this.symbol.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return this.position === 'after'
+              ? formatted + '\u00A0' + sym
+              : sym + '\u00A0' + formatted;
+      };
       // Initialize moment locale if available
       if (typeof moment !== 'undefined' && window.CRM.shortLocale) {
           moment.locale(window.CRM.shortLocale);
@@ -419,9 +499,9 @@ $MenuFirst = 1;
               </li>
               <?php foreach ($aBreadcrumbs as $crumb) : ?>
                 <?php if (!empty($crumb['active'])) : ?>
-              <li class="breadcrumb-item active" aria-current="page"><?= $crumb['label'] ?></li>
+              <li class="breadcrumb-item active" aria-current="page"><?= InputUtils::escapeHTML($crumb['label']) ?></li>
                 <?php else : ?>
-              <li class="breadcrumb-item"><a href="<?= $crumb['url'] ?>"><?= $crumb['label'] ?></a></li>
+              <li class="breadcrumb-item"><a href="<?= InputUtils::escapeAttribute($crumb['url']) ?>"><?= InputUtils::escapeHTML($crumb['label']) ?></a></li>
                 <?php endif; ?>
               <?php endforeach; ?>
             </ol>
@@ -436,9 +516,9 @@ $MenuFirst = 1;
         <?php endif; ?>
         <div class="row g-2 align-items-center">
           <div class="col">
-            <h2 class="page-title"><?= $sPageTitle ?></h2>
+            <h2 class="page-title"><?= InputUtils::escapeHTML($sPageTitle) ?></h2>
             <?php if (!empty($sPageSubtitle)) : ?>
-            <div class="text-body-secondary mt-1"><?= $sPageSubtitle ?></div>
+            <div class="text-body-secondary mt-1"><?= InputUtils::escapeHTML($sPageSubtitle) ?></div>
             <?php endif; ?>
           </div>
         </div>
@@ -481,3 +561,13 @@ foreach (NotificationService::getNotifications() as $notification) {
         <?php endif; ?>
       </div>
 <?php } ?>
+<?php
+// Server-side page view telemetry for legacy (non-API) pages.
+// Strip query string so no record IDs reach PostHog.
+$_telemetryRoute = explode('?', $_SERVER['PHP_SELF'] ?? 'unknown', 2)[0];
+TelemetryService::capturePageView($_telemetryRoute);
+
+if (TelemetryService::isEnabled()):
+?>
+<script src="<?= SystemURLs::assetVersioned('/skin/v2/telemetry.min.js') ?>" defer></script>
+<?php endif; ?>

@@ -82,12 +82,25 @@ Cypress.Commands.add('enrollCurrentUserInTwoFactor', () => {
  * @param {string} sessionName - Unique identifier for this session (e.g., 'admin-session')
  * @param {string} username - The username to authenticate with
  * @param {string} password - The password to authenticate with
- * @param {{ forceLogin?: boolean }} options - Additional behaviour flags
+ * @param {{ forceLogin?: boolean, twoFactorSecret?: string | null, validate?: () => void }} options - Additional behaviour flags
  */
 Cypress.Commands.add('setupLoginSession', (sessionName, username, password, options = {}) => {
-    const { forceLogin = false, twoFactorSecret = null } = options;
+    const { forceLogin = false, twoFactorSecret = null, validate } = options;
     const uniqueSuffix = forceLogin ? `-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` : '';
     const effectiveSessionName = `${sessionName}${uniqueSuffix}`;
+
+    // Default validate: confirm a CRM session cookie is present.
+    // Callers can override this via options.validate for role-specific checks.
+    const defaultValidate = () => {
+        cy.getCookies().should('satisfy', (cookies) => {
+            return cookies.some(cookie => cookie.name.startsWith('CRM-'));
+        });
+        cy.request({
+            method: 'GET',
+            url: '/api/persons/roles',
+            failOnStatusCode: false,
+        }).its('status').should('eq', 200);
+    };
 
     cy.session(
         effectiveSessionName,
@@ -100,17 +113,7 @@ Cypress.Commands.add('setupLoginSession', (sessionName, username, password, opti
                 .and('not.include', '/v2/user/current/changepassword');
         },
         {
-            // Validate session by checking for a CRM cookie
-            validate: () => {
-                cy.getCookies().should('satisfy', (cookies) => {
-                    return cookies.some(cookie => cookie.name.startsWith('CRM-'));
-                });
-                cy.request({
-                    method: 'GET',
-                    url: '/api/persons/roles',
-                    failOnStatusCode: false,
-                }).its('status').should('eq', 200);
-            }
+            validate: validate ?? defaultValidate
         }
     );
 });
@@ -134,7 +137,18 @@ Cypress.Commands.add('setupAdminSession', (options = {}) => {
     if (!username || !password) {
         throw new Error('Admin credentials not configured in cypress/configs/docker.config.ts (or cypress/configs/new-system.config.ts) env: admin.username and admin.password required');
     }
-    cy.setupLoginSession('admin-session', username, password, { ...options, twoFactorSecret });
+    // Validate against a Finance-protected endpoint so that a stale or
+    // cross-contaminated session (e.g. from a non-Finance spec that ran
+    // earlier in the same Cypress worker) is detected and triggers a
+    // fresh login instead of proceeding with the wrong role.
+    cy.setupLoginSession('admin-session', username, password, {
+        ...options,
+        twoFactorSecret,
+        validate: () => {
+            cy.request({ url: '/api/deposits', failOnStatusCode: false })
+                .its('status').should('eq', 200);
+        }
+    });
 });
 
 /**

@@ -4,6 +4,11 @@ import test from "node:test";
 
 const caddyfileUrl = new URL("./Caddyfile", import.meta.url);
 const caddyfile = readFileSync(caddyfileUrl, "utf8");
+const dockerfile = readFileSync(new URL("./Dockerfile", import.meta.url), "utf8");
+const integrityService = readFileSync(
+  new URL("../../src/ChurchCRM/Service/AppIntegrityService.php", import.meta.url),
+  "utf8",
+);
 const lines = caddyfile.split(/\r?\n/u).map((line) => line.trim());
 const matcher = lines.find((line) => line.startsWith("@privateMedia path_regexp privateMedia "));
 
@@ -73,4 +78,20 @@ test("returns 404 before the Shepherd catch-all can serve private media", () => 
   assert.ok(responseIndex >= 0, "the route block must contain the private-media denial");
   assert.ok(catchAllIndex >= 0, "the route block must contain the Shepherd catch-all");
   assert.ok(responseIndex < catchAllIndex, "the deny response must precede the catch-all");
+});
+
+test("declares configured Caddy rewriting to the prerequisite check", () => {
+  assert.match(dockerfile, /CHURCHCRM_URL_REWRITING=1/u);
+  assert.match(integrityService, /getenv\('CHURCHCRM_URL_REWRITING'\)/u);
+  assert.match(integrityService, /Apache \/ nginx \/ LiteSpeed \/ Caddy/u);
+});
+
+test("keeps liveness independent from database-backed readiness", () => {
+  assert.match(caddyfile, /handle \/shepherd\/livez\s*\{/u);
+  assert.match(caddyfile, /respond `\{"status":"alive"\}` 200/u);
+  assert.match(caddyfile, /handle \/shepherd\/healthz\s*\{[\s\S]*?healthz\.php/u);
+
+  const workflow = readFileSync(new URL("../../.github/workflows/shepherd-image.yml", import.meta.url), "utf8");
+  assert.match(workflow, /curl[^\n]*\/shepherd\/livez/u);
+  assert.doesNotMatch(workflow, /curl[^\n]*\/shepherd\/healthz/u);
 });

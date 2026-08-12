@@ -19,7 +19,7 @@ describe('03 - Backup and Restore', () => {
         password: 'changeme'
     };
     const adminTwoFactorRuntimeKey = 'newSystemAdminTwoFactorSecret';
-    const seededAdminTwoFactorSecret = 'JBSWY3DPEBLW64TMMQ======';
+    const seededAdminTwoFactorSecret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
 
     // Helper function to login, handling forced password-change redirect on first login
     const loginAsAdmin = () => {

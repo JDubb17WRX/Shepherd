@@ -50,7 +50,7 @@ declare namespace Cypress {
       sessionName: string,
       username: string,
       password: string,
-      options?: { forceLogin?: boolean; twoFactorSecret?: string | null }
+      options?: { forceLogin?: boolean; twoFactorSecret?: string | null; validate?: () => void }
     ): Chainable<void>;
 
     /** Log in and complete a TOTP challenge when a test secret is provided. */
@@ -181,6 +181,20 @@ declare namespace Cypress {
       url: string,
       body?: any,
       expectedStatus?: number
+    ): Chainable<any>;
+
+    /**
+     * MenuOptions-only user (id=902): usr_MenuOptions=1, all other perm flags 0,
+     * non-admin, non-EditSelf. Used to verify the EditRecords gate on person/family
+     * property routes (GHSA-4wmp-3v34-g7q8). Passes MenuOptions middleware but is
+     * blocked by EditRecordsRoleAuthMiddleware — expects 403 on record-level routes.
+     */
+    makePrivateMenuOptionsAPICall(
+      method: string,
+      url: string,
+      body?: any,
+      expectedStatus?: number,
+      timeoutMs?: number
     ): Chainable<any>;
 
     /**

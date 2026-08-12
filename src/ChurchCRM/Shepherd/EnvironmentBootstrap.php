@@ -30,6 +30,7 @@ final class EnvironmentBootstrap
             if (getenv('SHEPHERD_SMTP_HOST')) {
                 self::setIfChanged('bEnabledEmail', '1');
                 self::setIfChanged('bSMTPAuth', getenv('SHEPHERD_SMTP_USERNAME') ? '1' : '0');
+                self::setIfChanged('bPHPMailerAutoTLS', '1');
             }
             self::setIfChanged('bEnableSelfRegistration', '0');
             self::setIfChanged('s2FAApplicationName', 'Shepherd');

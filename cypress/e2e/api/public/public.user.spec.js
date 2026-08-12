@@ -111,7 +111,7 @@ describe("API Public User", () => {
 
     // 2FA Authentication tests
     // Uses the seeded `twofa_user` (password "changeme", usr_TwoFactorAuthSecret
-    // is a Defuse-encrypted TOTP secret that decrypts to JBSWY3DPEBLW64TMMQ======).
+    // is a Defuse-encrypted TOTP secret that decrypts to JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP).
     describe("2FA Authentication", () => {
         beforeEach(() => {
             cy.makePrivateAdminAPICall("POST", "/admin/api/user/27/login/reset", null, 200);
@@ -160,7 +160,7 @@ describe("API Public User", () => {
                 }).its("status").should("eq", 401);
             }
 
-            cy.task("generateTotp", { secret: "JBSWY3DPEBLW64TMMQ======" }, { log: false })
+            cy.task("generateTotp", { secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP" }, { log: false })
                 .then((otp) => {
                     cy.apiRequest({
                         method: "POST",

@@ -128,14 +128,14 @@ $sRootPath = SystemURLs::getRootPath();
         </div>
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2">
-                <a href="<?= $sRootPath ?>/FindDepositSlip.php" class="btn btn-success">
+                <a href="<?= $sRootPath ?>/finance/deposit/search" class="btn btn-success">
                     <i class="fa-solid fa-circle-plus me-1"></i><?= gettext('Create Deposit') ?>
                 </a>
-                <a href="<?= $sRootPath ?>/PledgeEditor.php?PledgeOrPayment=Pledge" class="btn btn-primary">
+                <a href="<?= $sRootPath ?>/finance/pledge/new?type=Pledge" class="btn btn-primary">
                     <i class="fa-solid fa-file-signature me-1"></i><?= gettext('Add Pledge') ?>
                 </a>
                 <?php if ($currentDeposit && !$currentDeposit->getClosed()): ?>
-                <a href="<?= $sRootPath ?>/PledgeEditor.php?CurrentDeposit=<?= $currentDepositId ?>&PledgeOrPayment=Payment" class="btn btn-secondary">
+                <a href="<?= $sRootPath ?>/finance/pledge/new?type=Payment&depositId=<?= (int) $currentDepositId ?>" class="btn btn-secondary">
                     <i class="fa-solid fa-hand-holding-dollar me-1"></i><?= gettext('Add Payment') ?>
                 </a>
                 <?php else: ?>
@@ -149,9 +149,11 @@ $sRootPath = SystemURLs::getRootPath();
                 <a href="<?= $sRootPath ?>/finance/pledge/dashboard" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-handshake me-1"></i><?= gettext('Pledges') ?>
                 </a>
+                <?php if (SystemConfig::getBooleanValue('bEnabledFundraiser')): ?>
                 <a href="<?= $sRootPath ?>/fundraiser/" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-gavel me-1"></i><?= gettext('Fundraisers') ?>
                 </a>
+                <?php endif; ?>
                 <?php if ($isAdmin): ?>
                 <a href="<?= $sRootPath ?>/DonationFundEditor.php" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-piggy-bank me-1"></i><?= gettext('Manage Funds') ?>
@@ -192,7 +194,7 @@ $sRootPath = SystemURLs::getRootPath();
                                 <?php if ($openDeposits > 0): ?>
                                 <span class="badge bg-warning text-dark"><?= $openDeposits ?> <?= gettext('open') ?></span>
                                 <?php endif; ?>
-                                <a href="<?= $sRootPath ?>/FindDepositSlip.php" class="btn btn-sm btn-outline-secondary ms-2">
+                                <a href="<?= $sRootPath ?>/finance/deposit/search" class="btn btn-sm btn-outline-secondary ms-2">
                                     <i class="fa-solid fa-eye"></i> <?= gettext('View') ?>
                                 </a>
                             </div>
@@ -283,7 +285,7 @@ $sRootPath = SystemURLs::getRootPath();
             <div class="card mb-3">
                 <div class="card-header d-flex align-items-center">
                     <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left me-2"></i><?= gettext('Recent Deposits') ?></h3>
-                    <a href="<?= $sRootPath ?>/FindDepositSlip.php" class="btn btn-sm btn-outline-secondary ms-auto">
+                    <a href="<?= $sRootPath ?>/finance/deposit/search" class="btn btn-sm btn-outline-secondary ms-auto">
                         <i class="fa-solid fa-list me-1"></i><?= gettext('View All') ?>
                     </a>
                 </div>
@@ -329,7 +331,7 @@ $sRootPath = SystemURLs::getRootPath();
                     <div class="empty">
                         <div class="empty-icon"><i class="fa-solid fa-inbox fa-3x text-body-secondary"></i></div>
                         <p class="empty-title"><?= gettext('No deposits found.') ?></p>
-                        <a href="<?= $sRootPath ?>/FindDepositSlip.php" class="btn btn-primary">
+                        <a href="<?= $sRootPath ?>/finance/deposit/search" class="btn btn-primary">
                             <i class="fa-solid fa-plus me-1"></i><?= gettext('Create First Deposit') ?>
                         </a>
                     </div>
@@ -383,7 +385,7 @@ $sRootPath = SystemURLs::getRootPath();
                     <div class="empty">
                         <div class="empty-icon"><i class="fa-solid fa-circle-plus fa-3x text-body-secondary"></i></div>
                         <p class="empty-title"><?= gettext('Create or select a deposit to get started.') ?></p>
-                        <a href="<?= $sRootPath ?>/FindDepositSlip.php" class="btn btn-success">
+                        <a href="<?= $sRootPath ?>/finance/deposit/search" class="btn btn-success">
                             <i class="fa-solid fa-plus me-1"></i><?= gettext('Create Deposit') ?>
                         </a>
                     </div>
@@ -398,15 +400,15 @@ $sRootPath = SystemURLs::getRootPath();
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
-                        <span><?= gettext('Total Deposits:') ?></span>
+                        <span><?= gettext('Total Deposits') ?>:</span>
                         <strong><?= $totalDeposits ?></strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span><?= gettext('Open Deposits:') ?></span>
+                        <span><?= gettext('Open Deposits') ?>:</span>
                         <span class="badge bg-warning text-dark"><?= $openDeposits ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
-                        <span><?= gettext('Closed Deposits:') ?></span>
+                        <span><?= gettext('Closed Deposits') ?>:</span>
                         <span class="badge bg-green-lt text-green"><?= $closedDeposits ?></span>
                     </div>
 
@@ -432,7 +434,9 @@ $sRootPath = SystemURLs::getRootPath();
                     <ul class="list-group list-group-flush">
                         <?php foreach ($activeFunds as $fund): ?>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-                            <span><?= InputUtils::escapeHTML($fund->getName()) ?></span>
+                            <a href="<?= InputUtils::escapeAttribute($sRootPath) ?>/finance/fund/<?= (int) $fund->getId() ?>/contributors" class="text-decoration-none">
+                                <?= InputUtils::escapeHTML($fund->getName()) ?>
+                            </a>
                             <span class="badge bg-green-lt text-green">
                                 <i class="fa-solid fa-check"></i>
                             </span>
@@ -459,17 +463,17 @@ $sRootPath = SystemURLs::getRootPath();
 $(document).ready(function() {
     window.CRM.settingsPanel.init({
         container: '#financialSettings',
-        title: <?= json_encode(gettext('Financial Settings'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+        title: <?= InputUtils::jsonEncodeForScript(gettext('Financial Settings')) ?>,
         icon: 'fa-solid fa-sliders',
         settings: [
-            { name: 'iFYMonth',          type: 'choice', label: <?= json_encode(gettext('First month of the fiscal year'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, choices: <?= json_encode(SystemConfig::getChoices('iFYMonth'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> },
-            { name: 'sDepositSlipType',  type: 'choice', label: <?= json_encode(gettext('Deposit ticket type'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, tooltip: <?= json_encode(SystemConfig::getTooltip('sDepositSlipType'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, choices: <?= json_encode(SystemConfig::getChoices('sDepositSlipType'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> },
-            { name: 'iChecksPerDepositForm', type: 'number',  label: <?= json_encode(gettext('Number of checks for Deposit Slip Report'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, min: 1, max: 100 },
-            { name: 'bDisplayBillCounts',    type: 'boolean', label: <?= json_encode(gettext('Display bill counts on deposit slip'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> },
-            { name: 'bUseScannedChecks',     type: 'boolean', label: <?= json_encode(gettext('Enable use of scanned checks'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> },
-            { name: 'bEnableNonDeductible',  type: 'boolean', label: <?= json_encode(gettext('Enable non-deductible payments'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> },
-            { name: 'bUseDonationEnvelopes', type: 'boolean', label: <?= json_encode(gettext('Enable use of donation envelopes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> },
-            { name: 'aFinanceQueries',       type: 'text',    label: <?= json_encode(gettext('Finance permission query IDs'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, placeholder: '30,31,32' }
+            { name: 'iFYMonth',          type: 'choice', label: <?= InputUtils::jsonEncodeForScript(gettext('First month of the fiscal year')) ?>, choices: <?= InputUtils::jsonEncodeForScript(SystemConfig::getChoices('iFYMonth')) ?> },
+            { name: 'sDepositSlipType',  type: 'choice', label: <?= InputUtils::jsonEncodeForScript(gettext('Deposit ticket type')) ?>, tooltip: <?= InputUtils::jsonEncodeForScript(SystemConfig::getTooltip('sDepositSlipType')) ?>, choices: <?= InputUtils::jsonEncodeForScript(SystemConfig::getChoices('sDepositSlipType')) ?> },
+            { name: 'iChecksPerDepositForm', type: 'number',  label: <?= InputUtils::jsonEncodeForScript(gettext('Number of checks for Deposit Slip Report')) ?>, min: 1, max: 100 },
+            { name: 'bDisplayBillCounts',    type: 'boolean', label: <?= InputUtils::jsonEncodeForScript(gettext('Display bill counts on deposit slip')) ?> },
+            { name: 'bUseScannedChecks',     type: 'boolean', label: <?= InputUtils::jsonEncodeForScript(gettext('Enable use of scanned checks')) ?> },
+            { name: 'bEnableNonDeductible',  type: 'boolean', label: <?= InputUtils::jsonEncodeForScript(gettext('Enable non-deductible payments')) ?> },
+            { name: 'bUseDonationEnvelopes', type: 'boolean', label: <?= InputUtils::jsonEncodeForScript(gettext('Enable use of donation envelopes')) ?> },
+            { name: 'aFinanceQueries',       type: 'text',    label: <?= InputUtils::jsonEncodeForScript(gettext('Finance permission query IDs')) ?>, placeholder: '30,31,32' }
         ],
         onSave: function() {
             // Reload page after short delay to show updated fiscal year data

@@ -35,6 +35,9 @@ const localAuthenticationSource = source(
     "src/ChurchCRM/Authentication/AuthenticationProviders/LocalAuthentication.php",
 );
 const authenticationManagerSource = source("src/ChurchCRM/Authentication/AuthenticationManager.php");
+const authMiddlewareSource = source("src/ChurchCRM/Slim/Middleware/AuthMiddleware.php");
+const slimUtilsSource = source("src/ChurchCRM/Slim/SlimUtils.php");
+const redirectUtilsSource = source("src/ChurchCRM/utils/RedirectUtils.php");
 const userModelSource = source("src/ChurchCRM/model/ChurchCRM/User.php");
 const currentUserApiSource = source("src/api/routes/users/user-current.php");
 const userApiSource = source("src/api/routes/users/user.php");
@@ -44,6 +47,36 @@ const publicUserApiSource = source("src/api/routes/public/public-user.php");
 const twoFactorClientSource = source("webpack/two-factor-enrollment.js");
 const apiKeyClientSource = source("src/skin/js/user.js");
 const adminUserClientSource = source("src/skin/js/users.js");
+const propertyTypeDeleteSource = source("src/PropertyTypeDelete.php");
+const whyCameEditorSource = source("src/WhyCameEditor.php");
+const phpSyntaxValidatorSource = source("scripts/validate-php-syntax.js");
+
+test("post-login redirects preserve page navigation and reject asset or API requests", () => {
+    assert.match(redirectUtilsSource, /isPostLoginNavigationRequest/);
+    assert.match(redirectUtilsSource, /stripos\(\$acceptHeader, 'text\/html'\)/);
+    assert.match(redirectUtilsSource, /\(\?:api\|skin\|images\|uploads\)/);
+    assert.match(redirectUtilsSource, /\|map\|json\|xml\|ico\|png\|jpe\?g\|/);
+    assert.match(authenticationManagerSource, /RedirectUtils::stripAndValidatePostLoginPath/);
+    assert.match(authenticationManagerSource, /RedirectUtils::validatePostLoginRedirectUrl/);
+    assert.match(authMiddlewareSource, /RedirectUtils::stripAndValidatePostLoginPath/);
+});
+
+test("legacy destructive and editor forms require POST CSRF protection", () => {
+    assert.match(propertyTypeDeleteSource, /isset\(\$_POST\['Confirmed'\]\)/);
+    assert.match(propertyTypeDeleteSource, /CSRFUtils::verifyRequest\(\$_POST, 'propertyTypeDelete'\)/);
+    assert.match(propertyTypeDeleteSource, /method="post" action="PropertyTypeDelete\.php"/);
+    assert.match(propertyTypeDeleteSource, /CSRFUtils::getTokenInputField\('propertyTypeDelete'\)/);
+    assert.doesNotMatch(propertyTypeDeleteSource, /\$_GET\['Confirmed'\]/);
+
+    assert.match(whyCameEditorSource, /CSRFUtils::verifyRequest\(\$_POST, 'whyCameEditor'\)/);
+    assert.match(whyCameEditorSource, /CSRFUtils::getTokenInputField\('whyCameEditor'\)/);
+});
+
+test("PHP syntax validation invokes tools without shell interpolation", () => {
+    assert.match(phpSyntaxValidatorSource, /execFileSync\('git', args/);
+    assert.match(phpSyntaxValidatorSource, /execFileSync\('php', \['-l', filePath\]/);
+    assert.doesNotMatch(phpSyntaxValidatorSource, /execSync|exec\(/);
+});
 
 test("logout teardown remains fail-closed when logging fails", () => {
     const endSession = between(
@@ -283,6 +316,13 @@ test("admin password changes validate both confirmation fields before updating t
 });
 
 test("security clients distinguish step-up, invalid-session, and expired-CSRF responses", () => {
+    assert.match(slimUtilsSource, /\?int \$status = null/);
+    assert.match(slimUtilsSource, /\$status \?\? \$response->getStatusCode\(\)/);
+    assert.match(
+        authenticationManagerSource,
+        /case LocalTwoFactorTokenRequest::class:[\s\S]*catch \(\\Exception \$e\)[\s\S]*RedirectUtils::redirect\(self::getSessionBeginURL\(\)\)/,
+    );
+
     const twoFactorFailureHandler = between(
         twoFactorClientSource,
         "function handleSecurityActionFailure",

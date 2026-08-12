@@ -9,39 +9,31 @@ function initPaymentTable() {
       width: "35%",
       title: i18next.t("Family"),
       data: "FamilyString",
-      render: function (data, type, full, meta) {
-        var familyName = data && data.trim() ? data : '<em class="text-muted">' + i18next.t("Anonymous") + "</em>";
-        var icon = isDepositClosed ? '<i class="fa-solid fa-magnifying-glass"></i>' : '<i class="fa-solid fa-pen"></i>';
-        return (
-          '<a class="btn btn-sm btn-outline-primary" href="PledgeEditor.php?linkBack=DepositSlipEditor.php?DepositSlipID=' +
-          depositSlipID +
-          "&GroupKey=" +
-          full.GroupKey +
-          '" title="' +
-          (isDepositClosed ? i18next.t("View") : i18next.t("Edit")) +
-          '">' +
-          icon +
-          "</a>&nbsp;<span>" +
-          familyName +
-          "</span>"
-        );
+      render: (data, type, full, meta) => {
+        if (!data || !data.trim()) {
+          return '<em class="text-body-secondary">' + i18next.t("Anonymous") + "</em>";
+        }
+        // Extract just the family name (before the colon) - FamilyString includes address
+        // Guard against 0-HoH families which produce no colon in the string
+        var colonIdx = data.indexOf(":");
+        var familyName = colonIdx !== -1 ? data.substring(0, colonIdx).trim() : data.trim();
+        return familyName;
       },
     },
     {
-      width: "8%",
+      width: "10%",
       title: i18next.t("Check Number"),
       data: "CheckNo",
-      render: function (data, type, full, meta) {
-        return data ? "<code>" + data + "</code>" : '<em class="text-muted">-</em>';
-      },
+      render: (data, type, full, meta) =>
+        data ? "<code>" + data + "</code>" : '<em class="text-body-secondary">-</em>',
     },
     {
-      width: "30%",
+      width: "25%",
       title: i18next.t("Fund"),
       data: "FundName",
-      render: function (data, type, full, meta) {
+      render: (data, type, full, meta) => {
         if (!data) {
-          return '<em class="text-muted">-</em>';
+          return '<em class="text-body-secondary">-</em>';
         }
 
         // For sorting and filtering, return plain text
@@ -49,74 +41,113 @@ function initPaymentTable() {
           return data;
         }
 
-        // For display, split multiple funds and show as individual badges
+        // For display, split multiple funds and show as individual badges using Tabler style
         var funds = data.split(", ");
-        var badges = funds.map(function (fund) {
-          return '<span class="badge badge-info text-white mr-1 mb-1">' + fund.trim() + "</span>";
-        });
-        return '<div class="d-flex flex-wrap">' + badges.join("") + "</div>";
+        var badges = funds.map((fund) => '<span class="badge bg-info-lt text-info">' + fund.trim() + "</span>");
+        return '<div class="d-flex flex-wrap gap-1">' + badges.join("") + "</div>";
       },
     },
     {
       width: "12%",
       title: i18next.t("Amount"),
       data: "sumAmount",
-      render: function (data, type, full, meta) {
+      render: (data, type, full, meta) => {
         if (type === "display") {
-          return '<strong class="text-end d-block">$' + parseFloat(data || 0).toFixed(2) + "</strong>";
+          return '<strong class="text-end d-block">' + window.CRM.currency.format(data) + "</strong>";
         }
         return parseFloat(data || 0);
       },
     },
     {
-      width: "10%",
+      width: "12%",
       title: i18next.t("Method"),
       data: "Method",
-      render: function (data, type, full, meta) {
-        var badgeClass = "badge-secondary";
+      render: (data, type, full, meta) => {
+        var badgeClass = "bg-secondary-lt text-secondary";
         var icon = "";
         if (data === "CHECK") {
-          badgeClass = "badge-primary";
-          icon = '<i class="fa-solid fa-check-double"></i> ';
+          badgeClass = "bg-primary-lt text-primary";
+          icon = '<i class="ti ti-check me-1"></i>';
         } else if (data === "CASH") {
-          badgeClass = "badge-success";
-          icon = '<i class="fa-solid fa-money-bill"></i> ';
+          badgeClass = "bg-success-lt text-success";
+          icon = '<i class="ti ti-coins me-1"></i>';
         } else if (data === "CREDITCARD") {
-          badgeClass = "badge-warning";
-          icon = '<i class="fa-solid fa-credit-card"></i> ';
+          badgeClass = "bg-warning-lt text-warning";
+          icon = '<i class="ti ti-credit-card me-1"></i>';
         }
         return '<span class="badge ' + badgeClass + '">' + icon + data + "</span>";
       },
     },
-  ];
+    {
+      width: "6%",
+      title: i18next.t("Actions"),
+      orderable: false,
+      data: null,
+      render: (data, type, full, meta) => {
+        var linkBack = encodeURIComponent("/DepositSlipEditor.php?DepositSlipID=" + depositSlipID);
+        var editUrl =
+          window.CRM.root + "/finance/pledge/" + encodeURIComponent(full.GroupKey) + "/edit?linkBack=" + linkBack;
+        var detailsUrl = "PledgeDetails.php?PledgeID=" + full.Id;
+        var familyUrl = window.CRM.root + "/people/family/" + full.FamId;
 
-  if (depositType === "CreditCard") {
-    colDef.push({
-      width: "auto",
-      title: i18next.t("Details"),
-      data: "Id",
-      render: function (data, type, full, meta) {
-        return (
-          '<a class="btn btn-sm btn-info" href="PledgeDetails.php?PledgeID=' +
-          data +
-          '"><i class="fa-solid fa-circle-info"></i>Details</a>'
-        );
+        var html =
+          '<div class="dropdown">' +
+          '<button class="btn btn-sm btn-ghost-secondary" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">' +
+          '<i class="ti ti-dots-vertical"></i>' +
+          "</button>" +
+          '<div class="dropdown-menu dropdown-menu-end">' +
+          '<a class="dropdown-item" href="' +
+          editUrl +
+          '">' +
+          '<i class="ti ti-' +
+          (isDepositClosed ? "eye" : "pencil") +
+          ' me-2"></i>' +
+          (isDepositClosed ? i18next.t("View") : i18next.t("Edit")) +
+          "</a>";
+
+        if (full.FamId) {
+          html +=
+            '<a class="dropdown-item" href="' +
+            familyUrl +
+            '">' +
+            '<i class="ti ti-users me-2"></i>' +
+            i18next.t("View Family") +
+            "</a>";
+        }
+
+        if (depositType === "CreditCard") {
+          html +=
+            '<div class="dropdown-divider"></div>' +
+            '<a class="dropdown-item" href="' +
+            detailsUrl +
+            '">' +
+            '<i class="ti ti-info-circle me-2"></i>' +
+            i18next.t("Details") +
+            "</a>";
+        }
+
+        html += "</div></div>";
+        return html;
       },
-    });
-  }
+    },
+  ];
 
   var dataTableConfig = {
     ajax: {
       url: window.CRM.root + "/api/deposits/" + depositSlipID + "/payments",
       dataSrc: "",
-      error: function (xhr, error, thrown) {
+      error: (xhr, error, thrown) => {
         console.error("DataTable error:", xhr, error, thrown);
         showGlobalMessage(i18next.t("Error loading payments"), "danger");
       },
     },
     columns: colDef,
-    createdRow: function (row, data, index) {
-      $(row).addClass("paymentRow").css("cursor", "pointer");
+    createdRow: (row, data, index) => {
+      $(row).addClass("paymentRow");
+      // Only allow selection on open deposits
+      if (!isDepositClosed) {
+        $(row).css("cursor", "pointer");
+      }
     },
     initComplete: function () {
       // Update payment count badge
@@ -140,7 +171,7 @@ function initPaymentTable() {
   dataT = $("#paymentsTable").DataTable(dataTableConfig);
 
   // Add loading indicator
-  dataT.on("xhr", function () {
+  dataT.on("xhr", () => {
     // Hide loading after data loads
   });
 }
@@ -156,7 +187,7 @@ function initDepositSlipEditor() {
       method: "GET",
       dataType: "json",
     })
-      .done(function (data) {
+      .done((data) => {
         var count = Array.isArray(data) ? data.length : 0;
         if (count === 0) {
           window.CRM.notify(i18next.t("No payments on this deposit"), {
@@ -169,7 +200,7 @@ function initDepositSlipEditor() {
         // There are payments; proceed to open/download the PDF
         window.CRM.VerifyThenLoadAPIContent(window.CRM.root + "/api/deposits/" + depositId + "/pdf");
       })
-      .fail(function (jqXHR, textStatus, errorThrown) {
+      .fail((jqXHR, textStatus, errorThrown) => {
         // Fallback: show generic error and do not proceed
         var errorMsg = i18next.t("There was a problem retrieving the requested object");
         if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
@@ -269,13 +300,13 @@ function initDepositSlipEditor() {
       encode: true,
       timeout: 10000,
     })
-      .done(function (data) {
+      .done((data) => {
         showGlobalMessage(i18next.t("Deposit saved successfully"), "success");
-        setTimeout(function () {
+        setTimeout(() => {
           location.reload();
         }, 1500);
       })
-      .fail(function (jqXHR, textStatus, errorThrown) {
+      .fail((jqXHR, textStatus, errorThrown) => {
         var errorMsg = i18next.t("Error saving deposit");
         if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
           errorMsg = jqXHR.responseJSON.error;
@@ -302,6 +333,11 @@ function initDepositSlipEditor() {
   });
 
   $(document).on("click", ".paymentRow", function (event) {
+    // Don't allow selection on closed deposits
+    if (isDepositClosed) {
+      return;
+    }
+
     // Prevent selecting when clicking on buttons or links
     if (
       $(event.target).closest(".btn").length ||
@@ -332,7 +368,7 @@ function initDepositSlipEditor() {
   });
 
   // Delete selected rows
-  $("#deleteSelectedRows").on("click", function () {
+  $("#deleteSelectedRows").on("click", () => {
     var selectedRows = dataT.rows(".selected").data();
     if (selectedRows.length === 0) {
       showGlobalMessage(i18next.t("Please select rows to delete"), "warning");
@@ -362,7 +398,7 @@ function initDepositSlipEditor() {
           className: "btn-danger",
         },
       },
-      callback: function (result) {
+      callback: (result) => {
         if (result) {
           // Delete each selected payment
           var deletePromises = [];
@@ -378,11 +414,11 @@ function initDepositSlipEditor() {
 
           $.when
             .apply($, deletePromises)
-            .done(function () {
+            .done(() => {
               showGlobalMessage(i18next.t("Payments deleted successfully"), "success");
               dataT.ajax.reload();
             })
-            .fail(function () {
+            .fail(() => {
               showGlobalMessage(i18next.t("Error deleting payments"), "danger");
             });
         }
@@ -405,7 +441,7 @@ function initCharts(pledgeLabels, pledgeChartData, fundLabels, fundChartData) {
         show: false,
       },
       events: {
-        click: function (event, chartContext, opts) {
+        click: (event, chartContext, opts) => {
           if (opts.dataPointIndex !== undefined) {
             var index = opts.dataPointIndex;
             var fundName = fundLabels[index];
@@ -445,26 +481,16 @@ function initCharts(pledgeLabels, pledgeChartData, fundLabels, fundChartData) {
     // Use ApexCharts default color palette (distributed: true assigns one per bar)
     xaxis: {
       categories: fundLabels,
-      tickFormatter: function (value) {
-        return (
-          "$" +
-          parseFloat(value).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        );
+      labels: {
+        formatter: (value) => window.CRM.currency.format(value),
       },
     },
     yaxis: {
-      tickFormatter: function (value) {
-        return value;
-      },
+      tickFormatter: (value) => value,
     },
     tooltip: {
       y: {
-        formatter: function (value) {
-          return "$" + parseFloat(value).toFixed(2);
-        },
+        formatter: (value) => window.CRM.currency.format(value),
       },
     },
     states: {
@@ -489,7 +515,7 @@ function highlightChartBar(chart, index) {
 
   var originalColors = chart.w.globals.colors.slice();
 
-  var newColors = originalColors.map(function (color, i) {
+  var newColors = originalColors.map((color, i) => {
     if (i === index) {
       return color;
     }
@@ -507,7 +533,7 @@ function highlightChartBar(chart, index) {
   });
 
   // Reset colors after 3 seconds
-  setTimeout(function () {
+  setTimeout(() => {
     chart.updateOptions({
       colors: originalColors,
     });

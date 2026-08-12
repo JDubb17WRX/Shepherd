@@ -1,9 +1,10 @@
 <?php
 
 use ChurchCRM\dto\SystemURLs;
+use ChurchCRM\Utils\InputUtils;
 
 ?>
-<title>Shepherd — <?= $sPageTitle ?></title>
+<title>Shepherd — <?= InputUtils::escapeHTML($sPageTitle) ?></title>
 
 <link rel="icon" href="/images/logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">

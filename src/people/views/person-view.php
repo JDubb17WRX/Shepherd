@@ -119,7 +119,7 @@ $fam_Longitude      = (float) ($personData['fam_Longitude'] ?? 0);
                         <?php if ($sCellPhone) : ?>
                         <li class="mb-2">
                             <i class="fa-solid fa-mobile-screen me-2 text-body-secondary"></i>
-                            <a href="tel:<?= InputUtils::escapeAttribute($sCellPhoneUnformatted) ?>"><?= $sCellPhone ?></a>
+                            <a href="tel:<?= InputUtils::escapeAttribute($sCellPhoneUnformatted) ?>"><?= InputUtils::escapeHTML($sCellPhone) ?></a>
                             <a href="sms:<?= InputUtils::escapeAttribute(preg_replace('/[^\d+]/', '', $sCellPhoneUnformatted)) ?>"
                                class="ms-1 text-body-secondary" title="<?= gettext('Send text message') ?>">
                                 <i class="fa-solid fa-comment-sms"></i>
@@ -135,7 +135,7 @@ $fam_Longitude      = (float) ($personData['fam_Longitude'] ?? 0);
                         <?php if ($sHomePhone) : ?>
                         <li class="mb-2">
                             <i class="fa-solid fa-house me-2 text-body-secondary"></i>
-                            <a href="tel:<?= InputUtils::escapeAttribute($sHomePhoneUnformatted) ?>"><?= $sHomePhone ?></a>
+                            <a href="tel:<?= InputUtils::escapeAttribute($sHomePhoneUnformatted) ?>"><?= InputUtils::escapeHTML($sHomePhone) ?></a>
                             <button class="btn btn-sm btn-ghost-secondary ms-1 copy-phone-btn" type="button"
                                     data-phone="<?= InputUtils::escapeAttribute($sHomePhone) ?>"
                                     title="<?= gettext('Copy to clipboard') ?>">
@@ -147,7 +147,7 @@ $fam_Longitude      = (float) ($personData['fam_Longitude'] ?? 0);
                         <?php if ($sWorkPhone) : ?>
                         <li class="mb-2">
                             <i class="fa-solid fa-briefcase me-2 text-body-secondary"></i>
-                            <a href="tel:<?= InputUtils::escapeAttribute($sWorkPhoneUnformatted) ?>"><?= $sWorkPhone ?></a>
+                            <a href="tel:<?= InputUtils::escapeAttribute($sWorkPhoneUnformatted) ?>"><?= InputUtils::escapeHTML($sWorkPhone) ?></a>
                             <button class="btn btn-sm btn-ghost-secondary ms-1 copy-phone-btn" type="button"
                                     data-phone="<?= InputUtils::escapeAttribute($sWorkPhone) ?>"
                                     title="<?= gettext('Copy to clipboard') ?>">
@@ -168,7 +168,7 @@ $fam_Longitude      = (float) ($personData['fam_Longitude'] ?? 0);
                         <?php if (!empty($sEmail)) : ?>
                         <li class="mb-2">
                             <i class="fa-solid fa-at me-2 text-body-secondary"></i>
-                            <a href="mailto:<?= InputUtils::escapeAttribute($sUnformattedEmail) ?>" target="_blank" rel="noopener noreferrer"><?= $sEmail ?></a>
+                            <a href="mailto:<?= InputUtils::escapeAttribute($sUnformattedEmail) ?>" target="_blank" rel="noopener noreferrer"><?= InputUtils::escapeHTML($sEmail) ?></a>
                             <button class="btn btn-sm btn-ghost-secondary ms-1 copy-email-btn" type="button"
                                     data-email="<?= InputUtils::escapeAttribute($sUnformattedEmail) ?>"
                                     title="<?= gettext('Copy to clipboard') ?>">
@@ -405,7 +405,7 @@ $fam_Longitude      = (float) ($personData['fam_Longitude'] ?? 0);
                     <a href="<?= $person->getFamily()->getViewURI() ?>" class="btn btn-sm btn-ghost-primary"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i><?= gettext('View') ?></a>
                 </div>
             </div>
-            <div class="table-responsive">
+            <div style="overflow-x: clip; overflow-y: visible;">
                 <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
@@ -641,7 +641,7 @@ $fam_Longitude      = (float) ($personData['fam_Longitude'] ?? 0);
                                                     <a class="dropdown-item" href="<?= SystemURLs::getRootPath() ?>/groups/view/<?= $grp_ID ?>"><i class="fa-solid fa-eye me-2"></i><?= gettext('View Group') ?></a>
                                                     <a class="dropdown-item changeRole" data-groupid="<?= $grp_ID ?>" data-current-role-id="<?= (int)$roleId ?>"><i class="fa-solid fa-user-tag me-2"></i><?= gettext('Change Role') ?></a>
                                                     <?php if ($grp_hasSpecialProps) { ?>
-                                                        <a class="dropdown-item" href="<?= SystemURLs::getRootPath() ?>/GroupPropsEditor.php?GroupID=<?= $grp_ID ?>&PersonID=<?= $iPersonID ?>"><i class="fa-solid fa-sliders me-2"></i><?= gettext('Update Properties') ?></a>
+                                                        <a class="dropdown-item" href="<?= SystemURLs::getRootPath() ?>/groups/<?= $grp_ID ?>/members/<?= $iPersonID ?>/properties"><i class="fa-solid fa-sliders me-2"></i><?= gettext('Update Properties') ?></a>
                                                     <?php } ?>
                                                     <div class="dropdown-divider"></div>
                                                     <button class="dropdown-item text-danger groupRemove" data-groupid="<?= (int)$grp_ID ?>" data-groupname="<?= InputUtils::escapeAttribute($grp_Name) ?>"><i class="fa-solid fa-trash-can me-2"></i><?= gettext('Remove') ?></button>

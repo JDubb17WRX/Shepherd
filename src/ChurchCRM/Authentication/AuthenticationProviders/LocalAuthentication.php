@@ -585,7 +585,6 @@ class LocalAuthentication implements IAuthenticationProvider
                 $this->primaryAuthenticationTwoFactorSecret = $primaryAuthentication['twoFactorSecret'];
                 $this->primaryAuthenticationRecoveryCodes = $primaryAuthentication['recoveryCodes'];
             }
-
             if ($this->currentUser instanceof User && $this->primaryAuthenticationTwoFactorSecret !== null && $this->currentUser->isTwoFactorAuthRateLimited()) {
                 $this->clearAuthenticationState();
                 $authenticationResult->message = gettext('Invalid login or password');
@@ -673,7 +672,7 @@ class LocalAuthentication implements IAuthenticationProvider
                 } else {
                     $authenticationResult->nextStepURL = AuthenticationManager::getSessionBeginURL();
                     LoggerUtils::getAuthLogger()->warning('Rejected recovery-code completion after account lock', $logCtx);
-                }
+            }
             } else {
                 LoggerUtils::getAuthLogger()->info('Invalid 2FA code provided by partially authenticated user', $logCtx);
                 $authenticationResult->isAuthenticated = false;

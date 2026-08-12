@@ -11,6 +11,7 @@ use ChurchCRM\Emails\TestEmail;
 use ChurchCRM\model\ChurchCRM\GroupQuery;
 use ChurchCRM\model\ChurchCRM\ListOptionQuery;
 use ChurchCRM\model\ChurchCRM\PersonQuery;
+use ChurchCRM\model\ChurchCRM\User;
 use ChurchCRM\model\ChurchCRM\UserQuery;
 use ChurchCRM\Service\AppIntegrityService;
 use ChurchCRM\Service\LocaleService;
@@ -988,7 +989,8 @@ function adminUserEditorNew(Request $request, Response $response): Response
         ]),
         'isNew'        => true,
         'configRows'   => [],
-        'bEmailEnabled' => SystemConfig::isEmailEnabled(),
+        'bEmailEnabled'  => SystemConfig::isEmailEnabled(),
+        'eventsEnabled'  => User::isEventsEnabled(),
     ];
 
     if ($request->getMethod() === 'POST') {
@@ -1017,7 +1019,8 @@ function adminUserEditorNew(Request $request, Response $response): Response
             $pageArgs['perms']            = ['admin' => 0, 'editSelf' => 0, 'addRecords' => 0,
                                              'editRecords' => 0, 'deleteRecords' => 0,
                                              'menuOptions' => 0, 'manageGroups' => 0,
-                                             'finance' => 0, 'manageFundraisers' => 0, 'notes' => 0];
+                                             'finance' => 0, 'manageFundraisers' => 0, 'notes' => 0,
+                                             'addEvent' => 0];
             return $renderer->render($response, 'user-editor.php', $pageArgs);
         }
 
@@ -1068,6 +1071,7 @@ function adminUserEditorNew(Request $request, Response $response): Response
         'editRecords' => 0, 'deleteRecords' => 0,
         'menuOptions' => 0, 'manageGroups' => 0,
         'finance' => 0, 'manageFundraisers' => 0, 'notes' => 0,
+        'addEvent' => 0,
     ];
     $pageArgs['formAction'] = SystemURLs::getRootPath() . '/admin/system/users/new';
     $pageArgs['sErrorText'] = '';
@@ -1115,6 +1119,7 @@ function adminUserEditorEdit(Request $request, Response $response, array $args):
         'showPersonSelect' => false,
         'people'           => [],
         'bEmailEnabled'    => SystemConfig::isEmailEnabled(),
+        'eventsEnabled'    => User::isEventsEnabled(),
         'formAction'       => SystemURLs::getRootPath() . '/admin/system/users/' . $personId . '/edit',
         'sErrorText'       => '',
     ];
@@ -1157,6 +1162,7 @@ function adminUserEditorEdit(Request $request, Response $response, array $args):
         'finance'            => $user->getFinance(),
         'manageFundraisers'  => $user->getManageFundraisers(),
         'notes'              => $user->getNotes(),
+        'addEvent'           => $userService->getAddEventPermission($personId),
     ];
     $pageArgs['configRows'] = $userService->getUserConfigRows($personId);
 

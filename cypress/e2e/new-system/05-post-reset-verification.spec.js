@@ -60,7 +60,20 @@ describe('05 - Post-Reset Verification', () => {
                     .then((twoFactorSecret) => cy.task('setRuntimeValue', {
                         key: adminTwoFactorRuntimeKey,
                         value: twoFactorSecret,
-                    }))
+                    }).then(() => twoFactorSecret))
+                    // Enrollment intentionally rotates the authenticated session.
+                    // Cypress completes the flow faster than the enrollment page's
+                    // background requests can settle, so a response carrying the
+                    // obsolete cookie can otherwise win the cookie race. Start a
+                    // clean session with the newly enrolled factor before continuing.
+                    .then((twoFactorSecret) => {
+                        cy.clearCookies();
+                        return cy.loginWithTwoFactor(
+                            adminCredentials.username,
+                            'Cypress@01!',
+                            twoFactorSecret,
+                        );
+                    })
                     .then(() => cy.visit('/admin/system/church-info'));
             }
         });

@@ -30,14 +30,18 @@ if ($pledge === null) {
     RedirectUtils::redirect($linkBack);
 }
 
-$sSQL = 'SELECT * FROM result_res WHERE res_ID=' . (int) $pledge->getAutResultId();
-$rsResultRec = RunQuery($sSQL);
+$rsResultRec = RunPreparedQuery('SELECT * FROM result_res WHERE res_ID = ?', 'i', [(int) $pledge->getAutResultId()]);
 
 $aBreadcrumbs = PageHeader::breadcrumbs([
     [gettext('Finance'), '/finance/'],
     [gettext('Transaction Details')],
 ]);
 require_once __DIR__ . '/Include/Header.php';
+
+$pledgeDetailsAction = 'PledgeDetails.php?' . http_build_query([
+    'PledgeID' => $iPledgeID,
+    'linkBack' => $linkBack,
+]);
 
 $resArr = mysqli_fetch_array($rsResultRec);
 if ($resArr) {
@@ -49,7 +53,7 @@ if ($resArr) {
 
 <div class="card">
   <div class="card-body">
-    <form method="post" action="PledgeDetails.php?<?= 'PledgeID=' . $iPledgeID . '&linkBack=' . $linkBack ?>" name="PledgeDelete">
+    <form method="post" action="<?= htmlspecialchars($pledgeDetailsAction, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" name="PledgeDelete">
       <input type="submit" class="btn btn-secondary" value="<?= gettext('Back') ?>" name="Back">
     </form>
   </div>

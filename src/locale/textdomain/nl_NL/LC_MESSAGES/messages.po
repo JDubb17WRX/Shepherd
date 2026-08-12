@@ -195,10 +195,6 @@ msgid "Anniversary Date"
 msgstr "Trouwdatum"
 
 #: 
-msgid "Output Method:"
-msgstr "Uitvoermethode:"
-
-#: 
 msgid "CSV Individual Records"
 msgstr "Individuele CSV-records"
 
@@ -265,46 +261,14 @@ msgstr "Kenmerken"
 msgid "Add Cart to Event"
 msgstr "Voeg werkbestand toe aan activiteit"
 
-#: 
-msgid "Your cart is empty!"
-msgstr "Uw werkbestand is leeg."
-
-#: 
-msgid "No family name entered!"
-msgstr "Geen naam gezin ingevoerd!"
-
-#: 
-msgid "Add Cart to Family"
-msgstr "Voeg werkbestand toe aan gezin"
-
 #. Context: queryparameteroptions_qpo
 #: 
 msgid "Name"
 msgstr "Naam"
 
 #: 
-msgid "Assign Role"
-msgstr "Toewijzen aan Rol"
-
-#: 
 msgid "Already in a family"
 msgstr "Reeds in een gezin "
-
-#: 
-msgid "Create new family"
-msgstr "Voer nieuw gezin in"
-
-#: 
-msgid "If adding a new family, enter data below."
-msgstr "Indien nieuw gezin, voeg onderstaande gegevens toe."
-
-#: 
-msgid "Use address/contact data from"
-msgstr "Gebruik adres/contact gegevens van"
-
-#: 
-msgid "Only the new data below"
-msgstr "Onderstaand alleen de nieuwe gegevens"
 
 #: 
 msgid "Do not auto-format"
@@ -317,10 +281,6 @@ msgstr "Voeg toe aan gezin"
 #: 
 msgid "Add Cart to Group"
 msgstr "Voeg werkbestand toe aan groep"
-
-#: 
-msgid "Select the group to which you would like to add your cart"
-msgstr "Selecteer de groep welke u wilt toevoegen aan het werkbestand"
 
 #: 
 msgid "Select Group"
@@ -398,10 +358,6 @@ msgstr "Actie"
 #: 
 msgid "Member"
 msgstr "Lid"
-
-#: 
-msgid " of the"
-msgstr "van de"
 
 #: 
 msgid "(No assigned family)"
@@ -1065,10 +1021,6 @@ msgid "Bank Draft"
 msgstr "Bank Overschrijving"
 
 #: 
-msgid "Minimum Total Amount:"
-msgstr "Minimum Totaal Bedrag:"
-
-#: 
 msgid "0 - No Minimum"
 msgstr "0- Geen Minimum"
 
@@ -1093,10 +1045,6 @@ msgid "All Families"
 msgstr "Alle Gezinnen"
 
 #: 
-msgid "Report Heading:"
-msgstr "Raport Titel:"
-
-#: 
 msgid "Graphic"
 msgstr "Graphisch"
 
@@ -1107,14 +1055,6 @@ msgstr "Kerk Adres"
 #: 
 msgid "Blank"
 msgstr "Blank"
-
-#: 
-msgid "Remittance Slip:"
-msgstr "Overschrijvings Strookje:"
-
-#: 
-msgid "Sort Data by:"
-msgstr "Sorteer Data op:"
 
 #: 
 msgid "Deposit"
@@ -1141,24 +1081,8 @@ msgid "Create Report"
 msgstr "Aanmaken rapportage"
 
 #: 
-msgid "Deposit Listing"
-msgstr "Stortings Lijst"
-
-#: 
 msgid "Deposits"
 msgstr "Stortingen"
-
-#: 
-msgid "Delete Selected Rows"
-msgstr "Verwijder geselecteerde rijen."
-
-#: 
-msgid "Export Selected Rows (OFX)"
-msgstr "Exporteer geselecteerde regels (OFX)"
-
-#: 
-msgid "Export Selected Rows (CSV)"
-msgstr "Exporteer geselecteerde regels (CSV)"
 
 #: 
 msgid "Fundraiser Listing"
@@ -1167,10 +1091,6 @@ msgstr "Fundraiser Lijst"
 #: 
 msgid "Date Start"
 msgstr "Start Datum"
-
-#: 
-msgid "Apply Filters"
-msgstr "Zet Filters"
 
 #: 
 msgid "Date End"
@@ -1309,18 +1229,6 @@ msgid "Type of Group"
 msgstr "Soort groep"
 
 #: 
-msgid "Group Member Roles"
-msgstr "Groepslid rollen"
-
-#: 
-msgid "Clone roles"
-msgstr "Clone rollen"
-
-#: 
-msgid "from group"
-msgstr "van de groep"
-
-#: 
 msgid "Select a group"
 msgstr "Selecteer een groep"
 
@@ -1331,10 +1239,6 @@ msgstr "Groepsspecifieke eigenschappen"
 #: 
 msgid "Enabled"
 msgstr "Ingeschakeld"
-
-#: 
-msgid "Edit Group-Specific Properties Form"
-msgstr "Formulier - bewerk de groep specifieke eigenschappen"
 
 #: 
 msgid "Disabled"
@@ -1387,14 +1291,6 @@ msgstr "Formulier bewerken voor groepsspecifieke kenmerken"
 #: 
 msgid "No properties have been added yet"
 msgstr "Er zijn nog geen kenmerken toegevoegd"
-
-#: 
-msgid "Show in"
-msgstr "Weergegeven in: "
-
-#: 
-msgid "Person View"
-msgstr "Per persoon"
 
 #: 
 msgid "Other Email"
@@ -1485,10 +1381,6 @@ msgid "Current Role"
 msgstr "Huidige Rol"
 
 #: 
-msgid "All People"
-msgstr "Alle personen"
-
-#: 
 msgid "Email All"
 msgstr "Email allen"
 
@@ -1561,10 +1453,6 @@ msgid "Updated"
 msgstr "Bijgewerkt"
 
 #: 
-msgid "Yes, delete this record"
-msgstr "Ja, Verwijder dit record"
-
-#: 
 msgid "(this action cannot be undone)"
 msgstr "{deze actie kan niet ongedaan worden gemaakt}"
 
@@ -1603,10 +1491,6 @@ msgstr "Beheer inkopers"
 #: 
 msgid "Generate Statement"
 msgstr "Genereer Rapportage"
-
-#: 
-msgid "Buyers for this fundraiser:"
-msgstr "Kopers van deze fundraiser:"
 
 #: 
 msgid "Select all"
@@ -1729,20 +1613,8 @@ msgid "Check number not valid for 'CASH' payment"
 msgstr "Controleer nummer niet geldig voor \"CASH\" betaling"
 
 #: 
-msgid " more entries will fit."
-msgstr "Er is ruimte voor meer."
-
-#: 
-msgid "Deposit closed"
-msgstr "Betalingstermijn gesloten"
-
-#: 
 msgid "Payment Schedule"
 msgstr "Betalings Programma:"
-
-#: 
-msgid "Select Schedule"
-msgstr "Selecteer Programma"
 
 #: 
 msgid "Weekly"
@@ -1765,28 +1637,8 @@ msgid "Other"
 msgstr "Andere"
 
 #: 
-msgid "Payment by"
-msgstr "Betalings Datum"
-
-#: 
-msgid "Scan check"
-msgstr "Controleer scan"
-
-#: 
-msgid "find family from check account #"
-msgstr "Zoek familie via cheque account #"
-
-#: 
-msgid "Set default check account number for family"
-msgstr "Stel cheque account voor familie in"
-
-#: 
 msgid "Fund Name"
 msgstr "Fonds Naam"
-
-#: 
-msgid "Non-deductible amount"
-msgstr "Niet Aftrekbaar"
 
 #: 
 msgid "Age"
@@ -1862,10 +1714,6 @@ msgid "Query Listing"
 msgstr "Overzicht van queries"
 
 #: 
-msgid " record(s) returned"
-msgstr "recors(s) ontvangen"
-
-#: 
 msgid "Query View"
 msgstr "Query Overzicht"
 
@@ -1876,22 +1724,6 @@ msgstr "Deze waarde is vereist."
 #: 
 msgid "This value must be numeric."
 msgstr "Deze waarde moet numeriek zijn."
-
-#: 
-msgid "This value must be at least "
-msgstr "Deze waarde moet op zijn minst "
-
-#: 
-msgid "This value cannot be more than "
-msgstr "Deze waarde kan niet meer zijn dan "
-
-#: 
-msgid " characters long"
-msgstr " karakters lang"
-
-#: 
-msgid "This value cannot be less than "
-msgstr "Deze waarde kan niet minder zijn dan "
 
 #: 
 msgid "Run Query Again"
@@ -1926,20 +1758,12 @@ msgid "WARNING: This family has records of donations and may NOT be deleted unti
 msgstr "WAARSCHUWING: Deze familie heeft gekoppelde donaties, en mag niet worden verwijderd totdat deze gekoppeld zijn aan een andere familie."
 
 #: 
-msgid "Please select another family with whom to associate these donations:"
-msgstr "Selecteer aub een andere familie aan wie deze donaties worden gekoppeld:"
-
-#: 
 msgid "WARNING: This action can not be undone and may have legal implications!"
 msgstr "Waarschuwing: Deze actie kan niet ongedaan worden gemaakt, en zou legale consequenties kunnen hebben!"
 
 #: 
 msgid "CURRENT FAMILY WITH DONATIONS"
 msgstr "HUIDIGE FAMILIE MET DONATIES"
-
-#: 
-msgid "Please confirm deletion of this family record:"
-msgstr "Bevestig aub verwijdering van deze familie:"
 
 #: 
 msgid "Note: This will also delete all Notes associated with this Family record."
@@ -2064,10 +1888,6 @@ msgstr "Beheer vrijwilligerswerk"
 #: 
 msgid "No volunteer opportunities have been added yet"
 msgstr "Er zijn nog geen vrijwilligers mogelijkheden toegevoegd"
-
-#: 
-msgid "\"Why Came\" notes for "
-msgstr "\"Waarom Kwam\" notities for "
 
 #: 
 msgid "Why did you come to the church?"
@@ -2255,10 +2075,6 @@ msgid "Start Column"
 msgstr "Start Kolom"
 
 #: 
-msgid "Ignore Incomplete<br>Addresses"
-msgstr "Negeer Incompleet"
-
-#: 
 msgid "File Type"
 msgstr "Bestand Type"
 
@@ -2311,14 +2127,6 @@ msgid "Cell"
 msgstr "Mobiel"
 
 #: 
-msgid "Estimated value "
-msgstr "Geschatte Waarde"
-
-#: 
-msgid "Donated by "
-msgstr "Geschonken door"
-
-#: 
 msgid "Paddle"
 msgstr "Peddel"
 
@@ -2327,24 +2135,8 @@ msgid "Bid"
 msgstr "Bod"
 
 #: 
-msgid "Minimum bid "
-msgstr "Minimum bod"
-
-#: 
 msgid "All Funds"
 msgstr "Alle Fonds"
-
-#: 
-msgid " for all funds"
-msgstr " voor alle fondsen"
-
-#: 
-msgid " for fund "
-msgstr " Voor fonds "
-
-#: 
-msgid "for funds "
-msgstr "Voor fondsen"
 
 #: 
 msgid "Donated Items"
@@ -2369,10 +2161,6 @@ msgstr "Bedrag betaald: ________________"
 #: 
 msgid "Paid by (  ) Cash    (  ) Check    (  ) Credit card __ __ __ __    __ __ __ __    __ __ __ __    __ __ __ __  Exp __ / __"
 msgstr "Ten laste van () Cash () Check () Creditcard ________________________________ Belichtingstijd __ / __"
-
-#: 
-msgid "                                        Signature ________________________________________________________________"
-msgstr "Handtekening ________________________________________________________________"
 
 #: 
 msgid "Totals"
@@ -2405,10 +2193,6 @@ msgstr "Groep Adresboek"
 #: 
 msgid "Please detach this slip and mail with your next gift."
 msgstr "Maak dit strookje los, en post het tegelijkertijd met uw bijdrage."
-
-#: 
-msgid "Please mail you next gift to "
-msgstr "Mail alstublieft uw volgende gift naar"
 
 #: 
 msgid "Gift Amount"
@@ -2557,10 +2341,6 @@ msgid "Family Select"
 msgstr "Selecteer gezin"
 
 #: 
-msgid "with at least one:"
-msgstr "met ten minste één:"
-
-#: 
 msgid "Welcome to"
 msgstr "Welkom bij"
 
@@ -2665,18 +2445,6 @@ msgid "item"
 msgstr "object"
 
 #: 
-msgid "-----------------------------------------------------------------------------------------------------------------------------------------------"
-msgstr "-----------------------------------------------------------------------------------------------------------------------------------------------"
-
-#: 
-msgid "Buyer # "
-msgstr "Inkoper"
-
-#: 
-msgid "Family Members:"
-msgstr "Gezinsleden"
-
-#: 
 msgid "Anniversary"
 msgstr "Verjaardag"
 
@@ -2687,10 +2455,6 @@ msgstr "Notities"
 #: 
 msgid "Reports"
 msgstr "Rapporten"
-
-#: 
-msgid "family"
-msgstr "Gezin"
 
 #: 
 msgid "Date Entered"
@@ -2729,10 +2493,6 @@ msgid "Groups"
 msgstr "Groepen"
 
 #: 
-msgid "Total $"
-msgstr "Totaal"
-
-#: 
 msgid "with this property..."
 msgstr "Met dit kenmerk ..."
 
@@ -2767,10 +2527,6 @@ msgstr "Plaats (standaard)"
 #: 
 msgid "Default State - Must be 2-letter abbreviation!"
 msgstr "Standaard staat - Moet 2 letters afkorting zijn!"
-
-#: 
-msgid "Default account for receiving a copy of all emails"
-msgstr "Standaard rekening voor het ontvangen van een kopie van alle e-mails"
 
 #: 
 msgid "SMTP Server Address (mail.server.com:25)"
@@ -2862,10 +2618,6 @@ msgid "Database information confirmation and correction report signer"
 msgstr "Database informatie bevestiging en correctie rapport ondertekenaar"
 
 #: 
-msgid "Verbage for the pledge summary report"
-msgstr "Kopie van het leningen overzichtsrapport "
-
-#: 
 msgid "Verbage for the directory report"
 msgstr "Kopie van het adresboek rapport"
 
@@ -2929,11 +2681,6 @@ msgstr "Soorten eigenschappen"
 #: 
 msgid "Zip Code"
 msgstr "Postcode"
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Field"
-msgstr "Veld"
 
 #. Context: query_qry
 #: 
@@ -4835,10 +4582,6 @@ msgid "Special Group Settings : Sunday School Type"
 msgstr "Specifieke groep parameter: type zondagsschool "
 
 #: 
-msgid "Sunday School group can't be modified, only in this two cases :"
-msgstr "De catechisatie groep kan niet worden gewijzigd, dan alleen in deze twee gevallen. "
-
-#: 
 msgid "Add new roles, but not modify or rename the Student and the Teacher roles."
 msgstr "Voeg nieuwe rollen toe, maar wijzig of hernoem de rollen Student en Docent niet."
 
@@ -4995,10 +4738,6 @@ msgid "Group Role"
 msgstr "Rol van de groep"
 
 #: 
-msgid "OR Create a Group and add the CART in ONE ACTION"
-msgstr "OF Maak een groep aan en voeg aan werkbestand toe in ÉÉN ACTIE"
-
-#: 
 msgid "Create Group + ADD Cart"
 msgstr "Groep maken en aan het werkbestand toevoegen"
 
@@ -5075,10 +4814,6 @@ msgid "Set the encryption system to use - ssl (deprecated) or tls"
 msgstr "Stel het te gebruiken coderingssysteem in - ssl (verouderd) of tls"
 
 #: 
-msgid "Generate Deposit Slip for Selected Rows (PDF)"
-msgstr "Aanbetalingsbewijs genereren voor geselecteerde rijen (PDF)"
-
-#: 
 msgid "Add All to Cart"
 msgstr "Alles in het werkbestand zetten"
 
@@ -5142,14 +4877,6 @@ msgstr "De gebruikersnaam is niet ingevuld"
 #: 
 msgid "Self Registrations"
 msgstr "Zelf registraties"
-
-#: 
-msgid "Public Calendar"
-msgstr "Openbare agenda"
-
-#: 
-msgid "Private Calendar"
-msgstr "Persoonlijke agenda"
 
 #: 
 msgid "Username"
@@ -5380,10 +5107,6 @@ msgid "Error sending email(s)"
 msgstr "Fout bij het verzenden van e-mail(s)"
 
 #: 
-msgid "Please check logs for more information"
-msgstr "Controleer de logboeken voor meer informatie"
-
-#: 
 msgid "Unexpected Person Id"
 msgstr "Onverwachte persoon-ID"
 
@@ -5439,10 +5162,6 @@ msgstr "Geef de applicatienaam op die moet worden weergegeven in de authenticato
 #: 
 msgid "Review"
 msgstr "Recensie"
-
-#: 
-msgid "User authenticated via API Key: "
-msgstr "Gebruiker geverifieerd via API-sleutel: "
 
 #: 
 msgid "Unsuccessful API Key authentication attempt"
@@ -5757,20 +5476,12 @@ msgid "Log File Viewer"
 msgstr "Bekijk logbestand"
 
 #: 
-msgid "Filter by log level:"
-msgstr "Filter op logniveau:"
-
-#: 
 msgid "Error"
 msgstr "Fout"
 
 #: 
 msgid "Info"
 msgstr "Info"
-
-#: 
-msgid "Number of lines to display:"
-msgstr "Aantal weer te geven regels:"
 
 #: 
 msgid "Loading log file..."
@@ -5783,10 +5494,6 @@ msgstr "Gezin verwijderd uit verzamelmap"
 #: 
 msgid "Add Group"
 msgstr "Groep toevoegen"
-
-#: 
-msgid "Back to Group List"
-msgstr "Terug naar groepslijst"
 
 #: 
 msgid "Edit Group"
@@ -6022,16 +5729,8 @@ msgid "Add any additional notes about this deposit"
 msgstr "Voeg aanvullende opmerkingen over deze storting toe"
 
 #: 
-msgid "Amount exceeds maximum allowed value (999999.99)."
-msgstr "Bedrag overschrijdt de maximaal toegestane waarde (999999.99)."
-
-#: 
 msgid "Checks"
 msgstr "Controles"
-
-#: 
-msgid "Clear Filters"
-msgstr "Filters wissen"
 
 #: 
 msgid "Click a bar to filter payments"
@@ -6056,10 +5755,6 @@ msgstr "Geen contanten"
 #: 
 msgid "No Checks"
 msgstr "Geen cheques"
-
-#: 
-msgid "NonDeductible amount exceeds maximum allowed value (999999.99)."
-msgstr "Niet-aftrekbaar bedrag overschrijdt de maximaal toegestane waarde (999999.99)."
 
 #: 
 msgid "Payments"
@@ -6137,10 +5832,6 @@ msgstr "Rootpad"
 #: 
 msgid "SMTP Host"
 msgstr "SMTP-host"
-
-#: 
-msgid "Tip:"
-msgstr "Tip:"
 
 #: 
 msgid "An error occurred during demo data import"
@@ -6572,10 +6263,6 @@ msgid "Please check the backup file and try again."
 msgstr "Controleer het back-upbestand en probeer het opnieuw."
 
 #: 
-msgid "Redirecting in"
-msgstr "Doorsturen naar"
-
-#: 
 msgid "Refresh List"
 msgstr "Lijst Vernieuwen"
 
@@ -6614,10 +6301,6 @@ msgstr "Beveiligingsaanbeveling"
 #: 
 msgid "Select Backup File"
 msgstr "Selecteer Back-upbestand"
-
-#: 
-msgid "Supported formats:"
-msgstr "Ondersteunde indelingen:"
 
 #: 
 msgid "The page you tried to visit requires special permissions that your account does not currently have."
@@ -6672,14 +6355,6 @@ msgid "or click to browse"
 msgstr "of klik om te bladeren"
 
 #: 
-msgid "seconds..."
-msgstr "seconden..."
-
-#: 
-msgid " Deposit #"
-msgstr " Storting #"
-
-#: 
 msgid "%d missing classification"
 msgstr "%d ontbrekende classificatie"
 
@@ -6690,10 +6365,6 @@ msgstr "%d ontbrekend geslacht"
 #: 
 msgid "%d missing role"
 msgstr "%d ontbrekende rol"
-
-#: 
-msgid "A payment is an actual donation received. It will be added to the current deposit."
-msgstr "Een betaling is een daadwerkelijke donatie. Het wordt toegevoegd aan de huidge storting."
 
 #: 
 msgid "A pledge is a commitment to give. It is not tied to a deposit slip."
@@ -6764,20 +6435,12 @@ msgid "Close All Deposits"
 msgstr "Sluit Alle Stortingen"
 
 #: 
-msgid "Closed Deposits:"
-msgstr "Gesloten Stortingen:"
-
-#: 
 msgid "Closed vs Total"
 msgstr "Gesloten vs Totaal"
 
 #: 
 msgid "Complete these tasks to ensure accurate year-end tax reporting for your donors."
 msgstr "Voltooi deze taken om nauwkeurige belastingrapportage aan het einde van het jaar voor uw donateurs te garanderen."
-
-#: 
-msgid "Configuration:"
-msgstr "Configuratie:"
 
 #: 
 msgid "Configure Email"
@@ -6818,14 +6481,6 @@ msgstr "Aanpasbaar rapport met filteren op datum, fonds, familie en betalingsmet
 #: 
 msgid "Customize the text that appears on tax statements (sTaxReport1, sTaxReport2, etc)."
 msgstr "Pas de tekst aan die op belastingafschriften verschijnt (sTaxReport1, sTaxReport2, enz.)."
-
-#: 
-msgid "Data Quality:"
-msgstr "Gegevenskwaliteit:"
-
-#: 
-msgid "Database:"
-msgstr "Database:"
 
 #: 
 msgid "Day"
@@ -6898,10 +6553,6 @@ msgstr "Familienavigatie"
 #: 
 msgid "Feb"
 msgstr "Feb"
-
-#: 
-msgid "File Integrity:"
-msgstr "Bestandsintegriteit:"
 
 #: 
 msgid "Filtering"
@@ -7012,10 +6663,6 @@ msgid "Name & Identity"
 msgstr "Naam en Identiteit"
 
 #: 
-msgid "New Deposit Will Be Created"
-msgstr "Nieuwe Storting wordt gemaakt"
-
-#: 
 msgid "New Payment"
 msgstr "Nieuwe Betaling"
 
@@ -7050,14 +6697,6 @@ msgstr "Oct"
 #: 
 msgid "Open"
 msgstr "Open"
-
-#: 
-msgid "Open Deposits:"
-msgstr "Open Stortingen:"
-
-#: 
-msgid "Orphaned Files:"
-msgstr "Verweesde Bestanden:"
 
 #: 
 msgid "Payment"
@@ -7144,14 +6783,6 @@ msgid "State (Other)"
 msgstr "Staat (Ander)"
 
 #: 
-msgid "Summary of pledges vs payments by fund for the fiscal year."
-msgstr "Samenvatting van toezeggingen versus betalingen per fonds voor het fiscale jaar."
-
-#: 
-msgid "System Configuration:"
-msgstr "Systeemconfiguratie:"
-
-#: 
 msgid "System Health"
 msgstr "Systeemgezondheid"
 
@@ -7184,10 +6815,6 @@ msgid "Total Amount"
 msgstr "Totaalbedrag"
 
 #: 
-msgid "Total Deposits:"
-msgstr "Totale Stortingen:"
-
-#: 
 msgid "Track pledges and payment progress for campaigns and fiscal year budgeting."
 msgstr "Volg toezeggingen en betalingsvoortgang voor campagnes en budgettering van fiscale jaren."
 
@@ -7214,10 +6841,6 @@ msgstr "Controleer of kerknaam, adres en contactgegevens op belastingafschriften
 #: 
 msgid "Verify fund names and descriptions are accurate for statements."
 msgstr "Controleer of fondsnamen en beschrijvingen nauwkeurig zijn voor afschriften."
-
-#: 
-msgid "Version:"
-msgstr "Versie:"
 
 #: 
 msgid "YTD Payments"
@@ -7256,10 +6879,6 @@ msgid "open"
 msgstr "open"
 
 #: 
-msgid "(Enter state/province for countries without predefined states)"
-msgstr "(Voer staat/provincie in voor landen zonder vooraf bepaalde staten)"
-
-#: 
 msgid "Base URL configuration is invalid. Please check your Config.php file."
 msgstr "Base URL-configuratie is ongeldig. Controleer uw Config.php-bestand."
 
@@ -7280,28 +6899,8 @@ msgid "Critical Configuration Error"
 msgstr "Kritieke Configuratiefout"
 
 #: 
-msgid "Current $URL[0] value:"
-msgstr "Huiges $URL[0] waarde:"
-
-#: 
-msgid "Custom port:"
-msgstr "Aangepaste poort:"
-
-#: 
-msgid "Ends with a <strong>trailing slash</strong> (/)"
-msgstr "Eindigt met een <strong>trailing slash</strong> (/)"
-
-#: 
-msgid "Find the line:"
-msgstr "Vind de regel:"
-
-#: 
 msgid "Group Memberships"
 msgstr "Groepslidmaatschappen"
-
-#: 
-msgid "How to Fix:"
-msgstr "Hoe te herstellen:"
 
 #: 
 msgid "Join the ChurchCRM community and help us improve by sharing your information. It takes less than a minute!"
@@ -7310,10 +6909,6 @@ msgstr "Sluit u aan bij de ChurchCRM-gemeenschap en help ons verbeteren door uw 
 #: 
 msgid "Language"
 msgstr "Taal"
-
-#: 
-msgid "Local development:"
-msgstr "Lokale ontwikkeling:"
 
 #: 
 msgid "Location & Contact Information"
@@ -7334,10 +6929,6 @@ msgstr "Registreer Uw Kerk"
 #: 
 msgid "Save the file and refresh this page"
 msgstr "Sla het bestand op en vernieuw deze pagina"
-
-#: 
-msgid "Starts with <strong>http://</strong> or <strong>https://</strong>"
-msgstr "Begint met <strong>http://</strong> of <strong>https://</strong>"
 
 #: 
 msgid "System Locale Support"
@@ -7362,14 +6953,6 @@ msgstr "URL moet eindigen met een trailing slash (/)"
 #: 
 msgid "URL must start with http:// or https://"
 msgstr "URL moet beginnen met http:// of https://"
-
-#: 
-msgid "Update it to a valid URL that:"
-msgstr "Werk het bij naar een geldig URL dat:"
-
-#: 
-msgid "Valid Examples:"
-msgstr "Geldige Voorbeelden:"
 
 #: 
 msgid "View Logs"
@@ -7430,10 +7013,6 @@ msgstr "Nieuwsbrief"
 #: 
 msgid "Personal"
 msgstr "Persoonlijk"
-
-#: 
-msgid "Please confirm your family information:"
-msgstr "Bevestig alstublieft uw familiegegevens:"
 
 #: 
 msgid "Please update our records with corrections"
@@ -7626,12 +7205,6 @@ msgstr[0] "%d persoon aan winkelwagen toegevoegd."
 msgstr[1] "%d personen aan winkelwagen toegevoegd."
 
 #: 
-msgid "%d Person successfully added to selected Family."
-msgid_plural "%d People successfully added to selected Family."
-msgstr[0] "%d persoon succesvol toegevoegd aan geselecteerde familie."
-msgstr[1] "%d personen succesvol toegevoegd aan geselecteerde familie."
-
-#: 
 msgid "%d Person successfully added to selected Group."
 msgid_plural "%d People successfully added to selected Group."
 msgstr[0] "%d persoon succesvol toegevoegd aan geselecteerde groep."
@@ -7698,16 +7271,8 @@ msgid "Move up"
 msgstr "Omhoog verplaatsen"
 
 #: 
-msgid "Opportunity"
-msgstr "Mogelijkheid"
-
-#: 
 msgid "Order"
 msgstr "Volgorde"
-
-#: 
-msgid "PDFs successfully emailed to %s families."
-msgstr "PDF's succesvol per e-mail verzonden naar %s families."
 
 #: 
 msgid "Percentage"
@@ -7716,26 +7281,6 @@ msgstr "Percentage"
 #: 
 msgid "Person Properties"
 msgstr "Persoonseigenschappen"
-
-#: 
-msgid "Property Type"
-msgstr "Eigendomstype"
-
-#: 
-msgid "There are people assigned to this Volunteer Opportunity. Deletion will unassign:"
-msgstr "Er zijn personen toegewezen aan deze Vrijwilligersmogelijkheid. Verwijdering zal unassign:"
-
-#: 
-msgid "Volunteer Opportunity"
-msgstr "Vrijwilligersmogelijkheid"
-
-#: 
-msgid "Warning:"
-msgstr "Waarschuwing:"
-
-#: 
-msgid "Yes, delete this Opportunity"
-msgstr "Ja, verwijder deze Mogelijkheid"
 
 #. Context: locales
 #: 
@@ -8408,10 +7953,6 @@ msgstr "Haal uw API-sleutel op bij MailChimp: Account Settings > Extras > API Ke
 #: 
 msgid "Help"
 msgstr "Help"
-
-#: 
-msgid "Id"
-msgstr "Id"
 
 #: 
 msgid "Image shown when no Gravatar exists for the email address"
@@ -9217,10 +8758,6 @@ msgid "Account Recovery"
 msgstr "Accountherstel"
 
 #: 
-msgid "Add Family"
-msgstr "Gezin toevoegen"
-
-#: 
 msgid "Add First Family"
 msgstr "Eerste gezin toevoegen"
 
@@ -9239,10 +8776,6 @@ msgstr "Notitie toevoegen"
 #: 
 msgid "Add People to the Family"
 msgstr "Personen toevoegen aan het gezin"
-
-#: 
-msgid "Add Person"
-msgstr "Persoon toevoegen"
 
 #: 
 msgid "Add Students to Cart"
@@ -9367,14 +8900,6 @@ msgstr "Collecte-envelopnummers toewijzen en beheren"
 #: 
 msgid "Assign and manage fundraiser buyer numbers"
 msgstr "Kopersnummers voor inzamelingsacties toewijzen en beheren"
-
-#: 
-msgid "Assign cart items to a family record"
-msgstr "Winkelwagenartikelen toewijzen aan een gezinsdossier"
-
-#: 
-msgid "Assign cart items to a group"
-msgstr "Winkelwagenartikelen toewijzen aan een groep"
 
 #: 
 msgid "Assign cart items to an event"
@@ -9629,10 +9154,6 @@ msgid "Delete Person"
 msgstr "Persoon verwijderen"
 
 #: 
-msgid "Delete Pledge"
-msgstr "Toezegging verwijderen"
-
-#: 
 msgid "Deleting this property will also remove all its assignments from any People, Family, or Group records."
 msgstr "Het verwijderen van deze eigenschap verwijdert ook alle toewijzingen ervan uit persoons-, gezins- of groepsdossiers."
 
@@ -9701,10 +9222,6 @@ msgid "Edit custom properties for a group member"
 msgstr "Aangepaste eigenschappen voor een groepslid bewerken"
 
 #: 
-msgid "Email BCC"
-msgstr "E-mail BCC"
-
-#: 
 msgid "Email Families"
 msgstr "Gezinnen e-mailen"
 
@@ -9715,14 +9232,6 @@ msgstr "E-mailinstellingen"
 #: 
 msgid "Email Tools"
 msgstr "E-mailhulpmiddelen"
-
-#: 
-msgid "Email cart items"
-msgstr "Winkelwagenartikelen e-mailen"
-
-#: 
-msgid "Email with hidden recipients"
-msgstr "E-mail met verborgen ontvangers"
 
 #: 
 msgid "Empty"
@@ -9807,10 +9316,6 @@ msgstr "BJ %s"
 #: 
 msgid "Families share an address and phone number."
 msgstr "Gezinnen delen een adres en telefoonnummer."
-
-#: 
-msgid "Family List"
-msgstr "Gezinslijst"
 
 #: 
 msgid "Family Pledge Summary"
@@ -9937,10 +9442,6 @@ msgid "Import contacts from your MailChimp audiences"
 msgstr "Contacten importeren uit uw MailChimp-doelgroepen"
 
 #: 
-msgid "Import failed: "
-msgstr "Import mislukt: "
-
-#: 
 msgid "Import from CSV"
 msgstr "Importeren vanuit CSV"
 
@@ -9985,10 +9486,6 @@ msgid "Invite Your Team"
 msgstr "Uw team uitnodigen"
 
 #: 
-msgid "Jump to any setup step:"
-msgstr "Spring naar een installatiestap:"
-
-#: 
 msgid "Key People"
 msgstr "Sleutelpersonen"
 
@@ -10015,10 +9512,6 @@ msgstr "Brieven & adresetiketten"
 #: 
 msgid "Letters and Labels"
 msgstr "Brieven en etiketten"
-
-#: 
-msgid "List families created via self registration"
-msgstr "Gezinnen weergeven die via zelfregistratie zijn aangemaakt"
 
 #: 
 msgid "Load demo data"
@@ -10129,10 +9622,6 @@ msgid "Minimum"
 msgstr "Minimum"
 
 #: 
-msgid "Modify family roles for group members"
-msgstr "Gezinsrollen voor groepsleden wijzigen"
-
-#: 
 msgid "Move to Group"
 msgstr "Naar groep verplaatsen"
 
@@ -10159,10 +9648,6 @@ msgstr "Nieuw"
 #: 
 msgid "New Family"
 msgstr "Nieuw gezin"
-
-#: 
-msgid "New Group"
-msgstr "Nieuwe groep"
 
 #: 
 msgid "New Person"
@@ -10279,10 +9764,6 @@ msgid "Past & next 7 days"
 msgstr "Afgelopen & komende 7 dagen"
 
 #: 
-msgid "People List"
-msgstr "Personenlijst"
-
-#: 
 msgid "People by Classification"
 msgstr "Personen per classificatie"
 
@@ -10341,10 +9822,6 @@ msgstr "Eigenschapstoewijzing niet gevonden."
 #: 
 msgid "Property deleted successfully."
 msgstr "Eigenschap succesvol verwijderd."
-
-#: 
-msgid "Property not found."
-msgstr "Eigenschap niet gevonden."
 
 #: 
 msgid "Quick Tips"
@@ -10439,10 +9916,6 @@ msgid "Search across people, families, groups, addresses, and more."
 msgstr "Zoeken in personen, gezinnen, groepen, adressen en meer."
 
 #: 
-msgid "Search and view deposit slip records"
-msgstr "Stortingsbondossiers zoeken en bekijken"
-
-#: 
 msgid "Search people, families, groups…"
 msgstr "Personen, gezinnen, groepen zoeken…"
 
@@ -10465,10 +9938,6 @@ msgstr "Selecteer een back-upbestand en klik op Database herstellen."
 #: 
 msgid "Select your options above and click a backup button."
 msgstr "Selecteer uw opties hierboven en klik op een back-upknop."
-
-#: 
-msgid "Self Registration Report"
-msgstr "Zelfregistratierapport"
 
 #: 
 msgid "Send email to families"
@@ -10815,14 +10284,6 @@ msgid "properties"
 msgstr "eigenschappen"
 
 #: 
-msgid "— Select a group —"
-msgstr "— Selecteer een groep —"
-
-#: 
-msgid "— Select type (optional) —"
-msgstr "— Selecteer type (optioneel) —"
-
-#: 
 msgid "Add Event"
 msgstr "Evenement toevoegen"
 
@@ -11039,11 +10500,6 @@ msgstr "Adres standaardinstellingen"
 msgid "Allow user to add new event"
 msgstr "Sta gebruiker toe om een nieuw evenement toe te voegen"
 
-#. Context: queryparameters_qrp
-#: 
-msgid "Beginning Date"
-msgstr "Begindatum"
-
 #: 
 msgid "Calendar Settings"
 msgstr "Kalenderinstellingen"
@@ -11112,11 +10568,6 @@ msgstr "Kopiëren naar klembord"
 msgid "Custom field"
 msgstr "Aangepast veld"
 
-#. Context: query_qry
-#: 
-msgid "CustomSearch"
-msgstr "Aangepast zoeken"
-
 #: 
 msgid "Default Country"
 msgstr "Standaardland"
@@ -11124,11 +10575,6 @@ msgstr "Standaardland"
 #: 
 msgid "Default State"
 msgstr "Standaardstaat"
-
-#. Context: userconfig_ucfg
-#: 
-msgid "Delimiter to separate emails in mailto: links"
-msgstr "Scheidingsteken om e-mails in mailto: koppelingen te scheiden"
 
 #: 
 msgid "Distance Unit"
@@ -11141,10 +10587,6 @@ msgstr "E-maildashboard"
 #: 
 msgid "Email Integrations"
 msgstr "E-mailintegraties"
-
-#: 
-msgid "Email functionality is currently disabled. The following features will not work until email is enabled:"
-msgstr "E-mailfunctionaliteit is momenteel uitgeschakeld. De volgende functies werken niet totdat e-mail is ingeschakeld:"
 
 #: 
 msgid "Email is Disabled"
@@ -11161,16 +10603,6 @@ msgstr "E-maillijsten zijn gesynchroniseerd met Mailchimp."
 #: 
 msgid "Enable email in the settings panel below, then configure your SMTP server."
 msgstr "Schakel e-mail in het onderstaande instellingenpaneel in en configureer uw SMTP-server."
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Ending Date"
-msgstr "Einddatum"
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Enter any part of the following: Name, City, State, Zip, Home Phone, Email, or Work Email."
-msgstr "Voer een deel van het volgende in: Naam, Stad, Staat, Postcode, Telefoonnummer thuis, E-mail of Werkmail."
 
 #: 
 msgid "External Calendar API Disabled"
@@ -11197,11 +10629,6 @@ msgstr "Veldwaarde"
 #: 
 msgid "Find people who pledged one year but not another"
 msgstr "Zoek mensen die het ene jaar hebben beloofd maar niet het andere"
-
-#. Context: query_qry
-#: 
-msgid "Find people with a custom field value"
-msgstr "Zoek mensen met een aangepaste veldwaarde"
 
 #. Context: query_qry
 #: 
@@ -11265,11 +10692,6 @@ msgstr "Aangepast veld matchen met deze waarde"
 
 #. Context: queryparameters_qrp
 #: 
-msgid "Maximum Age"
-msgstr "Maximale leeftijd"
-
-#. Context: queryparameters_qrp
-#: 
 msgid "Member, Regular Attender, etc."
 msgstr "Lid, regelmatige deelnemer, enz."
 
@@ -11282,11 +10704,6 @@ msgstr "Leden die zich in een bepaalde maand hebben aangemeld"
 #: 
 msgid "Membership anniversaries"
 msgstr "Jubileumverjaardagen van lidmaatschap"
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Minimum Age"
-msgstr "Minimale leeftijd"
 
 #. Context: query_qry
 #: 
@@ -11360,16 +10777,6 @@ msgstr "Personeelseigenschap gebruikt om leden uit te sluiten van SMS/tekstlijst
 msgid "Person property used to exclude members from email lists"
 msgstr "Personeelseigenschap gebruikt om leden uit te sluiten van e-maillijsten"
 
-#. Context: queryparameters_qrp
-#: 
-msgid "Please enter the last date to calculate total contributions for each member (i.e. YYYY-MM-DD)."
-msgstr "Voer de laatste datum in om totale bijdragen voor elk lid te berekenen (bijv. JJJJ-MM-DD)."
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Please select the beginning date to calculate total contributions for each member (i.e. YYYY-MM-DD). NOTE: You can only choose dates that contain donations."
-msgstr "Selecteer de begindatum om totale bijdragen voor elk lid te berekenen (bijv. JJJJ-MM-DD). OPMERKING: u kunt alleen datums selecteren die donaties bevatten."
-
 #. Context: query_qry
 #: 
 msgid "Pledge comparison"
@@ -11418,11 +10825,6 @@ msgstr "SMTP niet geconfigureerd"
 
 #. Context: queryparameters_qrp
 #: 
-msgid "Search"
-msgstr "Zoeken"
-
-#. Context: queryparameters_qrp
-#: 
 msgid "Second Fiscal Year"
 msgstr "Tweede fiscaal jaar"
 
@@ -11435,16 +10837,6 @@ msgstr "Tweede fiscaal jaar ter vergelijking"
 #: 
 msgid "Second volunteer opportunity choice"
 msgstr "Tweede keuze vrijwilligersopportuniteit"
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Select field to search for."
-msgstr "Selecteer veld om in te zoeken."
-
-#. Context: queryparameters_qrp
-#: 
-msgid "Select the desired family role."
-msgstr "Selecteer de gewenste familierol."
 
 #: 
 msgid "Send text message"
@@ -11485,38 +10877,13 @@ msgstr "De verjaardagsmaand waarvoor u records wilt hebben geretourneerd."
 
 #. Context: queryparameters_qrp
 #: 
-msgid "The desired gender to search the database for."
-msgstr "Het gewenste geslacht om in de database naar te zoeken."
-
-#. Context: queryparameters_qrp
-#: 
-msgid "The gender for which you would like records returned."
-msgstr "Het geslacht waarvoor u records wilt hebben geretourneerd."
-
-#. Context: queryparameters_qrp
-#: 
-msgid "The maximum age for which you want records returned."
-msgstr "De maximale leeftijd waarvoor u records wilt hebben geretourneerd."
-
-#. Context: queryparameters_qrp
-#: 
 msgid "The membership anniversary month for which you would like records returned."
 msgstr "De jubileummaand van het lidmaatschap waarvoor u records wilt hebben geretourneerd."
 
 #. Context: queryparameters_qrp
 #: 
-msgid "The minimum age for which you want records returned."
-msgstr "De minimale leeftijd waarvoor u records wilt hebben geretourneerd."
-
-#. Context: queryparameters_qrp
-#: 
 msgid "The property for which you would like person records returned."
 msgstr "De eigenschap waarvoor u personeelsrecords wilt hebben geretourneerd."
-
-#. Context: queryparameters_qrp
-#: 
-msgid "The sunday school class for which you would like records returned."
-msgstr "De zondagsschoolklas waarvoor u records wilt hebben geretourneerd."
 
 #: 
 msgid "These values are pre-filled when creating new families. Leave blank to require manual entry."
@@ -11552,11 +10919,6 @@ msgstr "Vonage SMS niet geconfigureerd"
 #: 
 msgid "Without Vonage, text actions will open your device's native SMS app or copy phone numbers to clipboard."
 msgstr "Zonder Vonage openen tekstacties uw native SMS-app of kopiëren telefoonnummers naar het klembord."
-
-#. Context: queryparameteroptions_qpo
-#: 
-msgid "WorkEmail"
-msgstr "Werk-e-mail"
 
 #. Context: queryparameters_qrp
 #: 
@@ -11720,10 +11082,6 @@ msgstr "Automatische TLS"
 msgid "Auto-Backup"
 msgstr "Automatische back-up"
 
-#: 
-msgid "BCC All Mail To"
-msgstr "BCC Alle E-mail Naar"
-
 #. plugin:external-backup:section:4:content
 #: 
 msgid "Before relying on external backups, test your connection:\n"
@@ -11882,10 +11240,6 @@ msgstr "Functies"
 #: 
 msgid "Finance permission query IDs"
 msgstr "Query-ID's voor financiële machtigingen"
-
-#: 
-msgid "Find family"
-msgstr "Gezin zoeken"
 
 #. plugin:openlp:section:3:title
 #: 
@@ -12537,14 +11891,6 @@ msgid "Changes will not take effect until next logon."
 msgstr "Wijzigingen worden pas van kracht bij de volgende aanmelding."
 
 #: 
-msgid "Choose between light and dark color scheme"
-msgstr "Kies tussen licht en donker kleurenschema"
-
-#: 
-msgid "ChurchCRM translations are managed by the community on POEditor. You can help by:"
-msgstr "ChurchCRM-vertalingen worden beheerd door de community op POEditor. U kunt helpen door:"
-
-#: 
 msgid "Customize the look and feel of the application"
 msgstr "Pas het uiterlijk van de applicatie aan"
 
@@ -12588,10 +11934,6 @@ msgstr "Help vertalingen te verbeteren"
 #: 
 msgid "If you notice garbled characters, HTML entities appearing as text, or translations that break page layout, please report the issue on GitHub so it can be fixed for everyone."
 msgstr "Als u verminkte tekens, HTML-entiteiten als tekst of vertalingen die de pagina-indeling verstoren opmerkt, meld het probleem dan op GitHub zodat het voor iedereen kan worden opgelost."
-
-#: 
-msgid "Include your API key in requests using the x-api-key header:"
-msgstr "Neem uw API-sleutel op in verzoeken via de x-api-key header:"
 
 #: 
 msgid "Indigo"
@@ -13025,10 +12367,6 @@ msgid "Everyone is checked in!"
 msgstr "Iedereen is ingecheckt!"
 
 #: 
-msgid "Fastest workflow:"
-msgstr "Snelste werkwijze:"
-
-#: 
 msgid "Find past events that are still active or have un-checked-out attendees"
 msgstr "Zoek oude evenementen die nog actief zijn of deelnemers hebben die niet zijn uitgecheckt"
 
@@ -13143,10 +12481,6 @@ msgstr "RangeEnd moet op of na RangeStart liggen"
 #: 
 msgid "Recommended"
 msgstr "Aanbevolen"
-
-#: 
-msgid "Resetting will permanently delete:"
-msgstr "Resetten zal permanent verwijderen:"
 
 #: 
 msgid "SQL Only"
@@ -13311,10 +12645,6 @@ msgstr "Zowel breedtegraad als lengtegraad moeten samen worden opgegeven (of bei
 #: 
 msgid "Church information saved, but the address could not be auto-located. Please enter the latitude and longitude manually under Map Coordinates."
 msgstr "Kerkgegevens opgeslagen, maar het adres kon niet automatisch worden gevonden. Voer de breedtegraad en lengtegraad handmatig in onder Kaartcoördinaten."
-
-#: 
-msgid "Coordinates are auto-detected from your address on save (via OpenStreetMap). You can also enter them manually below — manual values always take precedence over auto-detection. Leave both blank to let the system geocode from the address."
-msgstr "Coördinaten worden automatisch gedetecteerd uit uw adres bij opslaan (via OpenStreetMap). U kunt ze ook handmatig invoeren hieronder — handmatige waarden hebben altijd voorrang boven automatische detectie. Laat beide leeg om het systeem te laten geocoderen op basis van het adres."
 
 #: 
 msgid "Latitude must be a number between -90 and 90."
@@ -13645,10 +12975,6 @@ msgid "Church Email address is not set — the test email has nowhere to go."
 msgstr "Het e-mailadres van de kerk is niet ingesteld — de test-e-mail heeft geen bestemming."
 
 #: 
-msgid "Church email — configured on the"
-msgstr "Kerk-e-mail — geconfigureerd op de"
-
-#: 
 msgid "ChurchCRM Test Email"
 msgstr "ChurchCRM Test-e-mail"
 
@@ -13755,10 +13081,6 @@ msgstr "Geheugen"
 #: 
 msgid "Memory Limit"
 msgstr "Geheugenlimiet"
-
-#: 
-msgid "Now check the recipient inbox to confirm delivery. Look for the subject:"
-msgstr "Controleer nu het postvak van de ontvanger om de bezorging te bevestigen. Zoek naar het onderwerp:"
 
 #: 
 msgid "OPcache is not enabled. Enabling it is a low-risk way to speed up PHP page loads."
@@ -13879,14 +13201,6 @@ msgstr "Instellingen bijwerken"
 #: 
 msgid "View full photo"
 msgstr "Volledige foto bekijken"
-
-#: 
-msgid "page."
-msgstr "pagina."
-
-#: 
-msgid "user:"
-msgstr "gebruiker:"
 
 #: 
 msgid "1. Download the template"
@@ -14020,10 +13334,6 @@ msgstr "Upload een CSV om gezinnen en personen in bulk aan te maken."
 msgid "Your CSV has duplicate column names. Rename the duplicate columns (e.g. add \"(2)\" to the second one) and upload again."
 msgstr "Uw CSV heeft dubbele kolomnamen. Hernoem de dubbele kolommen (bijv. voeg \"(2)\" toe aan de tweede) en upload opnieuw."
 
-#: 
-msgid "Invalid security token. Please try again."
-msgstr "Ongeldig beveiligingstoken. Probeer het opnieuw."
-
 #. plugin:holidays:summary
 #: 
 msgid "Adds public holidays to the main calendar. Each selected country becomes its own toggleable calendar in the sidebar, so users can show or hide holidays independently."
@@ -14057,10 +13367,6 @@ msgid "Holidays are tagged by type: Official, Observances, Bank Holidays, Season
 msgstr "Feestdagen zijn getagd op type: Officieel, Herdenkingen, Bankfeestdagen, Seizoensgebonden en Religieus. Laat alle categorieën uitgeschakeld om alle feestdagen te tonen, of kies specifieke typen om de weergave te beperken."
 
 #: 
-msgid "Missing pledge identifier."
-msgstr "Ontbrekende identifier voor financiële toezegging."
-
-#: 
 msgid "No country is selected. Choose at least one country in the Holiday Calendars plugin settings."
 msgstr "Er is geen land geselecteerd. Kies ten minste één land in de instellingen van de Feestdagenkalenders plugin."
 
@@ -14084,10 +13390,6 @@ msgstr "Landen instellen"
 #: 
 msgid "Show all"
 msgstr "Alles tonen"
-
-#: 
-msgid "Show:"
-msgstr "Tonen:"
 
 #. plugin:holidays:section:2:title
 #: 
@@ -14269,10 +13571,6 @@ msgid "Plugin uninstalled"
 msgstr "Plugin verwijderd"
 
 #: 
-msgid "Plugin uninstalled."
-msgstr "Plugin verwijderd."
-
-#: 
 msgid "Plugin zip URL (HTTPS only)"
 msgstr "Plugin zip-URL (alleen HTTPS)"
 
@@ -14333,10 +13631,6 @@ msgid "Verified"
 msgstr "Geverifieerd"
 
 #: 
-msgid "What this plugin does:"
-msgstr "Wat deze plugin doet:"
-
-#: 
 msgid "downloadUrl, sha256, and pluginId are all required for unverified installs."
 msgstr "downloadUrl, sha256 en pluginId zijn allemaal vereist voor niet-geverifieerde installaties."
 
@@ -14351,10 +13645,6 @@ msgstr "Naam mag niet leeg zijn"
 #: 
 msgid "Name cannot be longer than %d characters"
 msgstr "Naam mag niet langer zijn dan %d tekens"
-
-#: 
-msgid "Opens a 2-minute window for devices to register at:"
-msgstr "Opent een venster van 2 minuten voor apparaten om te registreren op:"
 
 #: 
 msgid "Are you sure you want to delete this note?"
@@ -14613,10 +13903,6 @@ msgid "Are you sure you want to continue?"
 msgstr "Weet je zeker dat je wilt doorgaan?"
 
 #: 
-msgid "Are you sure you want to delete this deposit?"
-msgstr "Weet u zeker dat u deze storting wilt verwijderen?"
-
-#: 
 msgid "Are you sure you want to delete this event type? This cannot be undone."
 msgstr "Weet u zeker dat u dit type evenement wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
 
@@ -14647,10 +13933,6 @@ msgstr "Aanwezigheidsregistratie verwijderd."
 #: 
 msgid "Available after the event is saved."
 msgstr "Beschikbaar nadat het evenement is opgeslagen."
-
-#: 
-msgid "BCC All"
-msgstr "BCC aan allen"
 
 #: 
 msgid "Background Color"
@@ -14757,10 +14039,6 @@ msgid "Code is invalid"
 msgstr "Code is ongeldig"
 
 #: 
-msgid "Coming soon"
-msgstr "Binnenkort beschikbaar"
-
-#: 
 msgid "Confirm Activation"
 msgstr "Activering bevestigen"
 
@@ -14789,10 +14067,6 @@ msgid "Confirm with a code from your authenticator app"
 msgstr "Bevestigen met een code van uw authenticator-app"
 
 #: 
-msgid "Copied"
-msgstr "Gekopieerd"
-
-#: 
 msgid "Copied to clipboard"
 msgstr "Gekopieerd naar klembord"
 
@@ -14803,10 +14077,6 @@ msgstr "Gekopieerd!"
 #: 
 msgid "Copy"
 msgstr "Kopiëren"
-
-#: 
-msgid "Copy All Emails"
-msgstr "Alle e-mails kopiëren"
 
 #: 
 msgid "Copy All Numbers"
@@ -14883,10 +14153,6 @@ msgstr "Demogegevens worden normaal gesproken alleen bij nieuwe installaties gel
 #: 
 msgid "Deposit ID"
 msgstr "Betaling ID"
-
-#: 
-msgid "Deposit Total"
-msgstr "Betaling totaal"
 
 #: 
 msgid "Deposit Value"
@@ -16048,10 +15314,6 @@ msgid "event(s). Deactivate the type instead, or reassign the events first."
 msgstr "evenement(en). Deactiveer het type of wijs de evenementen eerst opnieuw toe."
 
 #: 
-msgid "from this class?"
-msgstr "uit deze klas?"
-
-#: 
 msgid "from this group?"
 msgstr "uit deze groep?"
 
@@ -16130,18 +15392,6 @@ msgstr "jr."
 #: 
 msgid "yrs"
 msgstr "jr."
-
-#: 
-msgid "— Ignore —"
-msgstr "— Negeren —"
-
-#: 
-msgid "— Select Country —"
-msgstr "— Selecteer land —"
-
-#: 
-msgid "— Select State —"
-msgstr "— Selecteer provincie —"
 
 #: 
 msgid "Account options"
@@ -16355,10 +15605,6 @@ msgid "These fields use formatting codes (letters that stand for parts of a date
 msgstr "Deze velden gebruiken opmaakcodes (letters die staan voor delen van een datum). Kies een voorinstelling onder elk veld of bouw uw eigen met behulp van de referentie. De live-preview toont exact hoe het eruit ziet. Laat leeg om de systeemstandaard te gebruiken."
 
 #: 
-msgid "This is how dates and phone numbers will appear throughout the system."
-msgstr "Zo worden datums en telefoonnummers in het hele systeem weergegeven."
-
-#: 
 msgid "Translation completeness"
 msgstr "Vertaalvolledigheid"
 
@@ -16454,10 +15700,6 @@ msgstr "Aangepaste machtigingen"
 #: 
 msgid "Full access — grants all privileges."
 msgstr "Volledige toegang — verleent alle bevoegdheden."
-
-#: 
-msgid "Grant individual permissions:"
-msgstr "Individuele machtigingen verlenen:"
 
 #: 
 msgid "If you need additional access, please contact your church administrator."
@@ -16684,10 +15926,6 @@ msgid "What's New in {{version}}"
 msgstr "Wat is er nieuw in {{version}}"
 
 #: 
-msgid "You are <strong>{{releaseCount}}</strong> releases behind. Here's what you'll gain:"
-msgstr "U loopt <strong>{{releaseCount}}</strong> versies achter. Dit zijn de verbeteringen:"
-
-#: 
 msgid "You are running a pre-release version."
 msgstr "U gebruikt een voorlopige versie."
 
@@ -16776,10 +16014,1666 @@ msgid "User must be an Admin or have Manage Fundraisers permission"
 msgstr "De gebruiker moet beheerder zijn of de machtiging 'Fondsenwerving beheren' hebben"
 
 #: 
-msgid "User not found."
-msgstr "Gebruiker niet gevonden."
+msgid "%d archived fundraiser"
+msgid_plural "%d archived fundraisers"
+msgstr[0] "%d gearchiveerde inzamelingsactie"
+msgstr[1] "%d gearchiveerde inzamelingsacties"
 
 #: 
-msgid "— Select a person —"
-msgstr "— Selecteer een persoon —"
+msgid "%d person successfully added to selected family."
+msgid_plural "%d people successfully added to selected family."
+msgstr[0] "%d persoon succesvol toegevoegd aan de geselecteerde familie."
+msgstr[1] "%d personen succesvol toegevoegd aan de geselecteerde familie."
+
+#: 
+msgid "%s Fundraisers"
+msgstr "%s Inzamelingsacties"
+
+#: 
+msgid "%s of %s goal raised"
+msgstr "%s van %s doel opgehaald"
+
+#: 
+msgid "Active Fundraisers"
+msgstr "Actieve inzamelingsacties"
+
+#: 
+msgid "Add Fundraiser"
+msgstr "Inzamelingsactie toevoegen"
+
+#: 
+msgid "Add Item"
+msgstr "Item toevoegen"
+
+#: 
+msgid "Add people to your cart before assigning them to a family."
+msgstr "Voeg mensen toe aan uw selectie voordat u ze aan een familie toewijst."
+
+#: 
+msgid "Add people to your cart first, then come back to add them to a group."
+msgstr "Voeg eerst mensen toe aan uw selectie en kom dan terug om ze aan een groep toe te voegen."
+
+#: 
+msgid "After amount (100.00 ¤)"
+msgstr "Na bedrag (100,00 ¤)"
+
+#: 
+msgid "All Statuses"
+msgstr "Alle statussen"
+
+#: 
+msgid "All people in your cart are already in a family. No one can be assigned."
+msgstr "Alle mensen in uw selectie zijn al in een familie. Niemand kan worden toegewezen."
+
+#: 
+msgid "All types"
+msgstr "Alle typen"
+
+#: 
+msgid "Already in"
+msgstr "Al in"
+
+#: 
+msgid "An unexpected error occurred. Please try again."
+msgstr "Er is een onverwachte fout opgetreden. Probeer het opnieuw."
+
+#: 
+msgid "Apply"
+msgstr "Toepassen"
+
+#: 
+msgid "Assign cart members to a group"
+msgstr "Selectieleden aan een groep toewijzen"
+
+#: 
+msgid "Assign people from your cart to a family"
+msgstr "Personen uit uw selectie aan een familie toewijzen"
+
+#: 
+msgid "Assign to Family"
+msgstr "Toewijzen aan familie"
+
+#: 
+msgid "Associated Fund"
+msgstr "Gekoppeld fonds"
+
+#: 
+msgid "At a Glance"
+msgstr "In één oogopslag"
+
+#: 
+msgid "Auction Reports"
+msgstr "Veilingrapporten"
+
+#: 
+msgid "Avg Sale Price"
+msgstr "Gemiddelde verkoopprijs"
+
+#: 
+msgid "Back to Cart"
+msgstr "Terug naar selectie"
+
+#: 
+msgid "Back to Fundraisers"
+msgstr "Terug naar inzamelingsacties"
+
+#: 
+msgid "Before amount (¤ 100.00)"
+msgstr "Voor bedrag (¤ 100,00)"
+
+#: 
+msgid "Best Streak"
+msgstr "Beste reeks"
+
+#: 
+msgid "Bid Sheets"
+msgstr "Biedformulieren"
+
+#: 
+msgid "Buyer Statements"
+msgstr "Kopersoverzichten"
+
+#: 
+msgid "Buyers Registered"
+msgstr "Kopers geregistreerd"
+
+#: 
+msgid "Buyers This Year"
+msgstr "Kopers dit jaar"
+
+#: 
+msgid "Catalog"
+msgstr "Catalogus"
+
+#: 
+msgid "Certificates"
+msgstr "Certificaten"
+
+#: 
+msgid "Character used as the decimal point in monetary amounts (e.g. . or ,)"
+msgstr "Teken als decimaalteken in geldbedragen (bijv. . of ,)"
+
+#: 
+msgid "Character used to separate thousands in monetary amounts (e.g. , or .)"
+msgstr "Teken als duizendtalscheidingsteken in geldbedragen (bijv. , of .)"
+
+#: 
+msgid "Check-out"
+msgstr "Afrekenen"
+
+#: 
+msgid "Choose a group..."
+msgstr "Kies een groep..."
+
+#: 
+msgid "Choose family"
+msgstr "Kies familie"
+
+#: 
+msgid "Configure how monetary amounts are displayed throughout the system. As finance pages are updated to use these settings (epic #8459), the symbol, position, and separators configured here will apply system-wide."
+msgstr "Stel in hoe geldbedragen in het systeem worden weergegeven. Naarmate financiële pagina's worden bijgewerkt om deze instellingen te gebruiken (epic #8459), zijn het symbool, de positie en de scheidingstekens die hier zijn ingesteld systeembreed van toepassing."
+
+#: 
+msgid "Create Fundraiser"
+msgstr "Inzamelingsactie aanmaken"
+
+#: 
+msgid "Create new family…"
+msgstr "Nieuwe familie aanmaken…"
+
+#: 
+msgid "Currency & Finance Formats"
+msgstr "Valuta- en financiële indelingen"
+
+#: 
+msgid "Currency Format"
+msgstr "Valuta-indeling"
+
+#: 
+msgid "Currency Symbol"
+msgstr "Valutasymbool"
+
+#: 
+msgid "Currency presets"
+msgstr "Valutavoorinstellingen"
+
+#: 
+msgid "Currency symbol to display next to monetary amounts (e.g. $, €, £, CHF, CAD $)."
+msgstr "Valutasymbool naast geldbedragen (bijv. $, €, £, CHF, CAD $)."
+
+#: 
+msgid "Decimal Separator"
+msgstr "Decimaalteken"
+
+#: 
+msgid "Did Not Attend"
+msgstr "Niet aanwezig"
+
+#: 
+msgid "End date must be on or after the start date"
+msgstr "Einddatum moet op of na de startdatum liggen"
+
+#: 
+msgid "Enter state/province for countries without predefined states"
+msgstr "Voer staat/provincie in voor landen zonder vooraf gedefinieerde staten"
+
+#: 
+msgid "Est. Value Total"
+msgstr "Geschatte totaalwaarde"
+
+#: 
+msgid "Everyone from linked groups checked in!"
+msgstr "Iedereen van gekoppelde groepen heeft ingecheckt!"
+
+#: 
+msgid "Failed to load attendance history."
+msgstr "Aanwezigheidsgeschiedenis kon niet worden geladen."
+
+#: 
+msgid "Family name is required when creating a new family."
+msgstr "Familienaam is vereist bij het aanmaken van een nieuwe familie."
+
+#: 
+msgid "Filter by event type"
+msgstr "Filteren op activiteitstype"
+
+#: 
+msgid "Financials"
+msgstr "Financiën"
+
+#: 
+msgid "From date"
+msgstr "Vanaf datum"
+
+#: 
+msgid "Fundraiser Overview"
+msgstr "Overzicht inzamelingsacties"
+
+#: 
+msgid "Fundraisers"
+msgstr "Inzamelingsacties"
+
+#: 
+msgid "Fundraising"
+msgstr "Fondsenwerving"
+
+#: 
+msgid "Goal %"
+msgstr "Doel %"
+
+#: 
+msgid "Goal Amount"
+msgstr "Doelbedrag"
+
+#: 
+msgid "Highest Sale"
+msgstr "Hoogste verkoop"
+
+#: 
+msgid "Invalid status value"
+msgstr "Ongeldige statuswaarde"
+
+#: 
+msgid "Invalid type value"
+msgstr "Ongeldige typewaarde"
+
+#: 
+msgid "Items Donated"
+msgstr "Gedoneerde items"
+
+#: 
+msgid "Items Donated (This Year)"
+msgstr "Gedoneerde items (dit jaar)"
+
+#: 
+msgid "Items Sold"
+msgstr "Verkochte items"
+
+#: 
+msgid "Last Attendance"
+msgstr "Laatste aanwezigheid"
+
+#: 
+msgid "Linked Donation Fund"
+msgstr "Gekoppeld donatiesfonds"
+
+#: 
+msgid "Live Preview"
+msgstr "Live voorbeeld"
+
+#: 
+msgid "Loading attendance history…"
+msgstr "Aanwezigheidsgeschiedenis laden…"
+
+#: 
+msgid "Multibuy Items"
+msgstr "Items met meervoudige aankoop"
+
+#: 
+msgid "New family details"
+msgstr "Gegevens nieuwe familie"
+
+#: 
+msgid "No %s fundraisers found."
+msgstr "Geen %s inzamelingsacties gevonden."
+
+#: 
+msgid "No active fundraisers found."
+msgstr "Geen actieve inzamelingsacties gevonden."
+
+#: 
+msgid "No attendance records found."
+msgstr "Geen aanwezigheidsregistraties gevonden."
+
+#: 
+msgid "No donated items yet."
+msgstr "Nog geen gedoneerde items."
+
+#: 
+msgid "Not a valid end date"
+msgstr "Geen geldige einddatum"
+
+#: 
+msgid "Not included"
+msgstr "Niet inbegrepen"
+
+#: 
+msgid "People to assign"
+msgstr "Te wijzen personen"
+
+#: 
+msgid "Please select a family role for %s."
+msgstr "Selecteer een familierol voor %s."
+
+#: 
+msgid "Populates the fields below without saving. Click Save to apply."
+msgstr "Vult de onderstaande velden in zonder op te slaan. Klik op Opslaan om toe te passen."
+
+#: 
+msgid "Position of the currency symbol relative to the amount."
+msgstr "Positie van het valutasymbool ten opzichte van het bedrag."
+
+#: 
+msgid "Quick presets"
+msgstr "Snelle voorinstellingen"
+
+#: 
+msgid "Raised"
+msgstr "Opgehaald"
+
+#: 
+msgid "Raised This Year"
+msgstr "Dit jaar opgehaald"
+
+#: 
+msgid "Sample Amount"
+msgstr "Voorbeeldbedrag"
+
+#: 
+msgid "Sell-through"
+msgstr "Verkooppercentage"
+
+#: 
+msgid "Single character used as the decimal point (e.g. . or ,). Default: ."
+msgstr "Enkel teken als decimaalteken (bijv. . of ,). Standaard: ."
+
+#: 
+msgid "Single character used to group thousands (e.g. , or .). Default: ,"
+msgstr "Enkel teken als duizendtalscheidingsteken (bijv. , of .). Standaard: ,"
+
+#: 
+msgid "Sold"
+msgstr "Verkocht"
+
+#: 
+msgid "Streak"
+msgstr "Reeks"
+
+#: 
+msgid "Symbol Position"
+msgstr "Symboolpositie"
+
+#: 
+msgid "Symbol or code shown next to amounts (e.g. $, €, £, CHF, CAD $). Default: $"
+msgstr "Symbool of code naast bedragen (bijv. $, €, £, CHF, CAD $). Standaard: $"
+
+#: 
+msgid "Target family"
+msgstr "Doelfamilie"
+
+#: 
+msgid "The group could not be found. Please try again."
+msgstr "De groep kon niet worden gevonden. Probeer het opnieuw."
+
+#: 
+msgid "The selected family no longer exists. Please refresh the page and try again."
+msgstr "De geselecteerde familie bestaat niet meer. Vernieuw de pagina en probeer het opnieuw."
+
+#: 
+msgid "The selected group was not found. Please select a valid group."
+msgstr "De geselecteerde groep is niet gevonden. Selecteer een geldige groep."
+
+#: 
+msgid "This is how dates, currency amounts, and phone numbers will appear throughout the system. Review the current formats here, then edit them in the sections below."
+msgstr "Zo worden datums, valutabedragen en telefoonnummers in het systeem weergegeven. Bekijk de huidige indelingen hier en bewerk ze in de onderstaande secties."
+
+#: 
+msgid "Thousands Separator"
+msgstr "Duizendtalscheidingsteken"
+
+#: 
+msgid "Thousands separator and decimal separator must be different characters."
+msgstr "Het duizendtalscheidingsteken en het decimaalteken moeten verschillende tekens zijn."
+
+#: 
+msgid "To date"
+msgstr "Tot datum"
+
+#: 
+msgid "Total Events"
+msgstr "Totale activiteiten"
+
+#: 
+msgid "Total Raised"
+msgstr "Totaal opgehaald"
+
+#: 
+msgid "Total raised (no goal set)"
+msgstr "Totaal opgehaald (geen doel ingesteld)"
+
+#: 
+msgid "Unsold"
+msgstr "Onverkocht"
+
+#: 
+msgid "Updates as you type."
+msgstr "Wordt bijgewerkt terwijl u typt."
+
+#: 
+msgid "Whether the symbol appears before or after the numeric amount. Default: Before amount"
+msgstr "Of het symbool voor of na het numerieke bedrag verschijnt. Standaard: Voor bedrag"
+
+#: 
+msgid "Your cart is empty. Add people to your cart first."
+msgstr "Uw selectie is leeg. Voeg eerst mensen toe aan uw selectie."
+
+#: 
+msgid "events"
+msgstr "activiteiten"
+
+#: 
+msgid "goalAmount must be a non-negative number"
+msgstr "doelbedrag moet een niet-negatief getal zijn"
+
+#: 
+msgid "goalAmount must be non-negative"
+msgstr "doelbedrag moet niet-negatief zijn"
+
+#: 
+msgid "thru %s"
+msgstr "t/m %s"
+
+#: 
+msgid "\"Why Came\" notes for %1$s %2$s"
+msgstr "\"Reden van komst\" notities voor %1$s %2$s"
+
+#: 
+msgid "%1$s of the %2$s family"
+msgstr "%1$s van de familie %2$s"
+
+#: 
+msgid "%d record(s) returned"
+msgstr "%d record(s) gevonden"
+
+#: 
+msgid "Assign role to all"
+msgstr "Rol toewijzen aan iedereen"
+
+#: 
+msgid "Buyer #"
+msgstr "Koper #"
+
+#: 
+msgid "Buyers for this fundraiser"
+msgstr "Kopers voor deze fondsenwerving"
+
+#: 
+msgid "Calendar Embed Origins"
+msgstr "Kalender insluit-origins"
+
+#: 
+msgid "ChurchCRM translations are managed by the community on POEditor. You can help by"
+msgstr "ChurchCRM-vertalingen worden door de gemeenschap beheerd op POEditor. U kunt helpen door"
+
+#: 
+msgid "Closed Deposits"
+msgstr "Gesloten stortingen"
+
+#: 
+msgid "Current $URL[0] value"
+msgstr "Huidige $URL[0] waarde"
+
+#: 
+msgid "Custom port"
+msgstr "Aangepaste poort"
+
+#: 
+msgid "Data Quality"
+msgstr "Gegevenskwaliteit"
+
+#: 
+msgid "Donated by %1$s %2$s."
+msgstr "Geschonken door %1$s %2$s."
+
+#: 
+msgid "Email functionality is currently disabled. The following features will not work until email is enabled"
+msgstr "E-mailfunctionaliteit is momenteel uitgeschakeld. De volgende functies werken niet totdat e-mail is ingeschakeld"
+
+#: 
+msgid "Estimated value $%s."
+msgstr "Geschatte waarde $%s."
+
+#: 
+msgid "Fastest workflow"
+msgstr "Snelste werkwijze"
+
+#: 
+msgid "File Integrity"
+msgstr "Bestandsintegriteit"
+
+#: 
+msgid "Filter by log level"
+msgstr "Filteren op logniveau"
+
+#: 
+msgid "Find the line"
+msgstr "Zoek de regel"
+
+#: 
+msgid "Grant individual permissions"
+msgstr "Individuele rechten verlenen"
+
+#: 
+msgid "How to Fix"
+msgstr "Hoe op te lossen"
+
+#: 
+msgid "Import failed: %s"
+msgstr "Import mislukt: %s"
+
+#: 
+msgid "Include your API key in requests using the x-api-key header"
+msgstr "Voeg uw API-sleutel toe aan verzoeken via de x-api-key header"
+
+#: 
+msgid "Jump to any setup step"
+msgstr "Spring naar een willekeurige installatiestap"
+
+#: 
+msgid "Local development"
+msgstr "Lokale ontwikkeling"
+
+#: 
+msgid "Minimum Total Amount"
+msgstr "Minimaal totaalbedrag"
+
+#: 
+msgid "Minimum bid $%s."
+msgstr "Minimumbod $%s."
+
+#: 
+msgid "Now check the recipient inbox to confirm delivery. Look for the subject"
+msgstr "Controleer nu het postvak van de ontvanger om bezorging te bevestigen. Zoek naar het onderwerp"
+
+#: 
+msgid "Number of lines to display"
+msgstr "Aantal weer te geven regels"
+
+#: 
+msgid "Open Deposits"
+msgstr "Openstaande stortingen"
+
+#: 
+msgid "Opens a 2-minute window for devices to register at"
+msgstr "Opent een venster van 2 minuten voor apparaten om zich te registreren bij"
+
+#: 
+msgid "Output Method"
+msgstr "Uitvoermethode"
+
+#: 
+msgid "Please confirm deletion of this family record"
+msgstr "Bevestig het verwijderen van dit gezinsrecord"
+
+#: 
+msgid "Please confirm your family information"
+msgstr "Bevestig uw gezinsinformatie"
+
+#: 
+msgid "Please mail you next gift to %s"
+msgstr "Stuur uw volgende gave naar %s"
+
+#: 
+msgid "Please select another family with whom to associate these donations"
+msgstr "Selecteer een ander gezin om deze giften aan te koppelen"
+
+#: 
+msgid "Remittance Slip"
+msgstr "Betalingsbewijs"
+
+#: 
+msgid "Report Heading"
+msgstr "Rapportkoptekst"
+
+#: 
+msgid "Resetting will permanently delete"
+msgstr "Opnieuw instellen zal permanent verwijderen"
+
+#: 
+msgid "Show"
+msgstr "Tonen"
+
+#: 
+msgid "Signature"
+msgstr "Handtekening"
+
+#: 
+msgid "Sort Data by"
+msgstr "Gegevens sorteren op"
+
+#: 
+msgid "Space-separated list of origins allowed to embed the public external calendar page in an <iframe> (CSP frame-ancestors). Default \"*\" allows any origin. Restrict to specific origins for tighter security, e.g. \"https://mysite.org https://embed.example.com\"."
+msgstr "Spatie-gescheiden lijst van origins die de openbare externe kalenderpagina mogen insluiten in een iframe. Standaard staat elke origin toe."
+
+#: 
+msgid "Space-separated origins allowed to embed the public calendar page in an <iframe> (CSP frame-ancestors). Default \"*\" allows any site. Restrict for tighter security, e.g. \"https://mysite.org\"."
+msgstr "Spatie-gescheiden origins die de openbare kalenderpagina mogen insluiten in een iframe. Standaard staat elke site toe."
+
+#: 
+msgid "Sunday School group can't be modified, only in this two cases"
+msgstr "Zondagsschoolgroep kan niet worden gewijzigd, alleen in deze twee gevallen"
+
+#: 
+msgid "Supported formats"
+msgstr "Ondersteunde indelingen"
+
+#: 
+msgid "System Configuration"
+msgstr "Systeemconfiguratie"
+
+#: 
+msgid "There are people assigned to this Volunteer Opportunity. Deletion will unassign"
+msgstr "Er zijn mensen toegewezen aan deze vrijwilligersmogelijkheid. Verwijderen zal de toewijzing ongedaan maken"
+
+#: 
+msgid "This value cannot be less than %d characters long"
+msgstr "Deze waarde mag niet korter zijn dan %d tekens"
+
+#: 
+msgid "This value cannot be more than %d characters long"
+msgstr "Deze waarde mag niet langer zijn dan %d tekens"
+
+#: 
+msgid "This value cannot be more than %s"
+msgstr "Deze waarde mag niet meer zijn dan %s"
+
+#: 
+msgid "This value must be at least %s"
+msgstr "Deze waarde moet minimaal %s zijn"
+
+#: 
+msgid "Total Deposits"
+msgstr "Totale stortingen"
+
+#: 
+msgid "Update it to a valid URL that"
+msgstr "Werk het bij naar een geldige URL die"
+
+#: 
+msgid "User authenticated via API Key: %s"
+msgstr "Gebruiker geverifieerd via API-sleutel: %s"
+
+#: 
+msgid "Valid Examples"
+msgstr "Geldige voorbeelden"
+
+#: 
+msgid "What this plugin does"
+msgstr "Wat deze plug-in doet"
+
+#: 
+msgid "for all funds"
+msgstr "voor alle fondsen"
+
+#: 
+msgid "for fund"
+msgstr "voor fonds"
+
+#: 
+msgid "for funds"
+msgstr "voor fondsen"
+
+#: 
+msgid "user"
+msgstr "gebruiker"
+
+#: 
+msgid "with at least one"
+msgstr "met ten minste één"
+
+#: 
+msgid "Also send to church address ({{email}})"
+msgstr "Ook verzenden naar kerkadres ({{email}})"
+
+#: 
+msgid "Are you sure you want to remove this person from"
+msgstr "Weet u zeker dat u deze persoon wilt verwijderen uit"
+
+#: 
+msgid "BCC Mode"
+msgstr "BCC-modus"
+
+#: 
+msgid "Checked in {{count}} people."
+msgstr "{{count}} personen ingecheckt."
+
+#: 
+msgid "Church email address automatically added as a removable recipient when composing emails from CRM"
+msgstr "Kerk-e-mailadres wordt automatisch toegevoegd als verwijderbare ontvanger bij het opstellen van e-mails vanuit CRM"
+
+#: 
+msgid "Church email — configured on the %s page."
+msgstr "Kerk-e-mail — geconfigureerd op de pagina %s."
+
+#: 
+msgid "Closing"
+msgstr "Sluiten"
+
+#: 
+msgid "Coordinates Updated"
+msgstr "Coördinaten bijgewerkt"
+
+#: 
+msgid "Copy Addresses"
+msgstr "Adressen kopiëren"
+
+#: 
+msgid "Copy Church Email"
+msgstr "Kerk-e-mail kopiëren"
+
+#: 
+msgid "Email All Members"
+msgstr "Alle leden e-mailen"
+
+#: 
+msgid "Email Cart Members"
+msgstr "Geselecteerde leden e-mailen"
+
+#: 
+msgid "Ends with a trailing slash (/)"
+msgstr "Eindigt met een slash (/)"
+
+#: 
+msgid "Failed to geocode"
+msgstr "Geocodering mislukt"
+
+#: 
+msgid "Failed to load recipients. Please try again."
+msgstr "Ontvangers laden mislukt. Probeer het opnieuw."
+
+#: 
+msgid "Failed to retrieve cart email addresses"
+msgstr "Ophalen van e-mailadressen uit selectie mislukt"
+
+#: 
+msgid "Family check-in failed. Please try again."
+msgstr "Gezinsinchecken mislukt. Probeer het opnieuw."
+
+#: 
+msgid "Ignore"
+msgstr "Negeren"
+
+#: 
+msgid "Ignore Incomplete Addresses"
+msgstr "Onvolledige adressen negeren"
+
+#: 
+msgid "Kids"
+msgstr "Kinderen"
+
+#: 
+msgid "Loading family members..."
+msgstr "Gezinsleden laden..."
+
+#: 
+msgid "Loading recipients…"
+msgstr "Ontvangers laden…"
+
+#: 
+msgid "No email addresses found."
+msgstr "Geen e-mailadressen gevonden."
+
+#: 
+msgid "Open in Email Client"
+msgstr "Openen in e-mailclient"
+
+#: 
+msgid "Redirecting in %s seconds..."
+msgstr "Doorsturen over %s seconden..."
+
+#: 
+msgid "Refreshing..."
+msgstr "Vernieuwen..."
+
+#: 
+msgid "Remove from Group"
+msgstr "Verwijderen uit groep"
+
+#: 
+msgid "Remove {{personName}} from this class?"
+msgstr "{{personName}} verwijderen uit deze klas?"
+
+#: 
+msgid "Request failed ({{status}})"
+msgstr "Verzoek mislukt ({{status}})"
+
+#: 
+msgid "Roles to include"
+msgstr "Op te nemen rollen"
+
+#: 
+msgid "Select Country"
+msgstr "Selecteer land"
+
+#: 
+msgid "Select State"
+msgstr "Selecteer provincie"
+
+#: 
+msgid "Select a person"
+msgstr "Selecteer een persoon"
+
+#: 
+msgid "Select role"
+msgstr "Selecteer rol"
+
+#: 
+msgid "Select type (optional)"
+msgstr "Selecteer type (optioneel)"
+
+#: 
+msgid "Starts with http:// or https://"
+msgstr "Begint met http:// of https://"
+
+#: 
+msgid "This group only has one role."
+msgstr "Deze groep heeft slechts één rol."
+
+#: 
+msgid "Who is bringing in {{name}}?"
+msgstr "Wie brengt {{name}}?"
+
+#: 
+msgid "Who is picking up {{name}}?"
+msgstr "Wie haalt {{name}} op?"
+
+#: 
+msgid "Working..."
+msgstr "Bezig..."
+
+#: 
+msgid "You are {{releaseCount}} releases behind. Here's what you'll gain"
+msgstr "U loopt {{releaseCount}} versies achter. Dit is wat u krijgt"
+
+#: 
+msgid "click to expand"
+msgstr "klik om uit te vouwen"
+
+#: 
+msgid "pick"
+msgstr "selecteren"
+
+#: 
+msgid "recipient"
+msgstr "ontvanger"
+
+#: 
+msgid "recipients"
+msgstr "ontvangers"
+
+#: 
+msgid "{{hours}}h {{mins}}m left"
+msgstr "{{hours}}u {{mins}}m over"
+
+#: 
+msgid "Add New Deposit"
+msgstr "Nieuwe storting toevoegen"
+
+#: 
+msgid "Add New Event"
+msgstr "Nieuw evenement toevoegen"
+
+#: 
+msgid "Add New Event Type"
+msgstr "Nieuw evenementtype toevoegen"
+
+#: 
+msgid "Add New Family"
+msgstr "Nieuw gezin toevoegen"
+
+#: 
+msgid "Add New Field"
+msgstr "Nieuw veld toevoegen"
+
+#: 
+msgid "Add New Fund"
+msgstr "Nieuw fonds toevoegen"
+
+#: 
+msgid "Add New Opportunity"
+msgstr "Nieuwe mogelijkheid toevoegen"
+
+#: 
+msgid "Add New Person"
+msgstr "Nieuwe persoon toevoegen"
+
+#: 
+msgid "Add New Pledge"
+msgstr "Nieuwe toezegging toevoegen"
+
+#: 
+msgid "Add New Role"
+msgstr "Nieuwe rol toevoegen"
+
+#: 
+msgid "Add New Volunteer Opportunity"
+msgstr "Nieuwe vrijwilligersmogelijkheid toevoegen"
+
+#: 
+msgid "Add Sunday School Class"
+msgstr "Zondagsschoolklas toevoegen"
+
+#: 
+msgid "Delete this family?"
+msgstr "Dit gezin verwijderen?"
+
+#: 
+msgid "Do you want to delete this family? You'll be taken to a page to choose what to delete. This cannot be undone."
+msgstr "Wilt u dit gezin verwijderen? U wordt doorgestuurd naar een pagina om te kiezen wat u wilt verwijderen. Dit kan niet ongedaan worden gemaakt."
+
+#: 
+msgid "Family Delete Confirmation"
+msgstr "Bevestiging gezin verwijderen"
+
+#: 
+msgid "Individuals (no family)"
+msgstr "Individuen (geen gezin)"
+
+#: 
+msgid "New Self-Registrations"
+msgstr "Nieuwe zelfregistraties"
+
+#: 
+msgid "Property Type Delete Confirmation"
+msgstr "Bevestiging eigenschapstype verwijderen"
+
+#: 
+msgid "Review new families and individuals who signed up on your public registration form"
+msgstr "Bekijk nieuwe gezinnen en individuen die zich hebben aangemeld via uw openbare registratieformulier"
+
+#: 
+msgid "Review new sign-ups from your public registration form below. Entries with no email or phone are flagged — verify contact info before following up."
+msgstr "Bekijk hieronder nieuwe aanmeldingen van uw openbare registratieformulier. Vermeldingen zonder e-mail of telefoonnummer zijn gemarkeerd — verifieer de contactgegevens voordat u contact opneemt."
+
+#: 
+msgid "Volunteer Opportunity Delete Confirmation"
+msgstr "Bevestiging vrijwilligersmogelijkheid verwijderen"
+
+#: 
+msgid "# Payments"
+msgstr "# Betalingen"
+
+#: 
+msgid "# Pledges"
+msgstr "# Toezeggingen"
+
+#: 
+msgid "A payment is an actual donation received. It will be added to the selected deposit."
+msgstr "Een betaling is een daadwerkelijk ontvangen donatie. Deze wordt toegevoegd aan de geselecteerde storting."
+
+#: 
+msgid "Add Fund"
+msgstr "Fonds toevoegen"
+
+#: 
+msgid "Amount ($)"
+msgstr "Bedrag ($)"
+
+#: 
+msgid "Amount exceeds maximum allowed (999999.99)"
+msgstr "Bedrag overschrijdt het maximaal toegestane bedrag (999999.99)"
+
+#: 
+msgid "An error occurred while saving. Please try again."
+msgstr "Er is een fout opgetreden tijdens het opslaan. Probeer het opnieuw."
+
+#: 
+msgid "Anonymous Telemetry"
+msgstr "Anonieme telemetrie"
+
+#: 
+msgid "Anonymous telemetry level. Controls how much anonymous diagnostic data is shared with the ChurchCRM team. No church names, member data, or personal information is ever sent."
+msgstr "Anoniem telemetrieniveau. Bepaalt hoeveel anonieme diagnostische gegevens worden gedeeld met het ChurchCRM-team. Er worden nooit kerkennamen, ledengegevens of persoonlijke informatie verzonden."
+
+#: 
+msgid "Are you sure you want to permanently delete this payment record?"
+msgstr "Weet u zeker dat u dit betalingsrecord permanent wilt verwijderen?"
+
+#: 
+msgid "At least one fund allocation is required"
+msgstr "Er is minimaal één fondstoewijzing vereist"
+
+#: 
+msgid "At least one fund must have a non-zero amount"
+msgstr "Ten minste één fonds moet een bedrag groter dan nul hebben"
+
+#: 
+msgid "Automatically send a birthday greeting email to people on their birthday"
+msgstr "Automatisch een verjaardagsgroet per e-mail sturen op iemands verjaardag"
+
+#: 
+msgid "Back to Finance"
+msgstr "Terug naar Financiën"
+
+#: 
+msgid "Back to Group"
+msgstr "Terug naar Groep"
+
+#: 
+msgid "Cannot prepare query."
+msgstr "Query kan niet worden voorbereid."
+
+#: 
+msgid "Catch JS errors"
+msgstr "JS-fouten opvangen"
+
+#: 
+msgid "Catch recurring errors"
+msgstr "Terugkerende fouten opvangen"
+
+#: 
+msgid "Check #"
+msgstr "Cheque #"
+
+#: 
+msgid "Church name, address, or contact details"
+msgstr "Kerknaam, adres of contactgegevens"
+
+#: 
+msgid "ChurchCRM version"
+msgstr "ChurchCRM-versie"
+
+#: 
+msgid "Collection level"
+msgstr "Verzamelingsniveau"
+
+#: 
+msgid "Count unique installs"
+msgstr "Unieke installaties tellen"
+
+#: 
+msgid "Data"
+msgstr "Gegevens"
+
+#: 
+msgid "Data is processed by PostHog on EU infrastructure."
+msgstr "Gegevens worden verwerkt door PostHog op EU-infrastructuur."
+
+#: 
+msgid "Date is required"
+msgstr "Datum is vereist"
+
+#: 
+msgid "Deleted successfully"
+msgstr "Succesvol verwijderd"
+
+#: 
+msgid "Deposit #"
+msgstr "Storting #"
+
+#: 
+msgid "Deposit Slip"
+msgstr "Stortingsbewijs"
+
+#: 
+msgid "Edit Pledge"
+msgstr "Toezegging bewerken"
+
+#: 
+msgid "Edit existing pledge or payment"
+msgstr "Bestaande toezegging of betaling bewerken"
+
+#: 
+msgid "Editing a Payment"
+msgstr "Betaling bewerken"
+
+#: 
+msgid "Editing a Pledge"
+msgstr "Toezegging bewerken"
+
+#: 
+msgid "Enable (full)"
+msgstr "Inschakelen (volledig)"
+
+#: 
+msgid "Errors only"
+msgstr "Alleen fouten"
+
+#: 
+msgid "Errors — server errors and JS exceptions"
+msgstr "Fouten — serverfouten en JS-uitzonderingen"
+
+#: 
+msgid "Failed to create pledge"
+msgstr "Toezegging maken mislukt"
+
+#: 
+msgid "Failed to delete pledge"
+msgstr "Toezegging verwijderen mislukt"
+
+#: 
+msgid "Failed to encode payment response"
+msgstr "Coderen van betalingsreactie mislukt"
+
+#: 
+msgid "Failed to retrieve pledge"
+msgstr "Toezegging ophalen mislukt"
+
+#: 
+msgid "Failed to update pledge"
+msgstr "Toezegging bijwerken mislukt"
+
+#: 
+msgid "Family is required"
+msgstr "Gezin is vereist"
+
+#: 
+msgid "Financial data"
+msgstr "Financiële gegevens"
+
+#: 
+msgid "Full — all of the above plus page views"
+msgstr "Volledig — alles van het bovenstaande plus paginaweergaven"
+
+#: 
+msgid "Full — page views, warnings, errors, and JS exceptions"
+msgstr "Volledig — paginaweergaven, waarschuwingen, fouten en JS-uitzonderingen"
+
+#: 
+msgid "Fund Summary"
+msgstr "Fondsoverzicht"
+
+#: 
+msgid "Group key is required"
+msgstr "Groepssleutel is vereist"
+
+#: 
+msgid "Happy Birthday"
+msgstr "Gefeliciteerd met uw verjaardag"
+
+#: 
+msgid "Help improve ChurchCRM"
+msgstr "Help ChurchCRM te verbeteren"
+
+#: 
+msgid "IP addresses"
+msgstr "IP-adressen"
+
+#: 
+msgid "Installation UUID"
+msgstr "Installatie-UUID"
+
+#: 
+msgid "Interactive pledges-vs-payments summary by fund with sort, search, and export."
+msgstr "Interactief overzicht van toezeggingen versus betalingen per fonds, met sorteren, zoeken en exporteren."
+
+#: 
+msgid "Internal: last date birthday emails were sent (YYYY-MM-DD). Do not edit manually."
+msgstr "Intern: laatste datum waarop verjaardagse-mails zijn verzonden (JJJJ-MM-DD). Niet handmatig bewerken."
+
+#: 
+msgid "JS exceptions"
+msgstr "JS-uitzonderingen"
+
+#: 
+msgid "Log level + message"
+msgstr "Logniveau + bericht"
+
+#: 
+msgid "Member or family records"
+msgstr "Leden- of gezinsrecords"
+
+#: 
+msgid "Modify the role for this group member"
+msgstr "De rol van dit groepslid wijzigen"
+
+#: 
+msgid "Network error, please try again"
+msgstr "Netwerkfout, probeer het opnieuw"
+
+#: 
+msgid "Never sent"
+msgstr "Nooit verzonden"
+
+#: 
+msgid "No deposit / create new deposit"
+msgstr "Geen storting / nieuwe storting aanmaken"
+
+#: 
+msgid "No pledge"
+msgstr "Geen toezegging"
+
+#: 
+msgid "No thanks"
+msgstr "Nee, bedankt"
+
+#: 
+msgid "Non-Deductible"
+msgstr "Niet-aftrekbaar"
+
+#: 
+msgid "Non-Deductible ($)"
+msgstr "Niet-aftrekbaar ($)"
+
+#: 
+msgid "Non-deductible amount can't exceed fund amount"
+msgstr "Het niet-aftrekbare bedrag mag het fondsbedrag niet overschrijden"
+
+#: 
+msgid "None (disabled)"
+msgstr "Geen (uitgeschakeld)"
+
+#: 
+msgid "OS family"
+msgstr "OS-familie"
+
+#: 
+msgid "Overpaid"
+msgstr "Te veel betaald"
+
+#: 
+msgid "PHP version"
+msgstr "PHP-versie"
+
+#: 
+msgid "Page route"
+msgstr "Paginapad"
+
+#: 
+msgid "Payment Details"
+msgstr "Betalingsgegevens"
+
+#: 
+msgid "Payment Method"
+msgstr "Betaalmethode"
+
+#: 
+msgid "Plan runtime support"
+msgstr "Runtime-ondersteuning plannen"
+
+#: 
+msgid "Please enter a date"
+msgstr "Voer een datum in"
+
+#: 
+msgid "Please select a family"
+msgstr "Selecteer een gezin"
+
+#: 
+msgid "Please select a fund for all rows"
+msgstr "Selecteer een fonds voor alle rijen"
+
+#: 
+msgid "Pledge Details"
+msgstr "Toezeggingsgegevens"
+
+#: 
+msgid "Pledge group not found"
+msgstr "Toezeggingsgroep niet gevonden"
+
+#: 
+msgid "Pledges & Payments"
+msgstr "Toezeggingen & Betalingen"
+
+#: 
+msgid "Prioritise translations"
+msgstr "Vertalingen prioriteren"
+
+#: 
+msgid "Purpose"
+msgstr "Doel"
+
+#: 
+msgid "Save and Add Another"
+msgstr "Opslaan en nog een toevoegen"
+
+#: 
+msgid "Save failed"
+msgstr "Opslaan mislukt"
+
+#: 
+msgid "Saved successfully"
+msgstr "Succesvol opgeslagen"
+
+#: 
+msgid "Select a fund"
+msgstr "Selecteer een fonds"
+
+#: 
+msgid "Send Test Birthday Email to Myself"
+msgstr "Verjaardagstest-e-mail naar mezelf sturen"
+
+#: 
+msgid "Sending to"
+msgstr "Verzenden naar"
+
+#: 
+msgid "Share anonymous usage statistics with the ChurchCRM team so we know which features and languages to prioritise. No church names, member data, or personal information is ever sent."
+msgstr "Deel anonieme gebruiksstatistieken met het ChurchCRM-team, zodat we weten welke functies en talen we moeten prioriteren. Er worden nooit kerkennamen, ledengegevens of persoonlijke informatie verzonden."
+
+#: 
+msgid "Test email sent to"
+msgstr "Test-e-mail verzonden naar"
+
+#: 
+msgid "Track adoption"
+msgstr "Gebruik bijhouden"
+
+#: 
+msgid "Type must be 'Pledge' or 'Payment'"
+msgstr "Type moet 'Toezegging' of 'Betaling' zijn"
+
+#: 
+msgid "URLs with query strings (record IDs are stripped)"
+msgstr "URL's met queryreeksen (record-ID's worden verwijderd)"
+
+#: 
+msgid "Underpaid"
+msgstr "Te weinig betaald"
+
+#: 
+msgid "Understand deployments"
+msgstr "Implementaties begrijpen"
+
+#: 
+msgid "Understand feature usage"
+msgstr "Functiegebruik begrijpen"
+
+#: 
+msgid "User names, emails, or roles"
+msgstr "Gebruikersnamen, e-mailadressen of rollen"
+
+#: 
+msgid "View pledge or payment details"
+msgstr "Toezeggings- of betalingsgegevens bekijken"
+
+#: 
+msgid "Warnings — warnings, errors, and JS exceptions"
+msgstr "Waarschuwingen — waarschuwingen, fouten en JS-uitzonderingen"
+
+#: 
+msgid "What is sent"
+msgstr "Wat wordt verzonden"
+
+#: 
+msgid "What we collect"
+msgstr "Wat we verzamelen"
+
+#: 
+msgid "Wishing you a wonderful %d year birthday!"
+msgstr "We wensen u een prachtige %d-jarige verjaardag!"
+
+#: 
+msgid "Wishing you a wonderful birthday!"
+msgstr "We wensen u een prachtige verjaardag!"
+
+#: 
+msgid "Your account has no email address on file. Add one to your profile to send a test."
+msgstr "Uw account heeft geen e-mailadres opgeslagen. Voeg er een toe aan uw profiel om een test te verzenden."
+
+#: 
+msgid "errors+"
+msgstr "fouten+"
+
+#: 
+msgid "full only"
+msgstr "alleen volledig"
+
+#: 
+msgid "is thinking of you today."
+msgstr "denkt vandaag aan u."
+
+#: 
+msgid "page routes, active locale, CRM version, PHP version, OS family, and a random installation ID. Nothing else. Data is stored in the EU."
+msgstr "paginapaden, actieve taal, CRM-versie, PHP-versie, OS-familie en een willekeurig installatie-ID. Niets anders. Gegevens worden opgeslagen in de EU."
+
+#: 
+msgid "% Paid"
+msgstr "% Betaald"
+
+#: 
+msgid "%s: Please verify your family's information"
+msgstr "%s: Verifieer uw gezinsinformatie"
+
+#: 
+msgid "Add Role"
+msgstr "Rol toevoegen"
+
+#: 
+msgid "Add custom properties specific to this group"
+msgstr "Aangepaste eigenschappen toevoegen voor deze groep"
+
+#: 
+msgid "Address changed since coordinates were last set."
+msgstr "Adres gewijzigd sinds de coordinaten voor het laatst zijn ingesteld."
+
+#: 
+msgid "All Tellers"
+msgstr "Alle kassiers"
+
+#: 
+msgid "All email sends failed. Please check your SMTP settings in System Settings."
+msgstr "Alle e-mails zijn mislukt. Controleer uw SMTP-instellingen in de systeeminstellingen."
+
+#: 
+msgid "Amount Max"
+msgstr "Maximumbedrag"
+
+#: 
+msgid "Amount Min"
+msgstr "Minimumbedrag"
+
+#: 
+msgid "An unexpected error occurred while sending emails. Please check your SMTP settings and server logs."
+msgstr "Er is een onverwachte fout opgetreden bij het verzenden van e-mails. Controleer uw SMTP-instellingen en serverlogboeken."
+
+#: 
+msgid "Are you sure you want to remove the role '{{name}}'?"
+msgstr "Weet u zeker dat u de rol '{{name}}' wilt verwijderen?"
+
+#: 
+msgid "Auto"
+msgstr "Automatisch"
+
+#: 
+msgid "Auto follows your OS or browser setting; Light and Dark override it"
+msgstr "Automatisch volgt uw besturingssysteem- of browserinstelling; Licht en Donker overschrijven dit"
+
+#: 
+msgid "Back to Pledge Dashboard"
+msgstr "Terug naar het beloftedashboard"
+
+#: 
+msgid "Click \"Generate Coordinates\" to look up the map location for the address above, or enter latitude/longitude manually. If left blank, coordinates are also auto-detected when you save the form."
+msgstr "Klik op \"Coordinaten genereren\" om de kaartlocatie voor het bovenstaande adres op te zoeken, of voer breedtegraad/lengtegraad handmatig in. Als dit leeg wordt gelaten, worden de coordinaten ook automatisch gedetecteerd wanneer u het formulier opslaat."
+
+#: 
+msgid "Contributor"
+msgstr "Bijdrager"
+
+#: 
+msgid "Contributors"
+msgstr "Bijdragers"
+
+#: 
+msgid "Could not find coordinates for that address. Try entering them manually."
+msgstr "Coordinaten voor dat adres konden niet worden gevonden. Probeer ze handmatig in te voeren."
+
+#: 
+msgid "Custom properties for this group"
+msgstr "Aangepaste eigenschappen voor deze groep"
+
+#: 
+msgid "Delete role"
+msgstr "Rol verwijderen"
+
+#: 
+msgid "Email Error"
+msgstr "E-mailfout"
+
+#: 
+msgid "Email is not configured. Please configure SMTP settings in System Settings."
+msgstr "E-mail is niet geconfigureerd. Configureer de SMTP-instellingen in de systeeminstellingen."
+
+#: 
+msgid "Enter a street address first."
+msgstr "Voer eerst een straatadres in."
+
+#: 
+msgid "Enter role name"
+msgstr "Rolnaam invoeren"
+
+#: 
+msgid "Failed to create deposit"
+msgstr "Aanmaken van storting mislukt"
+
+#: 
+msgid "Failed to load email preview"
+msgstr "Laden van e-mailvoorvertoning mislukt"
+
+#: 
+msgid "From Date"
+msgstr "Vanaf datum"
+
+#: 
+msgid "Fund Total"
+msgstr "Fondstotaal"
+
+#: 
+msgid "Fund contributor pledge summary by fiscal year"
+msgstr "Overzicht van toezeggingen van fondsbijdragers per boekjaar"
+
+#: 
+msgid "Fundraiser is disabled"
+msgstr "Fondswerving is uitgeschakeld"
+
+#: 
+msgid "Generate Coordinates"
+msgstr "Coordinaten genereren"
+
+#: 
+msgid "Generating..."
+msgstr "Genereren..."
+
+#: 
+msgid "Geocoding request failed. Please try again."
+msgstr "Geolocatieverzoek mislukt. Probeer het opnieuw."
+
+#: 
+msgid "Manage Events"
+msgstr "Evenementen beheren"
+
+#: 
+msgid "New Deposit"
+msgstr "Nieuwe storting"
+
+#: 
+msgid "No contributors found for this fund in the selected fiscal year"
+msgstr "Geen bijdragers gevonden voor dit fonds in het geselecteerde boekjaar"
+
+#: 
+msgid "No families with an email address were found. Nothing was sent."
+msgstr "Er zijn geen gezinnen met een e-mailadres gevonden. Er is niets verzonden."
+
+#: 
+msgid "No payments found for the selected deposits"
+msgstr "Geen betalingen gevonden voor de geselecteerde stortingen"
+
+#: 
+msgid "No valid deposit IDs provided"
+msgstr "Geen geldige stortings-ID's opgegeven"
+
+#: 
+msgid "Partial Send"
+msgstr "Gedeeltelijk verzonden"
+
+#: 
+msgid "Payments only"
+msgstr "Alleen betalingen"
+
+#: 
+msgid "Pledged Amount"
+msgstr "Toegezegd bedrag"
+
+#: 
+msgid "Preview"
+msgstr "Voorvertoning"
+
+#: 
+msgid "Retry"
+msgstr "Opnieuw proberen"
+
+#: 
+msgid "Search"
+msgstr "Zoeken"
+
+#: 
+msgid "Search and manage deposit slip records"
+msgstr "Stortingsbewijzen zoeken en beheren"
+
+#: 
+msgid "Select All"
+msgstr "Alles selecteren"
+
+#: 
+msgid "Send Emails"
+msgstr "E-mails verzenden"
+
+#: 
+msgid "Send Family Verification Emails"
+msgstr "Gezinsverificatie-e-mails verzenden"
+
+#: 
+msgid "Sent %1$d of %2$d — %3$d families could not be reached."
+msgstr "%1$d van %2$d verzonden — %3$d gezinnen konden niet worden bereikt."
+
+#: 
+msgid "Show in Profile"
+msgstr "Weergeven in profiel"
+
+#: 
+msgid "Showing total for selected fund only"
+msgstr "Totaal weergegeven alleen voor geselecteerd fonds"
+
+#: 
+msgid "Teller"
+msgstr "Kassier"
+
+#: 
+msgid "This is the only role in this group."
+msgstr "Dit is de enige rol in deze groep."
+
+#: 
+msgid "This role cannot be deleted."
+msgstr "Deze rol kan niet worden verwijderd."
+
+#: 
+msgid "To Date"
+msgstr "Tot datum"
+
+#: 
+msgid "Total Pledged"
+msgstr "Totaal toegezegd"
+
+#: 
+msgid "Unexpected error while sending emails. Please check logs."
+msgstr "Onverwachte fout bij het verzenden van e-mails. Controleer de logboeken."
+
+#: 
+msgid "Uses your street address above to look up coordinates via OpenStreetMap."
+msgstr "Gebruikt uw bovenstaande straatadres om coordinaten op te zoeken via OpenStreetMap."
+
+#: 
+msgid "View Payment"
+msgstr "Betaling bekijken"
+
+#: 
+msgid "View Pledge"
+msgstr "Toezegging bekijken"
+
+#: 
+msgid "When checked, this property will be displayed alongside the group in the person's group list on their profile page."
+msgstr "Wanneer aangevinkt, wordt deze eigenschap naast de groep weergegeven in de groepenlijst van de persoon op hun profielpagina."
+
+#: 
+msgid "[Family Name]"
+msgstr "[Gezinsnaam]"
+
+#: 
+msgid "row selected"
+msgstr "rij geselecteerd"
+
+#: 
+msgid "rows selected"
+msgstr "rijen geselecteerd"
 

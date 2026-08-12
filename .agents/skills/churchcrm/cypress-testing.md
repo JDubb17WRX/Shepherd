@@ -460,6 +460,25 @@ $btn.trigger("click");
 
 After clicking Cancel on a bootbox dialog, **do NOT assert that the dialog is gone** (`should("not.be.visible")` or `should("not.exist")`). Bootstrap 5 modal hide is asynchronous — the CSS fade-out keeps `.show` on the backdrop during the transition, causing these assertions to fail intermittently or permanently.
 
+### `should('not.have.class', 'show')` is equally unreliable for BS5 modals <!-- learned: 2026-08-07 -->
+
+BS5 removes the `show` class from the modal element only **after** the fade animation completes (~300 ms). In headless CI this transition does not always complete within Cypress's default command timeout, causing flaky `should('not.have.class', 'show')` failures. The same timing issue that makes `should('not.be.visible')` unreliable applies here too.
+
+If you need the modal to close before the next action (e.g. to re-open it), use `cy.visit()` to do a full page reload instead of waiting for the animation:
+
+```javascript
+// ✅ CORRECT — reload the page to get a clean modal state
+cy.visit("people/verify"); // re-navigates to the same page; modal resets
+cy.get("#openModalBtn").click(); // re-open cleanly
+
+// ❌ WRONG — times out in CI headless
+cy.get('[data-bs-dismiss="modal"]').click();
+cy.get("#myModal").should("not.have.class", "show"); // flaky
+cy.get("#openModalBtn").click();
+```
+
+When the test goal is only to verify an action was NOT taken (e.g. Cancel didn't send), check the side-effect alias immediately after clicking Cancel — no modal-close assertion needed:
+
 Instead, assert the **side effect** (the action was not taken):
 
 ```javascript
@@ -627,6 +646,35 @@ cy.intercept("GET", "/api/people/properties/definition/*").as("getDef");
 **Rule:** Always prefix `cy.intercept()` URL patterns with `**/` when matching API paths. This applies to ALL HTTP methods (GET, POST, PUT, DELETE, PATCH).
 
 **Note:** This does NOT apply to `cy.visit()` or `cy.request()` — those use `baseUrl` from config and handle the prefix automatically. Only `cy.intercept()` needs the `**` glob because it matches against the full request URL.
+
+### Intercept stubs are NOT cleared by `cy.visit()` within a test — use `times: 1` <!-- learned: 2026-08-07 -->
+
+`cy.intercept()` stubs are cleared between `it()` blocks, NOT within them. Calling `cy.visit()` mid-test does **not** reset intercepts. If a failure stub (e.g. 500) is set up and then you re-open a modal on a reloaded page, Cypress processes interceptors LIFO: a later `cy.intercept()` with no explicit response falls through to the still-active failure stub, causing the second request to also fail.
+
+**Fix:** Use `times: 1` in the route matcher and always give the "success" intercept an **explicit response** so it never falls through:
+
+```javascript
+// ❌ WRONG — @previewFail stays active for the entire test;
+//   the second open after cy.visit() falls through to it and also returns 500.
+cy.intercept("GET", "**/api/.../preview", { statusCode: 500, body: {} }).as("previewFail");
+// ... test actions ...
+cy.intercept("GET", "**/api/.../preview").as("previewOk"); // no response → falls through to @previewFail!
+cy.visit("page");
+
+// ✅ CORRECT — times:1 expires @previewFail after one match;
+//   explicit 200 on @previewOk means it never falls through.
+cy.intercept(
+    { method: "GET", url: "**/api/.../preview", times: 1 },
+    { statusCode: 500, body: { error: true } }
+).as("previewFail");
+// ... test actions ...
+cy.intercept(
+    "GET",
+    "**/api/.../preview",
+    { statusCode: 200, body: { recipientCount: 1, recipients: [], familiesWithoutEmail: [], templatePreview: {} } }
+).as("previewOk");
+cy.visit("page");
+```
 
 ## Editable Table Cells: Names Render in Input Values <!-- learned: 2026-04-12 -->
 
@@ -1086,7 +1134,8 @@ Config files live in `cypress/configs/` (NOT `docker/`):
 **CRITICAL: Always install Cypress via `npm install`** <!-- learned: 2026-03-07 -->
 - Never use `npx cypress install` — it can produce a corrupt binary with wrong permissions.
 - If Cypress binary is broken or missing, fix with: `npx cypress cache clear && npm install`
-- The config points at a Docker container. Start the stack (`npm run docker:test`) before running tests.
+- The config points at a Docker container. Start the stack (`npm run docker:test:start`) before running tests. There is **no** `docker:test` script — that name doesn't exist in `package.json`.
+- If the stack is already running (containers up but from a prior/stale run), `docker:test:start` is a no-op that just confirms health — it does **not** reseed the database. Use `npm run docker:test:reset:db` to tear down volumes and bring the containers back up with fresh seed data when a spec depends on specific seeded rows (e.g. `DepositSlipID=5`). <!-- learned: 2026-07-25 -->
 
 ### Running Tests <!-- learned: 2026-03-26 -->
 
@@ -1129,7 +1178,7 @@ Tests cannot run locally without Docker — the app server lives in a container.
 node --version  # must be v24.x
 
 # 1. Start test containers
-npm run docker:test
+npm run docker:test:start
 
 # 2. Run tests
 npm run test                          # full suite
@@ -1360,6 +1409,36 @@ cy.get(".modal-header input").type("My Event");          // matches ANY input
 cy.get(".modal-footer .btn-secondary").click();           // matches settings panel too
 cy.get("#eventEditorModal").should("not.be.visible");     // element is removed, not hidden
 ```
+
+### Bootstrap 5 Modal Textareas — Use `invoke("val", …)` Not `.type()` <!-- learned: 2026-08-08 -->
+
+Bootstrap 5 modals have a focus-trap that can steal keyboard focus mid-delivery,
+causing `cy.type()` to deposit only the first ~10 characters into a textarea. The
+root cause: as keyboard events fire, Bootstrap's `focusin` handler can redirect
+focus to a different modal element between keystrokes.
+
+**Fix:** set textarea values with `invoke("val", text)` instead of `.type(text)`.
+The submit handler (or any code that reads `textarea.value` at event time) will
+receive the complete value because `invoke("val", …)` is a direct DOM-property
+write that bypasses the keyboard-event delivery path.
+
+```javascript
+// ❌ WRONG — Bootstrap 5 focus-trap can cut off delivery after ~10 chars
+cy.get("#confirm-info-data").should("be.visible").click().type(longMessage);
+
+// ✅ CORRECT — sets textarea.value directly; submit handler reads it at click-time
+cy.get("#confirm-info-data").should("be.visible").invoke("val", longMessage);
+cy.get("#onlineVerifyBtn").click();
+```
+
+Note: `invoke("val", …)` does **not** fire `input`/`change` events. If the page
+has event listeners that validate on `input` (e.g. character counter, live
+validation), you also need to trigger those events:
+```javascript
+cy.get("#myTextarea").invoke("val", text).trigger("input");
+```
+For forms that only read `textarea.value` on submit (most ChurchCRM verify/note
+forms), the bare `invoke("val", …)` is sufficient.
 
 ### Tabler Form-Selectgroup (Radio/Checkbox Pills) <!-- learned: 2026-04-06 -->
 
@@ -1683,6 +1762,16 @@ npx cypress run --config-file cypress/configs/docker.config.ts \
 ```
 
 Then read `src/event-tests-output.txt` for the full result. Do **not** run `npx cypress install` / `cache clear` to try to "fix" it — the project rules forbid touching the binary cache and the issue isn't in the cache anyway.
+
+**Faster diagnostic than `DEBUG=cypress:*`**: `npx cypress verify` fails immediately with a clean, undoctored error instead of the truncated `MODULE_NOT_FOUND` from `cypress run`: <!-- learned: 2026-07-25 -->
+
+```
+/Users/.../Cypress.app/Contents/MacOS/Cypress: bad option: --no-sandbox
+/Users/.../Cypress.app/Contents/MacOS/Cypress: bad option: --smoke-test
+/Users/.../Cypress.app/Contents/MacOS/Cypress: bad option: --ping=439
+```
+
+This confirms the same root cause from a different angle: whatever binary the sandbox actually invokes at that path isn't the real Electron entry point (it doesn't recognize standard Electron CLI flags), consistent with the doubled-`Contents/` path corruption above. Use `npx cypress verify` as the quick sanity check before spending time on a full spec run.
 
 ### Filtering DataTables 2.x via JS API, not Selectors <!-- learned: 2026-04-09 -->
 
@@ -2095,3 +2184,75 @@ describe("CSV Export Authorization", () => {
 4. **Always test the happy path first** (admin can do it), then test denials
 5. **Test both GET and POST paths** when a feature has both (form page + form submission)
 6. **Use `failOnStatusCode: false`** on `cy.visit()` and `cy.request()` when expecting non-2xx responses
+
+---
+
+## Gotchas: URL Assertions with linkBack Query Params <!-- learned: 2026-07-27 -->
+
+**Anti-pattern:** `cy.url().should("contain", "DepositSlipEditor.php")` when the current page URL contains `DepositSlipEditor.php` in an encoded `linkBack` parameter:
+```
+/finance/pledge/new?type=Payment&depositId=7&linkBack=%2FDepositSlipEditor.php%3FDepositSlipID%3D7
+```
+The string `DepositSlipEditor.php` appears literally in the URL and the assertion false-positives while the page is still at `/finance/pledge/new`.
+
+**Fix:** Use `cy.location('pathname')` to check only the path, not query params:
+```js
+// ❌ Fails: matches encoded linkBack in query string
+cy.url().should("contain", "DepositSlipEditor.php");
+
+// ✅ Correct: checks pathname only
+cy.location("pathname").should("include", "DepositSlipEditor.php");
+```
+
+---
+
+## Gotcha: TomSelect Fields Not Auto-Populated in CI <!-- learned: 2026-07-27 -->
+
+The pledge/payment editor uses TomSelect for the family picker (`#FamilyName`). TomSelect only loads options when the user types ≥2 characters (async search). It does **not** auto-select anything.
+
+When the form is loaded without a `familyId` URL param, `#FamilyID` is `0`, and the JS validation fails with a toast — the form is never submitted, the page never redirects.
+
+**Fix:** For tests that need to submit the pledge editor form, set `#FamilyID` directly after navigating to the editor. Family ID 1 always exists in the test environment. Register the `cy.intercept()` call at the top of the test with the `**/` glob prefix (required for subdirectory CI mode) — see the Subdirectory-Aware section above:
+```js
+// At the top of the it() block — before any navigation
+cy.intercept("POST", "**/api/payments/pledges").as("submitPayment");
+
+// After cy.get(".btn-success").click() navigates to /finance/pledge/new
+cy.get(".fund-amount").first().should("be.visible"); // wait for page load
+cy.get("#FamilyID").invoke("val", "1");              // provide required family
+// ... fill rest of form ...
+cy.get("#savePledgeBtn").click();
+cy.wait("@submitPayment").its("response.statusCode").should("eq", 200);
+```
+
+Alternatively, use the API directly (as in `finance.pledge-operations.spec.js`) to avoid UI form interaction altogether.
+
+---
+
+## Gotcha: `*/` inside `/* */` JSDoc Comments Causes Babel SyntaxError <!-- learned: 2026-07-27 -->
+
+Cypress spec files go through a Babel/webpack preprocessor that is stricter than plain JS. A `*/` sequence inside a block comment (even quoted) prematurely closes the comment and causes `SyntaxError: Unexpected token` pointing to the first non-whitespace character after the `*/`.
+
+The failure manifests in CI as:
+```
+Error: Webpack Compilation Error
+SyntaxError: ... Unexpected token (NN:CC)
+```
+
+**Common trap:** Writing `'**/api/...'` inside a `/* ... */` block comment — the `*/` in `**/` closes the block.
+
+**Fix:** Avoid any `*/` inside block comments. Rewrite to use concatenation notation or plain prose:
+```js
+// ❌ Breaks Babel — '*/' closes the block comment prematurely
+/**
+ * Always use '**/api/payments' glob in cy.intercept.
+ */
+
+// ✅ Safe alternatives
+/**
+ * Always use the double-glob ('**') prefix: '**' + '/api/payments'.
+ * Always use the '**' glob prefix in cy.intercept path patterns.
+ */
+```
+
+Note: `*/` inside double-quoted strings (`"**/api/..."`) within actual code is fine — only the parser is affected by comment context.

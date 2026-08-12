@@ -154,8 +154,7 @@ if ($output === 'pdf') {
             $curY += 2 * SystemConfig::getValue('incrementY');
             if ($iDepID) {
                 // Get Deposit Date
-                $sSQL ="SELECT dep_Date, dep_Date FROM deposit_dep WHERE dep_ID='$iDepID'";
-                $rsDep = RunQuery($sSQL);
+                $rsDep = RunPreparedQuery('SELECT dep_Date, dep_Date FROM deposit_dep WHERE dep_ID = ?', 'i', [(int) $iDepID]);
                 [$sDateStart, $sDateEnd] = mysqli_fetch_row($rsDep);
             }
             if ($sDateStart == $sDateEnd) {
@@ -189,7 +188,7 @@ if ($output === 'pdf') {
                 $curX = 60;
                 $this->writeAt($curX, $curY, gettext('Please detach this slip and mail with your next gift.'));
                 $curY += (1.5 * SystemConfig::getValue('incrementY'));
-                $church_mailing = gettext('Please mail you next gift to ') . SystemConfig::getValue('sChurchName') . ', '
+                $church_mailing = sprintf(gettext('Please mail you next gift to %s'), SystemConfig::getValue('sChurchName')) . ', '
                     . SystemConfig::getValue('sChurchAddress') . ', ' . SystemConfig::getValue('sChurchCity') . ', ' . SystemConfig::getValue('sChurchState') . '  '
                     . SystemConfig::getValue('sChurchZip') . ', ' . gettext('Phone') . ': ' . SystemConfig::getValue('sChurchPhone');
                 $this->SetFont('Times', 'I', 10);

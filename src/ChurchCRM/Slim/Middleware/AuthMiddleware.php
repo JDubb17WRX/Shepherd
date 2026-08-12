@@ -212,11 +212,13 @@ class AuthMiddleware implements MiddlewareInterface
         $query = $request->getUri()->getQuery();
         $fullPath = $query !== '' ? $path . '?' . $query : $path;
 
-        // Validate the path (empty string fallback means "don't store" on failure).
-        // RedirectUtils::stripAndValidatePath() strips the root path and validates for safety.
-        $safePath = RedirectUtils::stripAndValidatePath($fullPath);
-        if ($safePath !== '') {
-            $_SESSION['location'] = $safePath;
+        if (RedirectUtils::isPostLoginNavigationRequest($request->getMethod(), $request->getHeaderLine('Accept'))) {
+            // Empty fallback means "don't store" on failure. The post-login
+            // validator also rejects API and static-asset requests.
+            $safePath = RedirectUtils::stripAndValidatePostLoginPath($fullPath);
+            if ($safePath !== '') {
+                $_SESSION['location'] = $safePath;
+            }
         }
 
         $response = new Response();

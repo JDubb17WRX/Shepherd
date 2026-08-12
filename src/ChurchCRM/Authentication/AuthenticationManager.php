@@ -256,7 +256,7 @@ class AuthenticationManager
                         "Tried to supply two factor authentication code, but didn't have an existing session.  This shouldn't ever happen",
                         ['exception' => $e]
                     );
-                    throw $e;
+                    RedirectUtils::redirect(self::getSessionBeginURL());
                 }
                 break;
             default:
@@ -353,9 +353,14 @@ class AuthenticationManager
 
                 // Store the originally requested URL in the session for post-login redirect.
                 // Using the session (server-side) prevents open-redirect attacks via a crafted query parameter.
-                $safeUri = RedirectUtils::stripAndValidatePath($_SERVER['REQUEST_URI'] ?? '');
-                if ($safeUri !== '') {
-                    $_SESSION['location'] = $safeUri;
+                if (RedirectUtils::isPostLoginNavigationRequest(
+                    $_SERVER['REQUEST_METHOD'] ?? 'GET',
+                    $_SERVER['HTTP_ACCEPT'] ?? ''
+                )) {
+                    $safeUri = RedirectUtils::stripAndValidatePostLoginPath($_SERVER['REQUEST_URI'] ?? '');
+                    if ($safeUri !== '') {
+                        $_SESSION['location'] = $safeUri;
+                    }
                 }
                 RedirectUtils::redirect(self::getSessionBeginURL());
             }
@@ -405,7 +410,7 @@ class AuthenticationManager
         if (empty($url)) {
             return null;
         }
-        $validated = RedirectUtils::validateRedirectUrl($url, '');
+        $validated = RedirectUtils::validatePostLoginRedirectUrl($url, '');
 
         return $validated !== '' ? $validated : null;
     }

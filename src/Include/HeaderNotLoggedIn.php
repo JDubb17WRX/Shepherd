@@ -32,7 +32,7 @@ $localeInfo = Bootstrapper::getCurrentLocale(); // always returns a LocaleInfo o
 
     <script src="<?= SystemURLs::assetVersioned('/skin/external/moment/moment.min.js') ?>"></script>
 
-    <title>Shepherd — <?= $sPageTitle ?></title>
+    <title>Shepherd — <?= InputUtils::escapeHTML($sPageTitle) ?></title>
     <link rel="icon" href="/images/logo.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

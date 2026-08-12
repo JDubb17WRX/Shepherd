@@ -7,17 +7,23 @@
 #   - Deny applying with `git apply --whitespace=error-all`
 #   - Fix automatically with `git apply --whitespace=fix`
 
+.gitattributes text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
+*.cjs  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.css  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.html text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=4 diff=html
 *.js   text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.json text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.lock text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=4
 *.md   text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
+*.mjs  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.php  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=4 diff=php
 *.po   text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
+*.scss text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.sh   text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.sql  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.svg  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
+*.ts   text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
+*.tsx  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2
 *.twig text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=4
 *.xml  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=4
 *.yml  text eol=lf whitespace=space-before-tab,tab-in-indent,trailing-space,tabwidth=2

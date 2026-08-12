@@ -169,7 +169,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
             <hr class="my-3">
             <div class="alert alert-info mb-0">
                 <i class="ti ti-rocket me-1"></i>
-                <strong><?= gettext('Fastest workflow:') ?></strong>
+                <strong><?= gettext('Fastest workflow') ?>:</strong>
                 <?= gettext("Open a class → click \"Create Today's Event\" — the event is created and linked to the class in one shot, then you land on the check-in page ready for a kiosk or walk-in attendance.") ?>
             </div>
         </div>
@@ -245,7 +245,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
                                     <a class="dropdown-item" href="<?= $sRootPath ?>/groups/sundayschool/class/<?= $class['id'] ?>">
                                         <i class="ti ti-eye me-2"></i><?= gettext('View') ?>
                                     </a>
-                                    <a class="dropdown-item" href="<?= $sRootPath ?>/GroupEditor.php?GroupID=<?= $class['id'] ?>">
+                                    <a class="dropdown-item" href="<?= $sRootPath ?>/groups/editor/<?= $class['id'] ?>">
                                         <i class="ti ti-pencil me-2"></i><?= gettext('Edit') ?>
                                     </a>
                                     <div class="dropdown-divider"></div>
@@ -391,7 +391,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
                 <div class="modal-header">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     <h4 class="modal-title" id="add-class-label">
-                        <?= gettext('Add') . ' ' . gettext('Sunday School') . ' ' . gettext('Class') ?>
+                        <?= gettext('Add Sunday School Class') ?>
                     </h4>
                 </div>
                 <div class="modal-body">

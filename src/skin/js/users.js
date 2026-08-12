@@ -1,4 +1,4 @@
-$(document).ready(function () {
+$(document).ready(() => {
   $("#user-listing-table").DataTable(window.CRM.plugin.dataTable);
 
   $(".setting-tip").click(function () {
@@ -178,7 +178,7 @@ function deleteUser(userId, userName) {
       ": <b>" +
       window.CRM.escapeHtml(String(userName || "")) +
       "</b></p>",
-    callback: function (result) {
+    callback: (result) => {
       if (result) {
         adminUserSecurityRequest(
           {
@@ -203,7 +203,7 @@ function restUserLoginCount(userId, userName) {
       ": <b>" +
       window.CRM.escapeHtml(String(userName || "")) +
       "</b></p>",
-    callback: function (result) {
+    callback: (result) => {
       if (result) {
         adminUserSecurityRequest(
           {
@@ -228,7 +228,7 @@ function resetUserPassword(userId, userName) {
       ": <b>" +
       window.CRM.escapeHtml(String(userName || "")) +
       "</b></p>",
-    callback: function (result) {
+    callback: (result) => {
       if (result) {
         adminUserSecurityRequest(
           {
@@ -255,7 +255,7 @@ function disableUserTwoFactorAuth(userId, userName) {
       ": <b>" +
       window.CRM.escapeHtml(String(userName || "")) +
       "</b></p>",
-    callback: function (result) {
+    callback: (result) => {
       if (result) {
         adminUserSecurityRequest(
           {

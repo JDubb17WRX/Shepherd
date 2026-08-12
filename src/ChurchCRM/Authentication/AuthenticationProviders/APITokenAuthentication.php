@@ -44,7 +44,7 @@ class APITokenAuthentication implements IAuthenticationProvider
 
         if ($candidateUser instanceof User && $candidateUser->isApiAuthenticationEligible()) {
             $this->currentUser = $candidateUser;
-            LoggerUtils::getAuthLogger()->debug(gettext('User authenticated via API Key: ') . $this->currentUser->getName());
+            LoggerUtils::getAuthLogger()->debug(sprintf(gettext('User authenticated via API Key: %s'), $this->currentUser->getName()));
             $authenticationResult->isAuthenticated = true;
         } else {
             $this->currentUser = null;

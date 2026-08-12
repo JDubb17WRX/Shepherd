@@ -38,7 +38,8 @@ RUN php -l healthz.php > /dev/null \
     && chown -R www-data:www-data Images uploads logs tmp_attach SQL plugins /data /config
 
 ENV XDG_DATA_HOME=/data \
-    XDG_CONFIG_HOME=/config
+    XDG_CONFIG_HOME=/config \
+    CHURCHCRM_URL_REWRITING=1
 
 USER www-data
 EXPOSE 8080

@@ -8,6 +8,7 @@ use ChurchCRM\model\ChurchCRM\Person;
 use ChurchCRM\model\ChurchCRM\PersonQuery;
 use ChurchCRM\model\ChurchCRM\WhyCame;
 use ChurchCRM\model\ChurchCRM\WhyCameQuery;
+use ChurchCRM\Utils\CSRFUtils;
 use ChurchCRM\Utils\InputUtils;
 use ChurchCRM\Utils\LoggerUtils;
 use ChurchCRM\Utils\RedirectUtils;
@@ -25,11 +26,16 @@ $person = PersonQuery::create()->findOneById($iPerson);
 $per_FirstName = $person->getFirstName();
 $per_LastName = $person->getLastName();
 
-$sPageTitle = gettext('"Why Came" notes for ') . $per_FirstName . ' ' . $per_LastName;
+$sPageTitle = sprintf(gettext('"Why Came" notes for %1$s %2$s'), $per_FirstName, $per_LastName);
 $sPageSubtitle = gettext('Record why attendees visited your church');
 
 // Is this the second pass?
 if (isset($_POST['Submit'])) {
+    if (!CSRFUtils::verifyRequest($_POST, 'whyCameEditor')) {
+        http_response_code(403);
+        die(gettext('Invalid CSRF token'));
+    }
+
     $tJoin = InputUtils::legacyFilterInput($_POST['Join']);
     $tCome = InputUtils::legacyFilterInput($_POST['Come']);
     $tSuggest = InputUtils::legacyFilterInput($_POST['Suggest']);
@@ -77,6 +83,12 @@ if (isset($_POST['Submit'])) {
 
 require_once __DIR__ . '/Include/Header.php';
 
+$whyCameAction = 'WhyCameEditor.php?' . http_build_query([
+    'PersonID' => $iPerson,
+    'WhyCameID' => $iWhyCameID,
+    'linkBack' => $linkBack,
+]);
+
 ?>
 <div class="card">
   <div class="card-header">
@@ -86,7 +98,8 @@ require_once __DIR__ . '/Include/Header.php';
     </h5>
   </div>
   <div class="card-body">
-    <form method="post" action="WhyCameEditor.php?<?= 'PersonID=' . $iPerson . '&WhyCameID=' . $iWhyCameID . '&linkBack=' . $linkBack ?>" name="WhyCameEditor">
+    <form method="post" action="<?= htmlspecialchars($whyCameAction, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" name="WhyCameEditor">
+      <?= CSRFUtils::getTokenInputField('whyCameEditor') ?>
       <div class="mb-3">
         <label class="form-label"><?= gettext('Why did you come to the church?') ?></label>
         <textarea name="Join" class="form-control" rows="3"><?= InputUtils::escapeHTML($tJoin) ?></textarea>

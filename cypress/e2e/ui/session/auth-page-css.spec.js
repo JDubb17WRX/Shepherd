@@ -8,15 +8,6 @@
  * Guards against regressions from the global→scoped CSS migration.
  */
 
-/** Toggle bEnableSelfRegistration via the admin API. value: "1" = on, "0" = off. */
-function setSelfReg(value) {
-    cy.makePrivateAdminAPICall(
-        "POST",
-        "admin/api/system/config/bEnableSelfRegistration",
-        { value },
-    );
-}
-
 describe("Auth Page CSS Regression", () => {
     describe("Login Page Styling", () => {
         beforeEach(() => {
@@ -32,10 +23,10 @@ describe("Auth Page CSS Regression", () => {
             cy.get(".login-card").should("be.visible");
         });
 
-        it("Should render sign-in button with auth-specific gradient styling", () => {
+        it("Should render sign-in button with Shepherd brand styling", () => {
             cy.get(".btn-sign-in").should("be.visible")
-                .invoke("css", "background-image")
-                .should("include", "gradient");
+                .and("have.css", "background-color", "rgb(45, 90, 39)")
+                .and("have.css", "background-image", "none");
         });
 
         it("Should render form inputs inside login form", () => {
@@ -48,46 +39,27 @@ describe("Auth Page CSS Regression", () => {
         });
     });
 
-    describe("Login Page — Segmented Pill Control (self-registration)", () => {
-        after(() => {
-            // Restore self-reg to disabled after this suite so other tests
-            // are not affected by the enabled state.
-            setSelfReg("0");
-        });
-
-        it("Pill control is hidden when self-registration is disabled", () => {
-            setSelfReg("0");
-            cy.visit("/session/begin");
-            cy.get(".login-tab-control").should("not.exist");
-            // Plain form title should appear instead
-            cy.get(".login-form-title").should("be.visible");
-        });
-
-        it("Pill control is visible when self-registration is enabled", () => {
-            setSelfReg("1");
+    describe("Login Page — Shepherd account-request navigation", () => {
+        it("Pill control remains visible while raw family registration is disabled", () => {
             cy.visit("/session/begin");
             cy.get(".login-tab-control").should("be.visible");
             cy.get(".login-tab-btn").should("have.length", 2);
         });
 
         it("Sign In pill is active by default", () => {
-            setSelfReg("1");
             cy.visit("/session/begin");
-            cy.get("#tab-signin").should("have.class", "active");
-            cy.get("#tab-register").should("not.have.class", "active");
+            cy.contains(".login-tab-btn.active", "Sign In").should("have.attr", "aria-selected", "true");
+            cy.contains("a.login-tab-btn", "Sign Up").should("not.have.class", "active");
         });
 
-        it("Register pill links to the registration page in a new tab", () => {
-            setSelfReg("1");
+        it("Sign Up pill links to Shepherd's account-request page", () => {
             cy.visit("/session/begin");
-            cy.get("#tab-register")
+            cy.contains("a.login-tab-btn", "Sign Up")
                 .should("have.attr", "href")
-                .and("include", "/external/register/");
-            cy.get("#tab-register").should("have.attr", "target", "_blank");
+                .and("include", "/session/signup");
         });
 
-        it("Login form is always visible regardless of self-reg setting", () => {
-            setSelfReg("1");
+        it("Login form remains visible beside the account-request option", () => {
             cy.visit("/session/begin");
             cy.get("input[name='User']").should("be.visible");
             cy.get("input[name='Password']").should("be.visible");

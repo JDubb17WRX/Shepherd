@@ -149,17 +149,13 @@ $("#cancelApiKeyReauthentication").on("click", () => {
   $("#apiKeyReauthentication").addClass("d-none");
 });
 
-// ── Theme Mode (Light / Dark) ────────────────────────────────────
+// ── Theme Mode (Light / Dark / Auto) ────────────────────────────
 $('input[name="themeMode"]').on("change", function () {
   const value = $(this).val();
   saveUserSetting("ui.style", value)
     .done(() => {
-      if (window.CRM.viewIsOwnProfile) {
-        if (value === "dark") {
-          document.documentElement.setAttribute("data-bs-theme", "dark");
-        } else {
-          document.documentElement.removeAttribute("data-bs-theme");
-        }
+      if (window.CRM.viewIsOwnProfile && window.CRM.theme) {
+        window.CRM.theme.setMode(value);
       }
       notifySuccess();
     })

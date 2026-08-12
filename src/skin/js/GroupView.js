@@ -277,81 +277,8 @@ function initializeGroupView() {
     });
   });
 
-  // ------------------------------------------------------------------ //
-  // Email dropdown: populate on first open, then handle clicks
-  // ------------------------------------------------------------------ //
-  var emailLoaded = false;
-  $("#emailDropdownBtn")
-    .parent()
-    .on("show.bs.dropdown", () => {
-      if (emailLoaded) return;
-      emailLoaded = true;
-      window.CRM.APIRequest({
-        method: "GET",
-        path: "groups/" + window.CRM.currentGroup + "/emails",
-      }).done((data) => {
-        var menu = $("#emailDropdownMenu");
-        menu.empty();
-        if (!data.all) {
-          menu.html('<span class="dropdown-item text-muted">' + i18next.t("No email addresses available") + "</span>");
-          return;
-        }
-        // All section
-        menu.append(
-          '<button class="dropdown-item" data-action="copy-emails" data-emails="' +
-            window.CRM.escapeHtml(data.all) +
-            '"><i class="fa-solid fa-copy me-2"></i>' +
-            i18next.t("Copy All Emails") +
-            "</button>",
-        );
-        menu.append(
-          '<button class="dropdown-item" data-action="mailto" data-emails="' +
-            window.CRM.escapeHtml(data.all) +
-            '"><i class="fa-solid fa-envelope me-2"></i>' +
-            i18next.t("Email All") +
-            "</button>",
-        );
-        menu.append(
-          '<button class="dropdown-item" data-action="bcc" data-emails="' +
-            window.CRM.escapeHtml(data.all) +
-            '"><i class="fa-solid fa-user-secret me-2"></i>' +
-            i18next.t("BCC All") +
-            "</button>",
-        );
-        // Per-role sections
-        if (data.roles && Object.keys(data.roles).length > 0) {
-          $.each(data.roles, (roleName, emails) => {
-            menu.append('<div class="dropdown-divider"></div>');
-            menu.append('<h6 class="dropdown-header">' + window.CRM.escapeHtml(roleName) + "</h6>");
-            menu.append(
-              '<button class="dropdown-item" data-action="copy-emails" data-emails="' +
-                window.CRM.escapeHtml(emails) +
-                '"><i class="fa-solid fa-copy me-2"></i>' +
-                i18next.t("Copy") +
-                "</button>",
-            );
-            menu.append(
-              '<button class="dropdown-item" data-action="mailto" data-emails="' +
-                window.CRM.escapeHtml(emails) +
-                '"><i class="fa-solid fa-envelope me-2"></i>' +
-                i18next.t("Email") +
-                "</button>",
-            );
-          });
-        }
-      });
-    });
-
-  // Handle email actions (delegated from dynamic items)
-  $("#group-view-toolbar").on("click", "[data-action='copy-emails']", function () {
-    window.CRM.comm.copyEmails($(this).data("emails"));
-  });
-  $("#group-view-toolbar").on("click", "[data-action='mailto']", function () {
-    window.CRM.comm.openMailto($(this).data("emails"));
-  });
-  $("#group-view-toolbar").on("click", "[data-action='bcc']", function () {
-    window.CRM.comm.openBcc($(this).data("emails"));
-  });
+  // Note: email action is handled by the email-composer.min.js bundle
+  // which auto-wires the [data-email-composer] button on the toolbar.
 
   // ------------------------------------------------------------------ //
   // Text dropdown: populate on first open, then handle clicks
@@ -808,7 +735,8 @@ function initDataTable() {
         title: i18next.t("Name"),
         data: "PersonId",
         render: (data, type, full) => {
-          var escapedName = $("<div>").text(full.Person.FullName).html();
+          // GHSA-m649-24q9-q6r4: HTML-escape for HTML content context (not attribute)
+          var escapedName = window.CRM.escapeHtml(full.Person.FullName || "");
           return (
             '<div class="d-flex align-items-center">' +
             '<img data-image-entity-type="person" data-image-entity-id="' +
@@ -841,8 +769,10 @@ function initDataTable() {
         defaultContent: "",
         render: (data) => {
           if (!data) return '<span class="text-muted">\u2014</span>';
+          // GHSA-m649-24q9-q6r4: HTML attribute-escape href value to prevent quote breakout;
+          // escapeAttribute preserves @ and + (not HTML-special) while encoding "
           var escaped = $("<div>").text(data).html();
-          return '<a href="tel:' + escaped + '">' + escaped + "</a>";
+          return '<a href="tel:' + window.CRM.escapeAttribute(data) + '">' + escaped + "</a>";
         },
       },
       {
@@ -852,8 +782,16 @@ function initDataTable() {
         defaultContent: "",
         render: (data) => {
           if (!data) return '<span class="text-muted">\u2014</span>';
+          // GHSA-m649-24q9-q6r4: HTML attribute-escape href value to prevent quote breakout;
+          // escapeAttribute preserves @ and + (not HTML-special) while encoding "
           var escaped = $("<div>").text(data).html();
-          return '<a href="mailto:' + escaped + '" target="_blank" rel="noopener noreferrer">' + escaped + "</a>";
+          return (
+            '<a href="mailto:' +
+            window.CRM.escapeAttribute(data) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            escaped +
+            "</a>"
+          );
         },
       },
       {
@@ -864,7 +802,8 @@ function initDataTable() {
         searchable: false,
         className: "text-end w-1 no-export",
         render: (data, type, full) => {
-          var escapedName = $("<div>").text(full.Person.FullName).html();
+          // GHSA-m649-24q9-q6r4: use escapeAttribute for data-name attribute context (encodes quotes)
+          var escapedName = window.CRM.escapeAttribute(full.Person.FullName || "");
           return (
             '<div class="dropdown">' +
             '<button class="btn btn-sm btn-ghost-secondary" type="button" data-bs-toggle="dropdown" data-bs-display="static">' +

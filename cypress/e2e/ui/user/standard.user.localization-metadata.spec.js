@@ -29,6 +29,7 @@ describe("Standard user localization metadata", () => {
                 200,
             );
 
+            cy.setupStandardSession({ forceLogin: true });
             cy.visit("/v2/dashboard");
             cy.get("html").should("have.attr", "lang", language);
             if (direction === null) {

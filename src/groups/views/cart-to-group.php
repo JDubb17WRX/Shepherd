@@ -57,7 +57,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
                     <h3 class="card-title"><?= gettext('Add to Group') ?></h3>
                 </div>
                 <div class="card-body">
-                    <form name="CartToGroup" action="<?= $sRootPath ?>/groups/cart-to-group" method="POST">
+                    <form name="CartToGroup" action="<?= $sRootPath ?>/groups/cart/add" method="POST">
                         <div class="mb-3">
                             <label class="form-label" for="GroupID"><?= gettext('Select Group') ?></label>
                             <select id="GroupID" name="GroupID" class="form-select" onchange="UpdateRoles();" required>
@@ -98,7 +98,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
                     <div class="mb-3">
                         <i class="ti ti-shopping-cart-off" style="font-size: 3rem; color: var(--tblr-muted);"></i>
                     </div>
-                    <h3 class="text-body-secondary"><?= gettext('Your cart is empty!') ?></h3>
+                    <h3 class="text-body-secondary"><?= gettext('Your cart is empty') ?></h3>
                     <p class="text-secondary"><?= gettext('Add people to your cart first, then come back to add them to a group.') ?></p>
                 </div>
             </div>

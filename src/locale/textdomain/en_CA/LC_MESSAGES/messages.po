@@ -35,10 +35,6 @@ msgid "Show Neighbors"
 msgstr "Show Neighbours"
 
 #: 
-msgid "Scan check"
-msgstr "Scan cheque"
-
-#: 
 msgid "City, State, Zip"
 msgstr "City, Province, Postal Code"
 
@@ -55,4 +51,24 @@ msgstr "Postal Code"
 #, fuzzy
 msgid "Show neighbors with these classifications"
 msgstr "Show neighbours with these classifications"
+
+#: 
+msgid "Primary Color"
+msgstr "Primary Colour"
+
+#: 
+msgid "Set the accent color used for buttons, links, and active elements"
+msgstr "Set the accent colour used for buttons, links, and active elements"
+
+#: 
+msgid "Invalid color format. Use hex colors like #FF0000."
+msgstr "Invalid colour format. Use hex colours like #FF0000."
+
+#: 
+msgid "Background Color"
+msgstr "Background Colour"
+
+#: 
+msgid "Foreground Color"
+msgstr "Foreground Colour"
 

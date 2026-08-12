@@ -32,7 +32,7 @@ if (AuthenticationManager::getCurrentUser()->isAdmin()) {
 $viewedUserLocaleInfo = new LocaleInfo(SystemConfig::getValue('sLanguage'), $user->getSetting('ui.locale'));
 
 // Read user settings server-side so controls are pre-populated without JS API calls
-$_userStyle = $user->getSettingValue('ui.style');
+$_userThemeMode = $user->getThemeMode(); // 'auto' | 'default' | 'dark'
 $_userPrimary = $user->getSettingValue('ui.theme.primary');
 $_userTableSize = $user->getSettingValue('ui.table.size');
 
@@ -223,19 +223,25 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
               <div class="col-sm-9">
                 <div class="form-selectgroup">
                   <label class="form-selectgroup-item">
-                    <input type="radio" name="themeMode" value="default" class="form-selectgroup-input" id="themeModeLight"<?= $_userStyle !== 'dark' ? ' checked' : '' ?>>
+                    <input type="radio" name="themeMode" value="auto" class="form-selectgroup-input" id="themeModeAuto"<?= $_userThemeMode === 'auto' ? ' checked' : '' ?>>
+                    <span class="form-selectgroup-label">
+                      <i class="ti ti-device-desktop me-1"></i><?= gettext("Auto") ?>
+                    </span>
+                  </label>
+                  <label class="form-selectgroup-item">
+                    <input type="radio" name="themeMode" value="default" class="form-selectgroup-input" id="themeModeLight"<?= $_userThemeMode === 'default' ? ' checked' : '' ?>>
                     <span class="form-selectgroup-label">
                       <i class="ti ti-sun me-1"></i><?= gettext("Light") ?>
                     </span>
                   </label>
                   <label class="form-selectgroup-item">
-                    <input type="radio" name="themeMode" value="dark" class="form-selectgroup-input" id="themeModeDark"<?= $_userStyle === 'dark' ? ' checked' : '' ?>>
+                    <input type="radio" name="themeMode" value="dark" class="form-selectgroup-input" id="themeModeDark"<?= $_userThemeMode === 'dark' ? ' checked' : '' ?>>
                     <span class="form-selectgroup-label">
                       <i class="ti ti-moon me-1"></i><?= gettext("Dark") ?>
                     </span>
                   </label>
                 </div>
-                <small class="form-hint"><?= gettext("Choose between light and dark color scheme") ?></small>
+                <small class="form-hint"><?= gettext("Auto follows your OS or browser setting; Light and Dark override it") ?></small>
               </div>
             </div>
 
@@ -330,7 +336,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
                 <div><i class="ti ti-info-circle me-2 mt-1"></i></div>
                 <div>
                   <h4 class="alert-title"><?= gettext("Missing or incorrect translations?") ?></h4>
-                  <p class="mb-2"><?= gettext("ChurchCRM translations are managed by the community on POEditor. You can help by:") ?></p>
+                  <p class="mb-2"><?= gettext("ChurchCRM translations are managed by the community on POEditor. You can help by") ?>:</p>
                   <ul class="mb-2">
                     <li><?= gettext("Fixing incorrect or awkward translations in your language") ?></li>
                     <li><?= gettext("Translating missing strings to improve coverage") ?></li>
@@ -393,7 +399,7 @@ require SystemURLs::getDocumentRoot() . '/Include/Header.php';
             <hr>
 
             <h4 class="mb-3"><?= gettext("Usage") ?></h4>
-            <p class="text-body-secondary"><?= gettext("Include your API key in requests using the x-api-key header:") ?></p>
+            <p class="text-body-secondary"><?= gettext("Include your API key in requests using the x-api-key header") ?>:</p>
             <pre class="p-3 bg-light rounded"><code>curl -H "x-api-key: &lt;your-api-key&gt;" \
      <?= SystemURLs::getURL() ?>/api/person/1</code></pre>
           </div>
