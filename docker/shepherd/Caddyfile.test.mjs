@@ -93,6 +93,10 @@ test("protects database backups and all persisted uploads", () => {
     assert.match(protectedPaths, new RegExp(`${path.replaceAll("/", "\\/")}\\/\\*`, "u"));
   }
   assert.match(caddyfile, /respond @protected 404/u);
+  assert.ok(
+    caddyfile.indexOf("respond @protected 404") < caddyfile.indexOf("handle /shepherd/* {"),
+    "persisted paths must be denied before the Shepherd catch-all",
+  );
 });
 
 test("declares configured Caddy rewriting to the prerequisite check", () => {

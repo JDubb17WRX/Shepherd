@@ -134,3 +134,11 @@ test('logout invalidates server state and expires the scoped browser cookie', as
     assert.match(authenticationManager, /'path' => \$cookieParameters\['path'\]/);
     assert.match(authenticationManager, /unset\(\$_COOKIE\[session_name\(\)\]\)/);
 });
+
+test('kiosk bearer cookies are secure on proxied HTTPS requests', async () => {
+    const kiosk = await read('src/kiosk/index.php');
+
+    assert.match(kiosk, /HTTP_X_FORWARDED_PROTO/);
+    assert.equal((kiosk.match(/'secure'\s*=>\s*\$isHttps/g) || []).length, 2);
+    assert.equal((kiosk.match(/setcookie\('kioskCookie'/g) || []).length, 2);
+});

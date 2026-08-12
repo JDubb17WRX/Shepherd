@@ -23,6 +23,8 @@ $basePath = SlimUtils::getBasePath('/kiosk');
 // Determine if this is an admin route or a device route
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 $isAdminRoute = str_contains($requestUri, '/kiosk/admin') || str_contains($requestUri, '/kiosk/api');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
 // For device routes, handle kiosk device initialization
 if (!$isAdminRoute) {
@@ -45,6 +47,7 @@ if (!$isAdminRoute) {
                 setcookie('kioskCookie', '', [
                     'expires'  => time() - 3600,
                     'path'     => SystemURLs::getRootPath() . '/kiosk/',
+                    'secure'   => $isHttps,
                     'httponly'  => true,
                     'samesite' => 'Lax',
                 ]);
@@ -60,6 +63,7 @@ if (!$isAdminRoute) {
         setcookie('kioskCookie', $guid, [
             'expires'  => time() + (90 * 24 * 60 * 60), // 90 days
             'path'     => SystemURLs::getRootPath() . '/kiosk/',
+            'secure'   => $isHttps,
             'httponly'  => true,
             'samesite' => 'Lax',
         ]);
