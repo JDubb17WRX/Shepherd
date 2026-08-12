@@ -71,11 +71,13 @@ test('both HTML shells declare an escaped BCP 47 language tag', async () => {
 });
 
 test('website content editing reuses only completed local administrator sessions', async () => {
-    const [api, routes, service, repository, caddyfile, upgrades, migration, install] = await Promise.all([
+    const [api, routes, service, repository, bootstrapper, loadConfigs, caddyfile, upgrades, migration, install] = await Promise.all([
         read('src/api/index.php'),
         read('src/api/routes/website-content.php'),
         read('src/ChurchCRM/Shepherd/WebsiteContentService.php'),
         read('src/ChurchCRM/Shepherd/WebsiteContentRepository.php'),
+        read('src/ChurchCRM/Bootstrapper.php'),
+        read('src/Include/LoadConfigs.php'),
         read('docker/shepherd/Caddyfile'),
         read('src/mysql/upgrade.json'),
         read('src/mysql/upgrade/7.6.1-shepherd-website-content.sql'),
@@ -90,6 +92,12 @@ test('website content editing reuses only completed local administrator sessions
     assert.match(routes, /CSRFMiddleware\('website_content_editor'\)/);
     assert.match(routes, /AuthenticationManager::isCompletedLocalAuthentication\(\)/);
     assert.match(routes, /X-CSRF|CSRFToken/);
+
+    assert.match(bootstrapper, /bool \$initializeSession = true/);
+    assert.match(bootstrapper, /if \(\$initializeSession\) \{\s+self::initSession\(\);/);
+    assert.match(loadConfigs, /isPublicWebsiteContentRead/);
+    assert.match(loadConfigs, /isAnonymousEditorProbe/);
+    assert.match(loadConfigs, /sessionCookieName/);
 
     assert.match(service, /MAX_CONTENT_BYTES/);
     assert.match(service, /private const PAGE_KEYS = \[/);
@@ -113,4 +121,13 @@ test('website content editing reuses only completed local administrator sessions
     assert.match(migration, /CREATE TABLE IF NOT EXISTS `shepherd_website_content`/);
     assert.match(install, /CREATE TABLE `shepherd_website_content`/);
     assert.match(caddyfile, /request_body @websiteContentUpdate[\s\S]*max_size 2100000/);
+});
+
+test('logout invalidates server state and expires the scoped browser cookie', async () => {
+    const authenticationManager = await read('src/ChurchCRM/Authentication/AuthenticationManager.php');
+
+    assert.match(authenticationManager, /session_destroy\(\)/);
+    assert.match(authenticationManager, /setcookie\(session_name\(\), '', \[/);
+    assert.match(authenticationManager, /'path' => \$cookieParameters\['path'\]/);
+    assert.match(authenticationManager, /unset\(\$_COOKIE\[session_name\(\)\]\)/);
 });

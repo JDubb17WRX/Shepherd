@@ -31,9 +31,11 @@ describe('Administrator website content API', () => {
             expect(response.body).to.include.keys('page', 'content', 'revision');
             expect(response.body.page).to.eq(pageKey);
             expectNoStore(response);
+            expect(response.headers).not.to.have.property('set-cookie');
         });
         cy.request({ url: sessionUrl, failOnStatusCode: false }).then((response) => {
             expect(response.status).to.eq(401);
+            expect(response.headers).not.to.have.property('set-cookie');
         });
         cy.request('/api/public/website-content/privacy').then((response) => {
             expect(response.status).to.eq(200);
