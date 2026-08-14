@@ -86,7 +86,7 @@ describe("Cart to Family — UI", () => {
         cy.get(".empty").should("be.visible");
         cy.get(".empty-title").should("contain", "cart is empty");
         cy.get("#cartToFamilyForm").should("not.exist");
-        cy.get("a[href*='/people/cart']").should("be.visible");
+        cy.get('a[href$="/v2/cart"]').should("be.visible");
     });
 
     // ── T2: Cart with 1 person → form displayed ─────────────────────────────

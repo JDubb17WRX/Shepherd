@@ -1,6 +1,6 @@
 # Shepherd
 
-Shepherd 7.6.1 is the Elkins Park Reformed Presbyterian Church management portal. It is a branded fork based on [ChurchCRM 7.6.0](https://github.com/ChurchCRM/CRM/tree/7.6.0), licensed under the MIT License. The upstream `LICENSE` file and attribution are intentionally retained.
+Shepherd 7.6.2 is the Elkins Park Reformed Presbyterian Church management portal. It is a branded fork based on [ChurchCRM 7.6.0](https://github.com/ChurchCRM/CRM/tree/7.6.0), licensed under the MIT License. The upstream `LICENSE` file and attribution are intentionally retained.
 
 ## Upstream baseline and updates
 

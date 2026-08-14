@@ -37,7 +37,7 @@ $group->get('[/]', function (Request $request, Response $response): Response {
         'sRootPath'          => SystemURLs::getRootPath(),
         'sPageTitle'         => gettext('Plugin Management'),
         'aBreadcrumbs'       => PageHeader::breadcrumbs([
-            [gettext('Admin'), '/admin/dashboard'],
+            [gettext('Admin'), '/admin/'],
             [gettext('Plugin Management')],
         ]),
         'sPageHeaderButtons' => PageHeader::buttons([

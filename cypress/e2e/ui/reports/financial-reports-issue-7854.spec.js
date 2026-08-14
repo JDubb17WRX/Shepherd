@@ -156,11 +156,11 @@ describe("Issue #7854 - Financial Reports Fix", () => {
                 cy.intercept("POST", "**/AdvancedDeposit.php").as("sortedReport");
                 cy.get("#createReport").click();
 
-                cy.url().then((url) => {
-                    if (!url.includes('ReturnMessage=NoRows')) {
-                        cy.wait("@sortedReport").then((interception) => {
-                            expect(interception.response.statusCode).to.equal(200);
-                        });
+                cy.wait("@sortedReport").then((interception) => {
+                    const { statusCode, headers } = interception.response;
+                    expect(statusCode).to.be.oneOf([200, 302]);
+                    if (statusCode === 302) {
+                        expect(headers.location).to.include("ReturnMessage=NoRows");
                     }
                 });
 

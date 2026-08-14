@@ -10,6 +10,12 @@ describe('Plugin Management UI', () => {
             cy.contains('Core Plugins').should('be.visible');
         });
 
+        it('should link the Admin breadcrumb to the admin landing page', () => {
+            cy.get('.breadcrumb a').contains('Admin')
+                .should('have.attr', 'href')
+                .and('match', /\/admin\/$/);
+        });
+
         it('should display core plugins section', () => {
             cy.contains('Core Plugins').should('be.visible');
             // Should have at least the custom-links plugin card

@@ -2,6 +2,21 @@
 export function setupCommonNodeEvents(on: any, config: any) {
   const runtimeValues = new Map<string, unknown>();
 
+  const createDatabaseConnection = async () => {
+    const mysql = require('mysql2/promise');
+    const baseUrl = new URL(config.baseUrl || 'http://127.0.0.1/');
+    const inferredDatabasePort = baseUrl.port === '8081' ? 3308 : baseUrl.port === '8080' ? 3307 : 3306;
+    const databasePort = Number(config.env.taskDbPort || inferredDatabasePort);
+
+    return mysql.createConnection({
+      host: config.env.taskDbHost || '127.0.0.1',
+      port: databasePort,
+      user: config.env['db.user'] || 'churchcrm',
+      password: config.env['db.password'] || 'changeme',
+      database: config.env['db.name'] || 'churchcrm',
+    });
+  };
+
   const decodeBase32 = (secret: string): Buffer => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     const normalizedSecret = secret.replace(/[\s-]/g, '').replace(/=+$/, '').toUpperCase();
@@ -45,21 +60,23 @@ export function setupCommonNodeEvents(on: any, config: any) {
       return String(binary % 1000000).padStart(6, '0');
     },
     async resetTwoFactorReplay({ username }: { username: string }) {
-      const mysql = require('mysql2/promise');
-      const baseUrl = new URL(config.baseUrl || 'http://127.0.0.1/');
-      const inferredDatabasePort = baseUrl.port === '8081' ? 3308 : baseUrl.port === '8080' ? 3307 : 3306;
-      const databasePort = Number(config.env.taskDbPort || inferredDatabasePort);
-      const connection = await mysql.createConnection({
-        host: config.env.taskDbHost || '127.0.0.1',
-        port: databasePort,
-        user: config.env['db.user'] || 'churchcrm',
-        password: config.env['db.password'] || 'changeme',
-        database: config.env['db.name'] || 'churchcrm',
-      });
+      const connection = await createDatabaseConnection();
       try {
         const [result] = await connection.execute(
           'UPDATE user_usr SET usr_TwoFactorAuthLastKeyTimestamp = NULL WHERE usr_UserName = ?',
           [username],
+        );
+        return result.affectedRows;
+      } finally {
+        await connection.end();
+      }
+    },
+    async restoreUserApiKey({ username, apiKey }: { username: string; apiKey: string }) {
+      const connection = await createDatabaseConnection();
+      try {
+        const [result] = await connection.execute(
+          'UPDATE user_usr SET usr_apiKey = ? WHERE usr_UserName = ?',
+          [apiKey, username],
         );
         return result.affectedRows;
       } finally {

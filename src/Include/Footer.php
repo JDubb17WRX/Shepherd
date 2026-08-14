@@ -39,7 +39,7 @@ $isAdmin = AuthenticationManager::getCurrentUser()->isAdmin();
           </div>
           <div class="col-12 col-lg-auto mt-3 mt-lg-0">
             Elkins Park Reformed Presbyterian Church ·
-            <a href="https://github.com/ChurchCRM/CRM/tree/7.5.0" target="_blank" rel="noopener noreferrer">ChurchCRM (MIT)</a>
+            <a href="https://github.com/ChurchCRM/CRM" target="_blank" rel="noopener noreferrer">ChurchCRM (MIT)</a>
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ use ChurchCRM\Service\SystemService;
 <div class="auth-footer">
   <div>
     <strong>Shepherd</strong> for Elkins Park Reformed Presbyterian Church.
-    Based on <a href="https://github.com/ChurchCRM/CRM/tree/7.5.0" target="_blank" rel="noopener noreferrer">ChurchCRM 7.5.0</a> under the MIT License.
+    Based on <a href="https://github.com/ChurchCRM/CRM" target="_blank" rel="noopener noreferrer">ChurchCRM</a> under the MIT License.
   </div>
   <div class="auth-footer-social">
     <a href="https://www.facebook.com/getChurchCRM" target="_blank" rel="noopener noreferrer" title="Facebook">

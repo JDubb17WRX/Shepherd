@@ -22,6 +22,10 @@
     # Caddy does not honor the deny rules in the directories' .htaccess files.
     # See: GHSA-r286-h493-ppwj
     @privateMedia path_regexp privateMedia (?i)^/shepherd/Images/(?:Person|Family)(?:/|$)
+    # These Slim modules render PHP templates from their views directories.
+    # Apache blocks direct template execution through each module's .htaccess;
+    # Caddy must provide the equivalent protection explicitly.
+    @moduleViews path_regexp moduleViews (?i)^/shepherd/(?:people|groups|event|fundraiser)/views(?:/|$).*\.php$
     @pluginPhp path_regexp pluginphp ^/shepherd/plugins/(community|core)/.+\.(php|phar|phtml|pht|php[3-9])$
     @websiteContentUpdate {
         method PUT
@@ -54,6 +58,7 @@
         respond @dotfiles 404
         respond @protected 404
         respond @privateMedia 404
+        respond @moduleViews 404
         respond @pluginPhp 404
 
         request_body @websiteContentUpdate {
@@ -78,6 +83,22 @@
         }
         handle /shepherd/finance/* {
             try_files {path} /shepherd/finance/index.php
+            php_server
+        }
+        handle /shepherd/people/* {
+            try_files {path} /shepherd/people/index.php
+            php_server
+        }
+        handle /shepherd/groups/* {
+            try_files {path} /shepherd/groups/index.php
+            php_server
+        }
+        handle /shepherd/event/* {
+            try_files {path} /shepherd/event/index.php
+            php_server
+        }
+        handle /shepherd/fundraiser/* {
+            try_files {path} /shepherd/fundraiser/index.php
             php_server
         }
         handle /shepherd/kiosk/* {

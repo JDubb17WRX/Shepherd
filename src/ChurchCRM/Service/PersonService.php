@@ -3,6 +3,7 @@
 namespace ChurchCRM\Service;
 
 use ChurchCRM\dto\SystemConfig;
+use ChurchCRM\dto\SystemURLs;
 use ChurchCRM\model\ChurchCRM\FamilyQuery;
 use ChurchCRM\model\ChurchCRM\ListOptionQuery;
 use ChurchCRM\model\ChurchCRM\Person2group2roleP2g2rQuery;
@@ -43,7 +44,7 @@ class PersonService
                 $familyRole = '(';
                 if ($values['familyID']) {
                     $roleText = $person->getFamilyRole() ? $person->getFamilyRoleName() : gettext('Part');
-                    $familyLink = '<a href="people/family/' . $values['familyID'] . '">' . $person->getFamily()->getName() . '</a>';
+                    $familyLink = '<a href="' . SystemURLs::getRootPath() . '/people/family/' . $values['familyID'] . '">' . $person->getFamily()->getName() . '</a>';
                     $familyRole .= sprintf(gettext('%1$s of the %2$s family'), $roleText, $familyLink) . ' )';
                 } else {
                     $familyRole = gettext('(No assigned family)');

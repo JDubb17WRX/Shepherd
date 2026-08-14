@@ -31,6 +31,12 @@ describe("Communication Menu and Dashboards", () => {
             cy.contains("Mailchimp");
         });
 
+        it("links Mailchimp settings to plugin management", () => {
+            cy.visit("v2/email/dashboard");
+            cy.get('a[href$="/plugins/management#plugin-mailchimp"]')
+                .should("be.visible");
+        });
+
         it("shows email tools", () => {
             cy.visit("v2/email/dashboard");
             cy.contains("Email Tools");
@@ -69,6 +75,12 @@ describe("Communication Menu and Dashboards", () => {
             cy.contains("SMS Integration");
             // Either configured or not configured status
             cy.get(".alert").should("exist");
+        });
+
+        it("links Vonage settings to plugin management", () => {
+            cy.visit("v2/text/dashboard");
+            cy.get('a[href$="/plugins/management#plugin-vonage"]')
+                .should("be.visible");
         });
 
         it("shows text tools info", () => {

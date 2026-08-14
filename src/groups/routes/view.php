@@ -174,7 +174,7 @@ function viewGroup(Request $request, Response $response, array $args): Response
     if ($bCanManageGroups) {
         $headerButtons[] = [
             'label' => gettext('Edit Group'),
-            'url'   => SystemURLs::getRootPath() . '/groups/editor/' . $iGroupID,
+            'url'   => '/groups/editor/' . $iGroupID,
             'icon'  => 'fa-pen',
             'style' => 'outline-secondary',
         ];
@@ -205,4 +205,3 @@ function viewGroup(Request $request, Response $response, array $args): Response
     $renderer = new PhpRenderer(__DIR__ . '/../views/');
     return $renderer->render($response, 'group-view.php', $pageArgs);
 }
-
