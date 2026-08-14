@@ -51,7 +51,7 @@ $app->group('/cart', function (RouteCollectorProxy $group): void {
             'sPageSubtitle' => gettext('Assign people from your cart to a family'),
             'aBreadcrumbs'  => PageHeader::breadcrumbs([
                 [gettext('People'), '/people/dashboard'],
-                [gettext('Cart'), '/people/cart'],
+                [gettext('Cart'), '/v2/cart'],
                 [gettext('Add to Family')],
             ]),
             'cartPersons'   => $cartPersons,
@@ -139,7 +139,7 @@ $app->group('/cart', function (RouteCollectorProxy $group): void {
                 'sPageSubtitle' => gettext('Assign people from your cart to a family'),
                 'aBreadcrumbs'  => PageHeader::breadcrumbs([
                     [gettext('People'), '/people/dashboard'],
-                    [gettext('Cart'), '/people/cart'],
+                    [gettext('Cart'), '/v2/cart'],
                     [gettext('Add to Family')],
                 ]),
                 'cartPersons'   => $cartPersons,
@@ -195,7 +195,7 @@ $app->group('/cart', function (RouteCollectorProxy $group): void {
                 'sPageSubtitle' => gettext('Assign people from your cart to a family'),
                 'aBreadcrumbs'  => PageHeader::breadcrumbs([
                     [gettext('People'), '/people/dashboard'],
-                    [gettext('Cart'), '/people/cart'],
+                    [gettext('Cart'), '/v2/cart'],
                     [gettext('Add to Family')],
                 ]),
                 'cartPersons'   => $cartPersons,

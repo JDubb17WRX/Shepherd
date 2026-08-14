@@ -11,6 +11,9 @@ const integrityService = readFileSync(
 );
 const lines = caddyfile.split(/\r?\n/u).map((line) => line.trim());
 const matcher = lines.find((line) => line.startsWith("@privateMedia path_regexp privateMedia "));
+const moduleViewsMatcher = lines.find((line) =>
+  line.startsWith("@moduleViews path_regexp moduleViews "),
+);
 
 assert.ok(matcher, "Caddyfile must define the @privateMedia path_regexp matcher");
 
@@ -22,6 +25,21 @@ const privateMediaPattern = new RegExp(javascriptExpression, caseInsensitive ? "
 function isPrivateMediaRequest(requestPath) {
   return privateMediaPattern.test(requestPath);
 }
+
+assert.ok(moduleViewsMatcher, "Caddyfile must define the @moduleViews path_regexp matcher");
+
+const moduleViewsExpression = moduleViewsMatcher.replace(
+  /^@moduleViews path_regexp moduleViews\s+/u,
+  "",
+);
+const moduleViewsCaseInsensitive = moduleViewsExpression.startsWith("(?i)");
+const moduleViewsJavascriptExpression = moduleViewsCaseInsensitive
+  ? moduleViewsExpression.slice(4)
+  : moduleViewsExpression;
+const moduleViewsPattern = new RegExp(
+  moduleViewsJavascriptExpression,
+  moduleViewsCaseInsensitive ? "iu" : "u",
+);
 
 test("denies unauthenticated direct requests for private media sentinels", () => {
   const sentinels = [
@@ -78,6 +96,83 @@ test("returns 404 before the Shepherd catch-all can serve private media", () => 
   assert.ok(responseIndex >= 0, "the route block must contain the private-media denial");
   assert.ok(catchAllIndex >= 0, "the route block must contain the Shepherd catch-all");
   assert.ok(responseIndex < catchAllIndex, "the deny response must precede the catch-all");
+});
+
+test("routes every standalone Slim module through its own front controller", () => {
+  const catchAllIndex = caddyfile.indexOf("handle /shepherd/* {");
+
+  for (const moduleName of ["people", "groups", "event", "fundraiser"]) {
+    const handler = `handle /shepherd/${moduleName}/* {`;
+    const handlerIndex = caddyfile.indexOf(handler);
+    assert.ok(handlerIndex >= 0, `${moduleName} must have a dedicated route handler`);
+    assert.ok(handlerIndex < catchAllIndex, `${moduleName} must be routed before the root catch-all`);
+
+    assert.match(
+      caddyfile,
+      new RegExp(
+        `handle /shepherd/${moduleName}/\\* \\{[\\s\\S]*?try_files \\{path\\} /shepherd/${moduleName}/index\\.php[\\s\\S]*?php_server[\\s\\S]*?\\n        \\}`,
+        "u",
+      ),
+      `${moduleName} must fall back to its own front controller and execute through FrankenPHP`,
+    );
+  }
+});
+
+test("denies direct Slim module PHP views before route handlers", () => {
+  for (const moduleName of ["people", "groups", "event", "fundraiser"]) {
+    for (const requestPath of [
+      `/shepherd/${moduleName}/views/page.php`,
+      `/shepherd/${moduleName}/views/nested/page.PHP`,
+    ]) {
+      assert.ok(moduleViewsPattern.test(requestPath), `${requestPath} must be denied`);
+    }
+  }
+
+  for (const requestPath of [
+    "/shepherd/people/views/page.html",
+    "/shepherd/people/preview/page.php",
+    "/shepherd/finance/views/page.php",
+    "/shepherd/people/views.php",
+  ]) {
+    assert.equal(moduleViewsPattern.test(requestPath), false, `${requestPath} must remain unmatched`);
+  }
+
+  const responseIndex = caddyfile.indexOf("respond @moduleViews 404");
+  const firstModuleHandlerIndex = caddyfile.indexOf("handle /shepherd/people/* {");
+  const catchAllIndex = caddyfile.indexOf("handle /shepherd/* {");
+  assert.ok(responseIndex >= 0, "the module-view denial must be configured");
+  assert.ok(responseIndex < firstModuleHandlerIndex, "the denial must precede module routing");
+  assert.ok(responseIndex < catchAllIndex, "the denial must precede the Shepherd catch-all");
+});
+
+test("keeps the generic FrankenPHP example's route table complete", () => {
+  const example = readFileSync(new URL("../examples/frankenphp/Caddyfile", import.meta.url), "utf8");
+  const exampleCatchAllIndex = example.indexOf("handle {");
+  const exampleRouteIndex = example.indexOf("route {");
+  const moduleViewsDenialIndex = example.indexOf("respond @moduleViews 404");
+
+  assert.ok(exampleRouteIndex >= 0, "the generic example must preserve literal handler order");
+  assert.ok(moduleViewsDenialIndex > exampleRouteIndex, "the module-view denial must be in the route block");
+  assert.ok(moduleViewsDenialIndex < exampleCatchAllIndex, "the denial must precede the example catch-all");
+
+  for (const moduleName of ["people", "groups", "event", "fundraiser"]) {
+    const handlerIndex = example.indexOf(`handle /${moduleName}/* {`);
+    assert.ok(handlerIndex >= 0, `${moduleName} must be documented in the generic example`);
+    assert.ok(handlerIndex < exampleCatchAllIndex, `${moduleName} must precede the example catch-all`);
+    assert.match(example, new RegExp(`try_files \\{path\\} /${moduleName}/index\\.php`, "u"));
+    assert.match(
+      example,
+      new RegExp(
+        `#     handle /churchcrm/${moduleName}/\\* \\{[\\s\\S]*?#         try_files \\{path\\} /churchcrm/${moduleName}/index\\.php`,
+        "u",
+      ),
+      `${moduleName} must be documented for subdirectory installs`,
+    );
+  }
+
+  assert.match(example, /@moduleViews path_regexp moduleViews/u);
+  assert.match(example, /respond @moduleViews 404/u);
+  assert.match(example, /#     route \{/u);
 });
 
 test("protects database backups and all persisted uploads", () => {

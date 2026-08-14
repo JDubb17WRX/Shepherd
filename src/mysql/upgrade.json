@@ -89,9 +89,14 @@
     ],
     "dbVersion": "7.6.0"
   },
-  "current": {
+  "pre-7.6.1": {
     "versions": ["7.6.0"],
     "scripts": ["/mysql/upgrade/7.6.1-shepherd-website-content.sql"],
     "dbVersion": "7.6.1"
+  },
+  "current": {
+    "versions": ["7.6.1"],
+    "scripts": ["/mysql/upgrade/7.6.2-fundraiser-schema-repair.php"],
+    "dbVersion": "7.6.2"
   }
 }

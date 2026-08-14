@@ -49,7 +49,7 @@ $app->get('/editor/{groupID:[0-9]+}', function (Request $request, Response $resp
     $sPageHeaderButtons = PageHeader::buttons([
         [
             'label' => gettext('Back to Group'),
-            'url'   => SystemURLs::getRootPath() . '/groups/view/' . $iGroupID,
+            'url'   => '/groups/view/' . $iGroupID,
             'icon'  => 'fa-arrow-left',
             'style' => 'outline-secondary',
         ],

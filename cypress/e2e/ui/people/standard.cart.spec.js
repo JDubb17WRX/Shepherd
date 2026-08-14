@@ -146,6 +146,22 @@ describe("Standard Cart", () => {
         cy.contains("You have no items in your cart", { timeout: 10000 }).should('be.visible');
     });
 
+    it("Cart dropdown maps the current cart with the supported map route", () => {
+        cy.request({
+            method: "POST",
+            url: "/api/cart/",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Persons: [1] }),
+        });
+
+        cy.visit("/v2/cart");
+        waitForCartReady();
+        cy.get("#cart-dropdown-menu")
+            .find('a[href$="/v2/map?groupId=0"]')
+            .should("exist")
+            .and("contain", "Map Cart");
+    });
+
     // NOTE: the pure-API "Cart API returns correct duplicate information"
     // test lives in cypress/e2e/api/private/standard/private.cart.duplicates.spec.js.
 });

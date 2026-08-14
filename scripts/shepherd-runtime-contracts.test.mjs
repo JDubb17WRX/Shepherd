@@ -126,6 +126,47 @@ test('website content editing reuses only completed local administrator sessions
     assert.match(caddyfile, /request_body @websiteContentUpdate[\s\S]*max_size 2100000/);
 });
 
+test('7.6.2 repairs missing fundraiser fields without changing correct schemas', async () => {
+    const [upgradeJson, migration, install, ormSchema, composer, packageJson, packageLock, dockerfile, cypressSeed] = await Promise.all([
+        read('src/mysql/upgrade.json'),
+        read('src/mysql/upgrade/7.6.2-fundraiser-schema-repair.php'),
+        read('src/mysql/install/Install.sql'),
+        read('orm/schema.xml'),
+        read('src/composer.json'),
+        read('package.json'),
+        read('package-lock.json'),
+        read('docker/shepherd/Dockerfile'),
+        read('cypress/data/seed.sql'),
+    ]);
+    const upgrades = JSON.parse(upgradeJson);
+
+    assert.deepEqual(upgrades.current, {
+        versions: ['7.6.1'],
+        scripts: ['/mysql/upgrade/7.6.2-fundraiser-schema-repair.php'],
+        dbVersion: '7.6.2',
+    });
+
+    const expectedColumns = ['fr_EndDate', 'fr_Status', 'fr_GoalAmount', 'fr_Type', 'fr_fund_ID'];
+    for (const column of expectedColumns) {
+        assert.match(migration, new RegExp(`['"]${column}['"]\\s*=>`));
+        assert.match(install, new RegExp('`' + column + '`'));
+        assert.match(ormSchema, new RegExp(`name="${column}"`));
+    }
+    assert.match(migration, /information_schema\.COLUMNS/);
+    assert.match(migration, /if \(\$fundraiserColumnExists\(\$columnName\)\)/);
+    assert.match(migration, /ADD COLUMN `\{\$columnName\}`/);
+    assert.match(migration, /\$fundraiserAddedColumns\[\] = \$columnName/);
+    assert.match(migration, /in_array\('fr_EndDate', \$fundraiserAddedColumns, true\)/);
+    assert.doesNotMatch(migration, /DROP\s+(?:COLUMN|TABLE)/i);
+
+    assert.equal(JSON.parse(composer).version, '7.6.2');
+    assert.equal(JSON.parse(packageJson).version, '7.6.2');
+    assert.equal(JSON.parse(packageLock).version, '7.6.2');
+    assert.equal(JSON.parse(packageLock).packages[''].version, '7.6.2');
+    assert.match(dockerfile, /org\.opencontainers\.image\.version="7\.6\.2"/);
+    assert.match(cypressSeed, /\(87,'7\.6\.2',[^;]+\);/);
+});
+
 test('logout invalidates server state and expires the scoped browser cookie', async () => {
     const authenticationManager = await read('src/ChurchCRM/Authentication/AuthenticationManager.php');
 

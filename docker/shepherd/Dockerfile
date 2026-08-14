@@ -8,7 +8,7 @@ RUN npm run build:frontend
 FROM dunglas/frankenphp:1-php8.4 AS php-base
 LABEL org.opencontainers.image.title="Shepherd" \
       org.opencontainers.image.description="Elkins Park branded ChurchCRM 7.6.0 fork" \
-      org.opencontainers.image.version="7.6.1" \
+      org.opencontainers.image.version="7.6.2" \
       org.opencontainers.image.source="https://github.com/JDubb17WRX/Shepherd"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
