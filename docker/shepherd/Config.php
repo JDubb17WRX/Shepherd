@@ -7,7 +7,7 @@ $sPASSWORD = getenv('SHEPHERD_DB_PASSWORD') ?: '';
 $sDATABASE = getenv('SHEPHERD_DB_NAME') ?: 'shepherd';
 $sRootPath = '/shepherd';
 $bLockURL = false;
-$publicUrl = rtrim(getenv('SHEPHERD_PUBLIC_URL') ?: 'https://eprpcna.rpcnacovenanters.com', '/');
+$publicUrl = rtrim(getenv('SHEPHERD_PUBLIC_URL') ?: 'https://elkinsparkchurch.com', '/');
 $URL[0] = $publicUrl . '/shepherd/';
 error_reporting(E_ERROR);
 
