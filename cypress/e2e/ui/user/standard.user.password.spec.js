@@ -20,6 +20,15 @@ describe("User 2FA", () => {
 
 describe("Standard User Password", () => {
     beforeEach(() => cy.setupStandardSession());
+
+    after(() => {
+        // Successful password changes revoke API credentials. Restore the shared
+        // standard-user fixture so later specs do not inherit that mutation.
+        cy.task("restoreUserApiKey", {
+            username: Cypress.env("standard.username"),
+            apiKey: Cypress.env("user.api.key"),
+        }).should("eq", 1);
+    });
     
     it("Change with invalid password", () => {
         cy.visit("v2/user/current/changepassword");

@@ -15,7 +15,7 @@ services:
       retries: 10
 
   mailserver:
-    profiles: [test]
+    profiles: [test, ci-root, ci-subdir]
     image: axllent/mailpit:latest
     ports:
       - ${MAILSERVER_PORT:-1025}:1025
