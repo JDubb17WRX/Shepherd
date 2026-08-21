@@ -79,8 +79,14 @@ export function setupCommonNodeEvents(on: any, config: any) {
     async forceUserName({ personId, userName }: { personId: number; userName: string }) {
       const connection = await createDatabaseConnection();
       try {
+        // The column is `usr_per_ID`, not `usr_PerID` — it is the table's
+        // primary key (Install.sql). The Propel model spells the property
+        // PersonId, which is what makes the wrong spelling look right here.
+        // Getting it wrong throws ER_BAD_FIELD_ERROR rather than matching no
+        // rows, so the task rejects and the calling test fails on the task
+        // itself rather than on anything it was trying to prove.
         const [result] = await connection.execute(
-          'UPDATE user_usr SET usr_UserName = ? WHERE usr_PerID = ?',
+          'UPDATE user_usr SET usr_UserName = ? WHERE usr_per_ID = ?',
           [userName, personId],
         );
         return result.affectedRows;
