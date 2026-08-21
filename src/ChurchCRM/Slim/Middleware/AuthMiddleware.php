@@ -90,9 +90,19 @@ class AuthMiddleware implements MiddlewareInterface
                     }
                 } else {
                     $logger = LoggerUtils::getAppLogger();
-                    $isPassiveWebsiteEditorProbe = $request->getMethod() === 'GET'
-                        && $request->getUri()->getPath() === SystemURLs::getRootPath() . '/api/background/website-content/session';
-                    $logMethod = $isPassiveWebsiteEditorProbe ? 'debug' : 'warning';
+                    // nginx calls these as `auth_request` subrequests on behalf
+                    // of whoever is browsing, so "no session" is the ordinary
+                    // answer for a logged-out visitor rather than anything worth
+                    // a warning. The console probe in particular fires on every
+                    // single request to a proxied path, and at warning level it
+                    // would bury the real ones within a day.
+                    $probeRootPath = SystemURLs::getRootPath();
+                    $isPassiveGateProbe = $request->getMethod() === 'GET'
+                        && in_array($request->getUri()->getPath(), [
+                            $probeRootPath . '/api/background/website-content/session',
+                            $probeRootPath . '/api/background/console/session',
+                        ], true);
+                    $logMethod = $isPassiveGateProbe ? 'debug' : 'warning';
                     $logger->{$logMethod}('No authenticated user or session', [
                         'path' => $request->getUri()->getPath(),
                         'method' => $request->getMethod()

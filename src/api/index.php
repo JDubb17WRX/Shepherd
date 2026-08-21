@@ -66,5 +66,6 @@ require __DIR__ . '/routes/users/user-current.php';
 require __DIR__ . '/routes/users/user-settings.php';
 require __DIR__ . '/routes/map.php';
 require __DIR__ . '/routes/website-content.php';
+require __DIR__ . '/routes/console-session.php';
 
 $app->run();

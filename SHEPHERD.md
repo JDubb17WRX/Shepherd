@@ -38,6 +38,59 @@ contain only a static base string and a replacement string; the public site appl
 with `textContent`, never HTML. Conflicting revisions return `409`, and API-key-only
 authentication is explicitly rejected so website editing always uses Shepherd's login.
 
+## Bulletin console identity
+
+`GET /shepherd/api/background/console/session` answers one question: which
+Shepherd account is this browser session? It exists so the Elkins Park nginx
+gateway can put an `auth_request` in front of the proxied bulletin console and
+forward a *trusted* username to the upstream.
+
+- **200** — the caller holds a completed local browser session. The canonical
+  username is in the `X-Shepherd-Username` response header, and repeated in the
+  JSON body for anyone holding curl.
+- **401** — no session at all.
+- **403** — the session is not a completed local browser login (API key, pending
+  two-factor, mid-password-change), or the account's username has no canonical
+  form.
+
+Canonical means trimmed, lowercased, and matching `[a-z0-9._-]{3,50}` — the same
+rule the website repo's `src/lib/roles.ts` applies to its roles file. The two
+must not drift: a username that normalises differently on each side matches
+nothing and denies access without saying why. A username with no canonical form
+is refused here rather than passed on, so the refusal is visible at the endpoint
+instead of appearing as an unexplained denial further downstream. The pattern
+also keeps CR and LF out of the response header.
+
+This is **not** the website-editor session endpoint, and it deliberately cannot
+be. That one is Administrator-only — the console also serves Elders and Deacons
+— and it answers in a JSON body, which `auth_request_set` cannot read.
+
+**It does not decide what the caller may do.** Roles live in the website repo's
+version-controlled `src/data/roles.json` so that adding an Elder shows up in a
+diff. Every authenticated account gets a username back, including accounts with
+no console role; an unrecognised username resolves to no role downstream and is
+refused there. Do not add a permission check here — splitting the role decision
+across two systems is the failure this arrangement exists to avoid.
+
+It is mounted under `/background` on purpose: `AuthMiddleware` skips the
+`tLastOperation` bump for those paths. nginx probes this endpoint on every
+request to a proxied path, so mounting it elsewhere would refresh the idle timer
+continuously and no console session would ever expire. For the same reason, an
+anonymous probe logs at debug rather than warning.
+
+### What the gateway must do
+
+- `auth_request_set $shepherd_username $upstream_http_x_shepherd_username;`, then
+  pass it upstream as a header.
+- **Overwrite that header unconditionally on every proxied location**, including
+  when the subrequest returned nothing. A browser must never be able to supply
+  its own identity by sending the header inbound.
+- Send `Accept: application/json` on the subrequest, as the existing editor gate
+  does. The path already contains `/api/`, which is what actually forces a JSON
+  answer, but the header keeps that from depending on the route's spelling.
+- Do not cache the subrequest. The response is `no-store` and `Vary: Cookie`, and
+  the session is rechecked on every call by design.
+
 ## Logins are names, not email addresses
 
 A Shepherd login must match `[a-z0-9._-]{3,50}` once trimmed and lowercased.
