@@ -57,15 +57,23 @@ $requestPath = rawurldecode((string) (parse_url($_SERVER['REQUEST_URI'] ?? '', P
 $rootPathPattern = preg_quote(rtrim($sRootPath, '/'), '#');
 $isPublicWebsiteContentRead = $requestMethod === 'GET'
     && preg_match("#^{$rootPathPattern}/api/public/website-content/[a-z0-9][a-z0-9-]{0,63}/?$#D", $requestPath) === 1;
-$editorSessionPath = rtrim($sRootPath, '/') . '/api/background/website-content/session';
+// nginx calls both of these as auth_request subrequests, the console one on
+// every single request to a proxied path. A signed-out visitor browsing the
+// console would otherwise mint a fresh server-side session per probe, which is
+// an unbounded pile of session files nobody ever reads.
+$backgroundBase = rtrim($sRootPath, '/') . '/api/background';
+$sessionProbePaths = [
+    $backgroundBase . '/website-content/session',
+    $backgroundBase . '/console/session',
+];
 $sessionCookieName = 'CRM-' . md5(dirname(__DIR__));
-$isAnonymousEditorProbe = $requestMethod === 'GET'
-    && $requestPath === $editorSessionPath
+$isAnonymousSessionProbe = $requestMethod === 'GET'
+    && in_array($requestPath, $sessionProbePaths, true)
     && !array_key_exists($sessionCookieName, $_COOKIE);
 
 // Public copy and signed-out capability checks must not create a Shepherd session.
-// An existing scoped cookie still enables the authenticated editor probe normally.
-$initializeSession = !$isPublicWebsiteContentRead && !$isAnonymousEditorProbe;
+// An existing scoped cookie still enables the authenticated probes normally.
+$initializeSession = !$isPublicWebsiteContentRead && !$isAnonymousSessionProbe;
 Bootstrapper::init(
     $sSERVERNAME,
     $dbPort,

@@ -10,6 +10,7 @@ use ChurchCRM\model\ChurchCRM\User;
 use ChurchCRM\model\ChurchCRM\UserConfig;
 use ChurchCRM\model\ChurchCRM\UserConfigQuery;
 use ChurchCRM\model\ChurchCRM\UserQuery;
+use ChurchCRM\Shepherd\Username;
 use ChurchCRM\Utils\FiscalYearUtils;
 use ChurchCRM\Utils\InputUtils;
 use ChurchCRM\Utils\LoggerUtils;
@@ -234,7 +235,8 @@ class UserService
      * @param string $userName Desired login name
      * @param bool   $sendWelcomeEmail Whether to send the upstream random-password welcome message
      * @return User The newly created user
-     * @throws \RuntimeException on validation failure (duplicate username, too short)
+     * @throws \RuntimeException on validation failure (duplicate login, or one
+     *         that is not a valid Shepherd login — see ChurchCRM\Shepherd\Username)
      */
     public function createUser(int $personId, array $perms, string $userName, bool $sendWelcomeEmail = true): User
     {
@@ -250,8 +252,11 @@ class UserService
             throw new \RuntimeException(gettext('This person already has a user account.'));
         }
 
-        if (strlen($userName) < 3) {
-            throw new \RuntimeException(gettext('Login must be at least 3 characters!'));
+        // Subsumes the old minimum-length check: Username enforces 3..50 and
+        // the character class together, so an email address is refused here
+        // rather than becoming an account the bulletin console cannot resolve.
+        if (!Username::isAcceptable($userName)) {
+            throw new \RuntimeException(Username::rejectionReason());
         }
 
         $dupCount = UserQuery::create()
@@ -352,8 +357,9 @@ class UserService
     /**
      * Update an existing user account.
      *
-     * Validates username length and uniqueness (excluding the user being updated),
-     * then persists permission changes.
+     * Validates uniqueness (excluding the user being updated) and, when the login
+     * is actually being changed, its format. An unchanged login is left alone so
+     * that accounts predating the format rule stay editable.
      *
      * @param int    $personId Person whose user account to update
      * @param array  $perms    Normalized perms from normalizeAccessMode()
@@ -363,8 +369,20 @@ class UserService
      */
     public function updateUser(int $personId, array $perms, string $userName): User
     {
-        if (strlen($userName) < 3) {
-            throw new \RuntimeException(gettext('Login must be at least 3 characters!'));
+        // Loaded before validation, not after, so a rename can be told apart
+        // from an untouched name.
+        $user = UserQuery::create()->findPk($personId);
+        if ($user === null) {
+            throw new \RuntimeException(gettext('User not found'));
+        }
+
+        // An account that predates this rule keeps the name it has, so an
+        // administrator is never locked out of fixing its permissions by a
+        // login somebody else created years ago. Renaming it is a different
+        // matter: the new name has to be one the console can resolve.
+        $isRename = strcasecmp(trim((string) $user->getUserName()), trim($userName)) !== 0;
+        if ($isRename && !Username::isAcceptable($userName)) {
+            throw new \RuntimeException(Username::rejectionReason());
         }
 
         $dupCount = UserQuery::create()
@@ -374,11 +392,6 @@ class UserService
 
         if ($dupCount > 0) {
             throw new \RuntimeException(gettext('Login already in use, please select a different login!'));
-        }
-
-        $user = UserQuery::create()->findPk($personId);
-        if ($user === null) {
-            throw new \RuntimeException(gettext('User not found'));
         }
 
         $user->setAddRecords($perms['addRecords'])

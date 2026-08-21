@@ -37,3 +37,96 @@ the 7.6.1 database migration (and by the fresh-install schema). Values
 contain only a static base string and a replacement string; the public site applies them
 with `textContent`, never HTML. Conflicting revisions return `409`, and API-key-only
 authentication is explicitly rejected so website editing always uses Shepherd's login.
+
+## Bulletin console identity
+
+`GET /shepherd/api/background/console/session` answers one question: which
+Shepherd account is this browser session? It exists so the Elkins Park nginx
+gateway can put an `auth_request` in front of the proxied bulletin console and
+forward a *trusted* username to the upstream.
+
+- **200** — the caller holds a completed local browser session. The canonical
+  username is in the `X-Shepherd-Username` response header, and repeated in the
+  JSON body for anyone holding curl.
+- **401** — no session at all.
+- **403** — the session is not a completed local browser login (API key, pending
+  two-factor, mid-password-change), or the account's username has no canonical
+  form.
+
+Canonical means trimmed, lowercased, and matching `[a-z0-9._-]{3,50}` — the same
+rule the website repo's `src/lib/roles.ts` applies to its roles file. The two
+must not drift: a username that normalises differently on each side matches
+nothing and denies access without saying why. A username with no canonical form
+is refused here rather than passed on, so the refusal is visible at the endpoint
+instead of appearing as an unexplained denial further downstream. The pattern
+also keeps CR and LF out of the response header.
+
+This is **not** the website-editor session endpoint, and it deliberately cannot
+be. That one is Administrator-only — the console also serves Elders and Deacons
+— and it answers in a JSON body, which `auth_request_set` cannot read.
+
+**It does not decide what the caller may do.** Roles live in the website repo's
+version-controlled `src/data/roles.json` so that adding an Elder shows up in a
+diff. Every authenticated account gets a username back, including accounts with
+no console role; an unrecognised username resolves to no role downstream and is
+refused there. Do not add a permission check here — splitting the role decision
+across two systems is the failure this arrangement exists to avoid.
+
+It is mounted under `/background` on purpose: `AuthMiddleware` skips the
+`tLastOperation` bump for those paths. nginx probes this endpoint on every
+request to a proxied path, so mounting it elsewhere would refresh the idle timer
+continuously and no console session would ever expire. For the same reason, an
+anonymous probe logs at debug rather than warning.
+
+### What the gateway must do
+
+- `auth_request_set $shepherd_username $upstream_http_x_shepherd_username;`, then
+  pass it upstream as a header.
+- **Overwrite that header unconditionally on every proxied location**, including
+  when the subrequest returned nothing. A browser must never be able to supply
+  its own identity by sending the header inbound.
+- Send `Accept: application/json` on the subrequest, as the existing editor gate
+  does. The path already contains `/api/`, which is what actually forces a JSON
+  answer, but the header keeps that from depending on the route's spelling.
+- Do not cache the subrequest. The response is `no-store` and `Vary: Cookie`, and
+  the session is rechecked on every call by design.
+- Keep `proxy_hide_header Set-Cookie` on the auth_request location, as the
+  existing website-editor gate already does. A subrequest's cookie has no
+  business on the main response even when, as here, there should not be one.
+
+A signed-out probe creates **no server-side session**. `Include/LoadConfigs.php`
+skips session initialisation for an anonymous GET to this path, alongside the
+website-editor probe and the public content reads. That is what makes the
+endpoint safe to call on every single request to a proxied path; without it each
+logged-out visitor would leave a trail of session files nobody ever reads. The
+Cypress spec asserts the absent `Set-Cookie`, so losing the exemption fails a
+test rather than quietly filling a disk.
+
+## Logins are names, not email addresses
+
+A Shepherd login must match `[a-z0-9._-]{3,50}` once trimmed and lowercased.
+`ChurchCRM\Shepherd\Username` is the only definition of that rule, and
+`UserService`, `SignupService`, and the console session endpoint all defer to
+it. The website repo's `src/lib/roles.ts` mirrors it; the two have to move
+together.
+
+Upstream ChurchCRM accepts any login of three characters or more, and this
+fork's admin user editor used to **pre-fill the field with the person's email
+address** — which is where logins like `tony.wade@example.com` came from. Such
+an account signs in to Shepherd normally and is then refused by the bulletin
+console, which cannot resolve it, with nothing on screen to say why. An address
+is also a delivery mechanism rather than an authentication subject, and it
+moves when someone changes mail provider.
+
+So the editor now suggests the local part of the address, falling back to
+`first.last`, and refuses an address on save with a message that names the
+problem.
+
+**Existing accounts are grandfathered.** `UserService::updateUser()` enforces the
+format only when the login actually changes, so an administrator is never locked
+out of the permission checkboxes by a login somebody created years ago. Renaming
+such an account does have to produce a conforming name. Nothing rewrites stored
+logins, and sign-in is unaffected — it matches the stored value either way.
+
+A grandfathered account still cannot use the console. The session endpoint logs
+that refusal at warning with the user id, which is the intended way to find out.

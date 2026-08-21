@@ -71,6 +71,29 @@ export function setupCommonNodeEvents(on: any, config: any) {
         await connection.end();
       }
     },
+    // Writes a login name straight to the row, bypassing UserService. The only
+    // legitimate use is manufacturing an account that predates Shepherd's
+    // username rule, so a test can prove such an account is still editable.
+    // Never reach for this to create a user — go through the editor, which is
+    // the thing under test.
+    async forceUserName({ personId, userName }: { personId: number; userName: string }) {
+      const connection = await createDatabaseConnection();
+      try {
+        // The column is `usr_per_ID`, not `usr_PerID` — it is the table's
+        // primary key (Install.sql). The Propel model spells the property
+        // PersonId, which is what makes the wrong spelling look right here.
+        // Getting it wrong throws ER_BAD_FIELD_ERROR rather than matching no
+        // rows, so the task rejects and the calling test fails on the task
+        // itself rather than on anything it was trying to prove.
+        const [result] = await connection.execute(
+          'UPDATE user_usr SET usr_UserName = ? WHERE usr_per_ID = ?',
+          [userName, personId],
+        );
+        return result.affectedRows;
+      } finally {
+        await connection.end();
+      }
+    },
     async restoreUserApiKey({ username, apiKey }: { username: string; apiKey: string }) {
       const connection = await createDatabaseConnection();
       try {
