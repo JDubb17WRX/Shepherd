@@ -91,11 +91,16 @@ anonymous probe logs at debug rather than warning.
 - Do not cache the subrequest. The response is `no-store` and `Vary: Cookie`, and
   the session is rechecked on every call by design.
 - Keep `proxy_hide_header Set-Cookie` on the auth_request location, as the
-  existing website-editor gate already does. A caller arriving without a
-  `PHPSESSID` gets one back even when the answer is 401, because PHP starts a
-  session before anything decides the request is anonymous. That cookie carries
-  no identity, but forwarding a subrequest's cookie onto the main response is
-  never what you want.
+  existing website-editor gate already does. A subrequest's cookie has no
+  business on the main response even when, as here, there should not be one.
+
+A signed-out probe creates **no server-side session**. `Include/LoadConfigs.php`
+skips session initialisation for an anonymous GET to this path, alongside the
+website-editor probe and the public content reads. That is what makes the
+endpoint safe to call on every single request to a proxied path; without it each
+logged-out visitor would leave a trail of session files nobody ever reads. The
+Cypress spec asserts the absent `Set-Cookie`, so losing the exemption fails a
+test rather than quietly filling a disk.
 
 ## Logins are names, not email addresses
 
