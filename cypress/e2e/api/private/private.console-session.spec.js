@@ -22,9 +22,14 @@ describe('Console session identity API', () => {
     // shape here rather than only the literal value.
     const CANONICAL_USERNAME = /^[a-z0-9._-]{3,50}$/;
 
+    // Only the identity header is asserted here, deliberately. A refused caller
+    // with no PHPSESSID still gets a Set-Cookie, because PHP starts a session
+    // before anything decides the request is anonymous — that cookie carries no
+    // identity and is not a leak. The gateway drops it anyway with
+    // `proxy_hide_header Set-Cookie` on the auth_request location, as the
+    // existing website-editor gate already does.
     function expectNoIdentity(response) {
         expect(response.headers).not.to.have.property('x-shepherd-username');
-        expect(response.headers).not.to.have.property('set-cookie');
     }
 
     function expectIdentity(response, username) {

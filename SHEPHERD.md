@@ -90,6 +90,12 @@ anonymous probe logs at debug rather than warning.
   answer, but the header keeps that from depending on the route's spelling.
 - Do not cache the subrequest. The response is `no-store` and `Vary: Cookie`, and
   the session is rechecked on every call by design.
+- Keep `proxy_hide_header Set-Cookie` on the auth_request location, as the
+  existing website-editor gate already does. A caller arriving without a
+  `PHPSESSID` gets one back even when the answer is 401, because PHP starts a
+  session before anything decides the request is anonymous. That cookie carries
+  no identity, but forwarding a subrequest's cookie onto the main response is
+  never what you want.
 
 ## Logins are names, not email addresses
 
