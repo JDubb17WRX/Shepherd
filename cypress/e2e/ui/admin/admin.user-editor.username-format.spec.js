@@ -22,7 +22,18 @@ describe('Administrator user editor username format', () => {
     const suggestedUserName = 'ivan.hayes';
 
     function deleteTestUser() {
-        cy.makePrivateAdminAPICall('DELETE', `/admin/api/user/${personId}`, null, [200, 204, 404]);
+        // The trailing slash is load-bearing. The route is registered as
+        // `$group->delete('/')` inside the `/api/user/{userId:[0-9]+}` group,
+        // so the path is `/admin/api/user/13/`. Without it Slim matches no
+        // route and answers 404 — which this call accepts, so the cleanup
+        // reports success while deleting nothing, and every test after the
+        // first one runs against a leftover account. `src/skin/js/users.js`
+        // sends the same trailing slash, so the route is right and the caller
+        // is the thing that has to keep in step with it. 404 stays in the
+        // accepted list for the first run, when there is genuinely no user.
+        cy.makePrivateAdminAPICall('DELETE', `/admin/api/user/${personId}/`, null, [200, 204, 404]);
+        // Deleting a user rotates the admin session, so establish a new one
+        // before the next request.
         cy.setupAdminSession({ forceLogin: true });
     }
 
