@@ -37,3 +37,32 @@ the 7.6.1 database migration (and by the fresh-install schema). Values
 contain only a static base string and a replacement string; the public site applies them
 with `textContent`, never HTML. Conflicting revisions return `409`, and API-key-only
 authentication is explicitly rejected so website editing always uses Shepherd's login.
+
+## Logins are names, not email addresses
+
+A Shepherd login must match `[a-z0-9._-]{3,50}` once trimmed and lowercased.
+`ChurchCRM\Shepherd\Username` is the only definition of that rule, and
+`UserService`, `SignupService`, and the console session endpoint all defer to
+it. The website repo's `src/lib/roles.ts` mirrors it; the two have to move
+together.
+
+Upstream ChurchCRM accepts any login of three characters or more, and this
+fork's admin user editor used to **pre-fill the field with the person's email
+address** — which is where logins like `tony.wade@example.com` came from. Such
+an account signs in to Shepherd normally and is then refused by the bulletin
+console, which cannot resolve it, with nothing on screen to say why. An address
+is also a delivery mechanism rather than an authentication subject, and it
+moves when someone changes mail provider.
+
+So the editor now suggests the local part of the address, falling back to
+`first.last`, and refuses an address on save with a message that names the
+problem.
+
+**Existing accounts are grandfathered.** `UserService::updateUser()` enforces the
+format only when the login actually changes, so an administrator is never locked
+out of the permission checkboxes by a login somebody created years ago. Renaming
+such an account does have to produce a conforming name. Nothing rewrites stored
+logins, and sign-in is unaffected — it matches the stored value either way.
+
+A grandfathered account still cannot use the console. The session endpoint logs
+that refusal at warning with the user id, which is the intended way to find out.

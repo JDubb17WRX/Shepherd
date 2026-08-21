@@ -71,6 +71,23 @@ export function setupCommonNodeEvents(on: any, config: any) {
         await connection.end();
       }
     },
+    // Writes a login name straight to the row, bypassing UserService. The only
+    // legitimate use is manufacturing an account that predates Shepherd's
+    // username rule, so a test can prove such an account is still editable.
+    // Never reach for this to create a user — go through the editor, which is
+    // the thing under test.
+    async forceUserName({ personId, userName }: { personId: number; userName: string }) {
+      const connection = await createDatabaseConnection();
+      try {
+        const [result] = await connection.execute(
+          'UPDATE user_usr SET usr_UserName = ? WHERE usr_PerID = ?',
+          [userName, personId],
+        );
+        return result.affectedRows;
+      } finally {
+        await connection.end();
+      }
+    },
     async restoreUserApiKey({ username, apiKey }: { username: string; apiKey: string }) {
       const connection = await createDatabaseConnection();
       try {

@@ -16,6 +16,7 @@ use ChurchCRM\model\ChurchCRM\UserQuery;
 use ChurchCRM\Service\AppIntegrityService;
 use ChurchCRM\Service\LocaleService;
 use ChurchCRM\Service\UserService;
+use ChurchCRM\Shepherd\Username;
 use ChurchCRM\Slim\Middleware\CSRFMiddleware;
 use ChurchCRM\Slim\Middleware\InputSanitizationMiddleware;
 use ChurchCRM\Slim\SlimUtils;
@@ -1051,7 +1052,12 @@ function adminUserEditorNew(Request $request, Response $response): Response
         }
         $sUser    = $person->getLastName() . ', ' . $person->getFirstName();
         $email    = $person->getEmail();
-        $userName = !empty($email) ? $email : $person->getFirstName() . '.' . $person->getLastName();
+        // Never the address itself. This field used to be pre-filled with it,
+        // which is how logins like tony.wade@example.com came to exist — the
+        // console cannot resolve those, and the account looks fine until the
+        // day someone tries to use it. suggest() takes the local part where it
+        // can and falls back to first.last.
+        $userName = Username::suggest($email, $person->getFirstName(), $person->getLastName());
         $pageArgs['editorPersonId']        = $personId;
         $pageArgs['sUser']            = $sUser;
         $pageArgs['sUserName']        = $userName;

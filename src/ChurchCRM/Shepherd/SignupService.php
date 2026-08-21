@@ -242,7 +242,9 @@ final class SignupService
         $firstName = trim((string) ($input['first_name'] ?? ''));
         $lastName = trim((string) ($input['last_name'] ?? ''));
         $email = strtolower(trim((string) ($input['email'] ?? '')));
-        $username = strtolower(trim((string) ($input['username'] ?? '')));
+        // Same namespace, same rule, one definition. This validated the
+        // identical pattern inline before Username existed.
+        $username = Username::canonical((string) ($input['username'] ?? ''));
         $note = trim((string) ($input['note'] ?? ''));
 
         if ($firstName === '' || $lastName === '' || mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100) {
@@ -251,7 +253,7 @@ final class SignupService
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 254) {
             return null;
         }
-        if (!preg_match('/^[a-z0-9._-]{3,50}$/', $username) || mb_strlen($note) > 2000) {
+        if ($username === null || mb_strlen($note) > 2000) {
             return null;
         }
 
