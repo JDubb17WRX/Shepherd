@@ -96,7 +96,10 @@
   },
   "current": {
     "versions": ["7.6.1"],
-    "scripts": ["/mysql/upgrade/7.6.2-fundraiser-schema-repair.php"],
+    "scripts": [
+      "/mysql/upgrade/7.6.2-fundraiser-schema-repair.php",
+      "/mysql/upgrade/7.6.2-signup-sheets.sql"
+    ],
     "dbVersion": "7.6.2"
   }
 }

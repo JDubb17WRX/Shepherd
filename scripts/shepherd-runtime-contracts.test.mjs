@@ -140,11 +140,15 @@ test('7.6.2 repairs missing fundraiser fields without changing correct schemas',
     ]);
     const upgrades = JSON.parse(upgradeJson);
 
-    assert.deepEqual(upgrades.current, {
-        versions: ['7.6.1'],
-        scripts: ['/mysql/upgrade/7.6.2-fundraiser-schema-repair.php'],
-        dbVersion: '7.6.2',
-    });
+    // Every script for the in-development release lives in the same `current`
+    // block and targets the same dbVersion, so this asserts the fundraiser
+    // repair is present and ordered first rather than that it is alone.
+    assert.deepEqual(upgrades.current.versions, ['7.6.1']);
+    assert.equal(upgrades.current.dbVersion, '7.6.2');
+    assert.equal(upgrades.current.scripts[0], '/mysql/upgrade/7.6.2-fundraiser-schema-repair.php');
+    for (const script of upgrades.current.scripts) {
+        assert.match(script, /^\/mysql\/upgrade\/7\.6\.2-/);
+    }
 
     const expectedColumns = ['fr_EndDate', 'fr_Status', 'fr_GoalAmount', 'fr_Type', 'fr_fund_ID'];
     for (const column of expectedColumns) {
