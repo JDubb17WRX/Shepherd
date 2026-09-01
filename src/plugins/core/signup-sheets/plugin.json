@@ -11,12 +11,7 @@
   "dependencies": [],
   "settingsUrl": null,
   "schemaFile": "schema/install.sql",
-  "requiredTables": [
-    "signupsheet_shs",
-    "signupslot_sls",
-    "signupclaim_sgc",
-    "signupaudit_sga"
-  ],
+  "requiredTables": ["signupsheet_shs", "signupslot_sls", "signupclaim_sgc", "signupaudit_sga"],
   "routesFile": "routes/routes.php",
   "publicRoutesFile": "routes/public.php",
   "settings": [
