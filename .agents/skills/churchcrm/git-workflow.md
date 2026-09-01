@@ -452,14 +452,20 @@ Nothing is wrong with the code. Read the line *under* each `❌` — `ENOENT` me
 binary is missing, a genuine parse error names the file and line. **Do not reach for
 `--no-verify` here**; put `php` on PATH and re-run, so the hook performs the real check:
 
+On this machine PHP 8.5.3 lives at `F:\Program Files\php\php-8.5.3-Win32-vs17-x64`
+and is on the User PATH, so a freshly opened terminal already has it. A shell
+started *before* that PATH entry was added does not — export it explicitly,
+minding the spaces in the path:
+
 ```bash
-export PATH="/c/Users/JWeid/php:$PATH"   # adjust to your PHP location
+export PATH="/f/Program Files/php/php-8.5.3-Win32-vs17-x64:$PATH"
 git commit -m "..."
 ```
 
-On Windows without a system-wide PHP, keep the toolchain somewhere durable —
-a portable build unzipped into `Downloads` can be deleted by Storage Sense
-mid-session, which presents as PHP working earlier in a session and vanishing later.
+Keep the toolchain somewhere durable. A portable build unzipped into `Downloads`
+was deleted by Windows cleanup mid-session on 2026-09-01, which presents as PHP
+working earlier in a session and vanishing later — the same fake `SYNTAX ERROR`
+wall, with no PATH change to explain it.
 
 **Scope note:** the validator diffs against `merge-base HEAD origin/master`, so it
 re-checks every PHP file changed *on the branch*, not just the ones staged in this
