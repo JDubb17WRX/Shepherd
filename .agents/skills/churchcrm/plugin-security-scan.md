@@ -31,6 +31,39 @@ Run this scan whenever you:
 - Respond to a reported vulnerability in an already-approved plugin.
 - Audit an existing entry on the quarterly review cadence.
 
+### Running it against a core plugin — expect false positives <!-- learned: 2026-09-01 -->
+
+`scripts/plugin-scan.php` encodes **community**-plugin rules and says so itself:
+
+```
+i [INFO]  plugin.json  This scanner is designed for community plugins.
+                       Core plugin reviews follow plugin-migration.md instead.
+```
+
+Pointing it at `src/plugins/core/*` is still a worthwhile read for the sink and
+supply-chain checks, but treat the textdomain rule as noise. The scanner flags
+every `gettext()` call with *"Plain gettext() translates from the core 'messages'
+textdomain. Use dgettext('{pluginId}', '…') instead."* — correct for a community
+plugin shipping its own `.mo`, wrong for a core plugin, whose strings live in the
+core catalog by design.
+
+Verified 2026-09-01 across every core plugin — `custom-links`, `external-backup`,
+`google-analytics`, `gravatar`, `holidays`, `mailchimp`, `openlp`, `vonage` —
+**190 `gettext()` calls, zero `dgettext()`**. A new core plugin using plain
+`gettext()` matches convention; converting it to `dgettext()` to silence the
+scanner would make it the odd one out.
+
+When reviewing a core plugin, filter the noise before reading:
+
+```bash
+php scripts/plugin-scan.php src/plugins/core/<id> | grep -v "core 'messages' textdomain"
+```
+
+Judge such a run on the `errors:` count and the non-textdomain warnings. Note the
+scan does **not** cover i18n rules the pre-commit hook enforces (trailing colons,
+markup in strings) — run `node scripts/locale-check.js` separately; a clean scan
+does not mean a committable plugin.
+
 ---
 
 ## Fixtures you need before starting

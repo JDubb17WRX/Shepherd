@@ -429,6 +429,42 @@ A failing check blocks the commit with the offending file:line and a fix pointer
 
 **Not automated**: duplicate/reuse checks (e.g. `Zip` vs `Zip / Postal Code`) and trailing-punctuation-consistency checks (e.g. `User not found` vs `User not found.`) are judgment calls that depend on reading sibling call sites — see `i18n-localization.md` → "Trailing-Period/Exclamation Duplicates" for why these are deliberately *not* hard-blocked by the hook. Review those manually during code review.
 
+### Pre-Commit Also Runs `php -l` — and Needs `php` on PATH <!-- learned: 2026-09-01 -->
+
+`.githooks/pre-commit` runs **two** checks, not just the locale one above. After
+`locale-check.js` passes it runs `npm run --silent build:php:validate`, i.e. `php -l`
+on every changed `.php` file (the full 700+ file scan stays in CI).
+
+**The trap:** `validate-php-syntax.js` calls `execFileSync('php', ...)`. When `php`
+is not on PATH, Node throws `spawnSync php ENOENT` *per file*, and the script
+reports each one as a syntax error. A commit with 15 changed PHP files fails like
+this:
+
+```
+❌ SYNTAX ERROR: plugins/core/foo/views/bar.php
+spawnSync php ENOENT
+...
+❌ Errors: 15 files
+✘ pre-commit: PHP syntax error in a changed file.
+```
+
+Nothing is wrong with the code. Read the line *under* each `❌` — `ENOENT` means the
+binary is missing, a genuine parse error names the file and line. **Do not reach for
+`--no-verify` here**; put `php` on PATH and re-run, so the hook performs the real check:
+
+```bash
+export PATH="/c/Users/JWeid/php:$PATH"   # adjust to your PHP location
+git commit -m "..."
+```
+
+On Windows without a system-wide PHP, keep the toolchain somewhere durable —
+a portable build unzipped into `Downloads` can be deleted by Storage Sense
+mid-session, which presents as PHP working earlier in a session and vanishing later.
+
+**Scope note:** the validator diffs against `merge-base HEAD origin/master`, so it
+re-checks every PHP file changed *on the branch*, not just the ones staged in this
+commit. A docs-only commit on a branch that touched PHP still needs `php` present.
+
 ### Mandatory Pre-Push Biome Check <!-- learned: 2026-04-09 -->
 
 **Biome lint MUST pass before any `git push`.** This is enforced two ways
