@@ -130,3 +130,44 @@ logins, and sign-in is unaffected — it matches the stored value either way.
 
 A grandfathered account still cannot use the console. The session endpoint logs
 that refusal at warning with the user id, which is the intended way to find out.
+
+## Volunteer signup sheets
+
+The `signup-sheets` core plugin builds sheets of claimable slots — what to
+bring, which shift to take, who is serving when. Staff work inside the CRM at
+**Events → Signup Sheets**; volunteers without an account claim slots through a
+shareable secret link.
+
+Public pages live on the unauthenticated `/external` app:
+
+- `/shepherd/external/signup-sheets/{sheetToken}` — the sheet
+- `/shepherd/external/signup-sheets/{sheetToken}/claim` — claim a slot
+- `/shepherd/external/signup-sheets/manage/{claimToken}` — the volunteer's own signup
+- `/shepherd/external/signup-sheets/manage/{claimToken}/cancel` — release it
+
+`/external` has no `AuthMiddleware`, so **authorization here is entirely by
+unguessable token**. Both tokens are `bin2hex(random_bytes(16))` — 128 bits of
+CSPRNG output, stored unique. The sheet token only resolves while the sheet is
+explicitly published (`shs_is_public = 1`), and a claim is refused once the
+sheet leaves open status or passes `shs_close_at`. Knowing a sheet token never
+reveals a claim token, so one volunteer cannot cancel another's signup.
+
+Public pages show **names only**. Email and phone are collected on the claim
+form and are visible to staff inside the CRM, but are never rendered on a
+public page. Visitor IP addresses are only ever stored as a SHA-256 hash in
+`signupaudit_sga`, which is what the hourly per-visitor rate limit counts.
+
+Three plugin settings govern the public surface: `allowPublicSheets` (off
+disables share links entirely), `publicRateLimit` (claims per hour per IP,
+default 20), and `contactEmail` (shown on public sheets).
+
+Schema is `signupsheet_shs`, `signupslot_sls`, `signupclaim_sgc` and
+`signupaudit_sga`, created by the 7.6.2 migration and by the fresh-install
+schema — the two definitions are kept byte-identical.
+
+**This plugin introduced `publicRoutesFile`.** A plugin that declares one in
+its `plugin.json` gets that file mounted on `/external` by
+`PluginManager::registerPublicPluginRoutes()`. It is a general mechanism, not
+specific to signup sheets: any plugin can now expose anonymous routes, and any
+plugin that does so owns its own authorization. Plugins that omit the key
+expose nothing publicly.
