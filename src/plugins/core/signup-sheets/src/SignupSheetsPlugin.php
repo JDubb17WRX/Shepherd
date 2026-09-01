@@ -3,6 +3,7 @@
 namespace ChurchCRM\Plugins\SignupSheets;
 
 use ChurchCRM\Plugin\AbstractPlugin;
+use RuntimeException;
 
 /**
  * Signup Sheets Plugin.
@@ -17,6 +18,14 @@ class SignupSheetsPlugin extends AbstractPlugin
     private static ?SignupSheetsPlugin $instance = null;
 
     private ?SignupSheetService $service = null;
+
+    /**
+     * Memoised per request: the plugin list page asks whether the plugin is
+     * configured, and that answer is a database round trip.
+     *
+     * @var string[]|null
+     */
+    private ?array $missingTables = null;
 
     public function __construct(string $basePath = '')
     {
@@ -69,11 +78,38 @@ class SignupSheetsPlugin extends AbstractPlugin
     }
 
     /**
-     * The plugin works out of the box — nothing must be configured first.
+     * Nothing must be configured before the plugin is useful, but it cannot
+     * run without the four tables its schema file creates on enable.
      */
     public function isConfigured(): bool
     {
-        return true;
+        return $this->getConfigurationError() === null;
+    }
+
+    /**
+     * Explains a half-provisioned install — tables dropped by hand, or a
+     * restore from a dump taken before the plugin was enabled.
+     *
+     * Unlike the enable gate, this runs on a page render, so a database that
+     * cannot answer becomes a message rather than an exception. It still
+     * reports the plugin as unconfigured: unverified is not the same as fine.
+     */
+    public function getConfigurationError(): ?string
+    {
+        try {
+            $this->missingTables ??= $this->getMissingTables();
+        } catch (RuntimeException) {
+            return gettext('Signup Sheets could not verify its database tables. Check the database connection, then see the application log.');
+        }
+
+        if ($this->missingTables === []) {
+            return null;
+        }
+
+        return sprintf(
+            gettext('Signup Sheets is missing its database tables (%s). Disable and re-enable the plugin to create them.'),
+            implode(', ', $this->missingTables)
+        );
     }
 
     /**

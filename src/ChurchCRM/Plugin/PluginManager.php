@@ -463,6 +463,24 @@ class PluginManager
             return false;
         }
 
+        // Provision the plugin's own tables before anything can use them.
+        //
+        // Plugin schema deliberately does not ride on a core release migration:
+        // upgrade.json scripts only run when a database crosses the version they
+        // are attached to, so a plugin added within an already released version
+        // would never provision itself on databases already at that version.
+        // The schema file is idempotent, so this is a no-op once applied.
+        if ($plugin instanceof AbstractPlugin) {
+            $plugin->installSchema();
+
+            $missingTables = $plugin->getMissingTables();
+            if ($missingTables !== []) {
+                throw new \RuntimeException(
+                    "Plugin '$pluginId' is missing required tables: " . implode(', ', $missingTables)
+                );
+            }
+        }
+
         // Call activate hook
         $plugin->activate();
 

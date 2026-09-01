@@ -140,15 +140,11 @@ test('7.6.2 repairs missing fundraiser fields without changing correct schemas',
     ]);
     const upgrades = JSON.parse(upgradeJson);
 
-    // Every script for the in-development release lives in the same `current`
-    // block and targets the same dbVersion, so this asserts the fundraiser
-    // repair is present and ordered first rather than that it is alone.
-    assert.deepEqual(upgrades.current.versions, ['7.6.1']);
-    assert.equal(upgrades.current.dbVersion, '7.6.2');
-    assert.equal(upgrades.current.scripts[0], '/mysql/upgrade/7.6.2-fundraiser-schema-repair.php');
-    for (const script of upgrades.current.scripts) {
-        assert.match(script, /^\/mysql\/upgrade\/7\.6\.2-/);
-    }
+    assert.deepEqual(upgrades.current, {
+        versions: ['7.6.1'],
+        scripts: ['/mysql/upgrade/7.6.2-fundraiser-schema-repair.php'],
+        dbVersion: '7.6.2',
+    });
 
     const expectedColumns = ['fr_EndDate', 'fr_Status', 'fr_GoalAmount', 'fr_Type', 'fr_fund_ID'];
     for (const column of expectedColumns) {
@@ -186,4 +182,62 @@ test('kiosk bearer cookies are secure on proxied HTTPS requests', async () => {
     assert.match(kiosk, /HTTP_X_FORWARDED_PROTO/);
     assert.equal((kiosk.match(/'secure'\s*=>\s*\$isHttps/g) || []).length, 2);
     assert.equal((kiosk.match(/setcookie\('kioskCookie'/g) || []).length, 2);
+});
+
+test('plugins provision their own tables on enable, never via a release migration', async () => {
+    const [manifest, schema, pluginManager, abstractPlugin, install, upgradeJson] = await Promise.all([
+        read('src/plugins/core/signup-sheets/plugin.json'),
+        read('src/plugins/core/signup-sheets/schema/install.sql'),
+        read('src/ChurchCRM/Plugin/PluginManager.php'),
+        read('src/ChurchCRM/Plugin/AbstractPlugin.php'),
+        read('src/mysql/install/Install.sql'),
+        read('src/mysql/upgrade.json'),
+    ]);
+    const plugin = JSON.parse(manifest);
+
+    // UpgradeService returns early when the database version already equals the
+    // installed version, so a plugin whose schema rode on a release migration
+    // would never reach databases already at that release.
+    assert.equal(plugin.schemaFile, 'schema/install.sql');
+    assert.deepEqual(plugin.requiredTables, [
+        'signupsheet_shs',
+        'signupslot_sls',
+        'signupclaim_sgc',
+        'signupaudit_sga',
+    ]);
+
+    for (const table of plugin.requiredTables) {
+        assert.match(schema, new RegExp('CREATE TABLE IF NOT EXISTS `' + table + '`'));
+        assert.doesNotMatch(install, new RegExp('`' + table + '`'));
+        assert.doesNotMatch(upgradeJson, new RegExp(table));
+    }
+
+    // The schema runs on every enable, so it must never destroy existing data.
+    assert.doesNotMatch(schema, /DROP\s+(?:COLUMN|TABLE)/i);
+
+    assert.match(abstractPlugin, /public function installSchema\(\): void/);
+    assert.match(abstractPlugin, /SQLUtils::sqlImport\(\$schemaFile, Propel::getWriteConnection\('default'\)\)/);
+    assert.match(abstractPlugin, /public function getMissingTables\(\): array/);
+
+    // A verification gate that cannot verify must fail closed: returning an
+    // empty array on a query error would read as "nothing missing" and let
+    // enablePlugin() record the plugin as enabled over an unknown schema.
+    assert.match(abstractPlugin, /throw new .{1,2}RuntimeException\(\s*"Unable to verify tables for plugin/);
+
+    // Enable applies the schema and verifies it before the plugin is recorded
+    // as enabled, so a half-created schema can never present as a working plugin.
+    const enableBlock = pluginManager.match(
+        /public static function enablePlugin\(string \$pluginId\): bool[\s\S]*?\n    \}/,
+    );
+    assert.ok(enableBlock, 'enablePlugin must exist');
+    const enableBody = enableBlock[0];
+    assert.ok(
+        enableBody.indexOf('$plugin->installSchema()') < enableBody.indexOf('$plugin->activate()'),
+        'schema must be installed before the activate hook',
+    );
+    assert.ok(
+        enableBody.indexOf('getMissingTables()') < enableBody.indexOf("SystemConfig::setValue($enabledKey, '1')"),
+        'missing tables must be detected before the plugin is marked enabled',
+    );
+    assert.match(enableBody, /is missing required tables/);
 });

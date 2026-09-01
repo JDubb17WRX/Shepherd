@@ -1,5 +1,9 @@
--- Shepherd 7.6.2: Signup Sheets plugin schema.
+-- Signup Sheets plugin schema.
 -- Volunteer / potluck style signup sheets: a sheet holds slots, people claim slots.
+--
+-- Applied by PluginManager when the plugin is enabled, so the tables exist on
+-- any database regardless of which release it was installed or upgraded from.
+-- Every statement must stay idempotent: this file runs on every enable.
 
 CREATE TABLE IF NOT EXISTS `signupsheet_shs` (
   `shs_ID` int NOT NULL AUTO_INCREMENT,

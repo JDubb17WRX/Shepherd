@@ -571,6 +571,85 @@ $person->setFirstName('Test')->save(); // Now hooks fire
 | `openlp` | OpenLP projector integration | ❌ | ❌ |
 | `vonage` | Vonage SMS notifications | ❌ | ❌ |
 
+## Plugin-Owned Database Schema <!-- learned: 2026-09-01 -->
+
+**A plugin that needs tables must ship its own schema file. Never attach plugin
+tables to a core release migration in `upgrade.json`.**
+
+`UpgradeService::upgradeDatabaseVersion()` returns early when
+`$db_version === $installed_version`, and each `upgrade.json` block only runs
+for the versions listed in its `versions` array. A plugin added *within* an
+already released version therefore never provisions itself on any database
+already at that version — the tables silently do not exist, and the plugin
+fails at first query. Re-sequencing the block does not help: the early return
+happens before `upgrade.json` is even read.
+
+Declare the schema in `plugin.json`:
+
+```json
+{
+  "schemaFile": "schema/install.sql",
+  "requiredTables": ["signupsheet_shs", "signupslot_sls"]
+}
+```
+
+`PluginManager::enablePlugin()` calls `AbstractPlugin::installSchema()` before
+the `activate()` hook, then verifies `getMissingTables()` is empty *before*
+writing `plugin.{id}.enabled = 1` — so a plugin is never marked enabled over a
+half-created schema.
+
+**Rules:**
+
+- The schema file runs on **every** enable, so every statement must be
+  idempotent: `CREATE TABLE IF NOT EXISTS`, `ALTER` guarded by an
+  `information_schema` check. Never `DROP`.
+- Do **not** add plugin tables to `src/mysql/install/Install.sql` — a fresh
+  install should not carry tables for a plugin nobody enabled.
+- `schemaFile` is resolved relative to the plugin directory and rejected if it
+  contains `..`.
+- Enabling a plugin with a `schemaFile` executes **DDL as the runtime database
+  user**. The in-app upgrader already needs that privilege, but this makes it
+  reachable from the plugin page, so a DML-only deployment now fails on enable.
+  Check with `SHOW GRANTS FOR CURRENT_USER();` before deploying a schema-owning
+  plugin. The failure is clean — `installSchema()` wraps it in a
+  `RuntimeException` naming the plugin and the schema file, and the plugin is
+  never marked enabled.
+- `getMissingTables()` **throws** when the database cannot be questioned rather
+  than returning `[]`. A verification gate that cannot verify fails closed, so
+  the enable attempt fails instead of recording an enabled plugin over an
+  unknown schema.
+- Surface a broken schema to the admin by overriding `getConfigurationError()`
+  with `getMissingTables()`; catch its `RuntimeException` there (a page render
+  should not fatal) and still report the plugin as unconfigured. Memoise the
+  result, because the plugin list page calls `isConfigured()` on render and
+  each call is a database round trip.
+
+Reference implementation: `src/plugins/core/signup-sheets/` (schema file,
+manifest keys, and the `getConfigurationError()` override).
+
+### Known limitation: no schema versioning yet <!-- learned: 2026-09-01 -->
+
+**The mechanism provisions; it does not migrate.** `schemaFile` runs *only* when
+a plugin is enabled, and the file is create-only and idempotent. Two
+consequences a plugin author will otherwise discover the hard way:
+
+- Adding a column in plugin v1.1 and re-enabling the plugin does **not** alter
+  an existing table. `CREATE TABLE IF NOT EXISTS` skips a table that is already
+  there, whatever shape it is in.
+- Nothing in `plugin.json` expresses a schema version, and nothing compares the
+  installed schema against the shipped one. An already-enabled plugin never
+  re-runs its schema file on CRM upgrade — the admin would have to disable and
+  re-enable it by hand, which is not a migration path anyone should rely on.
+
+Until a real per-plugin migration runner exists (`schemaVersion` in the
+manifest, an applied version recorded in SystemConfig as
+`plugin.{id}.schemaVersion`, and ordered migration files applied on load),
+**a plugin that ships a schema change must express it idempotently inside the
+same `schemaFile`** — an `information_schema`-guarded `ALTER`, in the style of
+`src/mysql/upgrade/7.6.2-fundraiser-schema-repair.php` — *and* the release notes
+must tell admins to disable and re-enable the plugin. Design v1 tables with that
+cost in mind.
+
 ## Files
 
 **Plugin System:** `src/ChurchCRM/Plugin/`

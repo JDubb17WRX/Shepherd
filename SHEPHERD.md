@@ -162,8 +162,23 @@ disables share links entirely), `publicRateLimit` (claims per hour per IP,
 default 20), and `contactEmail` (shown on public sheets).
 
 Schema is `signupsheet_shs`, `signupslot_sls`, `signupclaim_sgc` and
-`signupaudit_sga`, created by the 7.6.2 migration and by the fresh-install
-schema — the two definitions are kept byte-identical.
+`signupaudit_sga`, and **the plugin owns it** — neither `Install.sql` nor a
+release migration creates these tables.
+
+**This plugin introduced plugin-owned schema.** A plugin that declares
+`schemaFile` in its `plugin.json` has that SQL applied by
+`PluginManager::enablePlugin()` the moment an administrator enables it, and
+`requiredTables` is verified straight afterwards so a plugin is never marked
+enabled over a half-created schema. This is deliberate rather than incidental:
+`UpgradeService` runs an `upgrade.json` script only when a database *crosses*
+the version that script is attached to, and returns early when the database
+version already equals the installed version. A plugin whose tables rode on a
+release migration would therefore never provision itself on any database
+already at that release — which is exactly what happened when this plugin's
+schema was first attached to the 7.6.2 block. Applying the schema on enable
+works on any database, from any version, including a fresh install. Schema
+files must stay idempotent (`CREATE TABLE IF NOT EXISTS`), because they run on
+every enable.
 
 **This plugin introduced `publicRoutesFile`.** A plugin that declares one in
 its `plugin.json` gets that file mounted on `/external` by
