@@ -20,6 +20,35 @@ final class SignupSheetService
     public const SOURCE_INTERNAL = 'internal';
     public const SOURCE_PUBLIC = 'public';
 
+    /**
+     * Public audit event types.
+     *
+     * EVENT_CLAIM is written only after a claim is actually accepted, so the
+     * signup limit counts signups. Everything a visitor sends that does not
+     * become a signup is recorded under its own rejection type and counted
+     * separately, by the looser attempt limit.
+     */
+    public const EVENT_CLAIM = 'public_claim';
+    public const EVENT_REJECTED_HONEYPOT = 'public_rejected_honeypot';
+    public const EVENT_REJECTED_INVALID = 'public_rejected_invalid';
+    public const EVENT_RATE_LIMITED = 'public_rate_limited';
+    public const EVENT_CANCEL = 'public_cancel';
+
+    /**
+     * What counts as a submission attempt.
+     *
+     * EVENT_RATE_LIMITED is deliberately absent: a refusal is a record of the
+     * limiter working, not a new attempt. Counting it would let a visitor who
+     * keeps retrying extend their own window indefinitely.
+     *
+     * @var string[]
+     */
+    private const ATTEMPT_EVENT_TYPES = [
+        self::EVENT_CLAIM,
+        self::EVENT_REJECTED_HONEYPOT,
+        self::EVENT_REJECTED_INVALID,
+    ];
+
     private const MAX_QUANTITY = 99;
     private const MAX_SLOTS_PER_SHEET = 500;
 
@@ -393,9 +422,28 @@ final class SignupSheetService
         return hash('sha256', (string) $ipAddress);
     }
 
-    public function isRateLimited(string $ipHash, int $limit): bool
+    /**
+     * Has this visitor used up their hourly signup allowance?
+     *
+     * Counts accepted signups only. This is the business rule — how many slots
+     * one household may take in an hour — not the abuse control.
+     */
+    public function isClaimLimitReached(string $ipHash, int $limit): bool
     {
-        return $this->repository->isRateLimited($ipHash, max(1, $limit));
+        return $this->repository->countRecentEvents($ipHash, [self::EVENT_CLAIM]) >= max(1, $limit);
+    }
+
+    /**
+     * Has this visitor sent too many submissions of any kind in the last hour?
+     *
+     * Counts accepted and rejected submissions alike, so malformed traffic is
+     * throttled even though it never produces a signup. Kept deliberately
+     * looser than the signup limit: several people can share one NAT address,
+     * and a few fumbled forms must not consume the whole household allowance.
+     */
+    public function isAttemptLimitReached(string $ipHash, int $limit): bool
+    {
+        return $this->repository->countRecentEvents($ipHash, self::ATTEMPT_EVENT_TYPES) >= max(1, $limit);
     }
 
     public function audit(string $eventType, ?int $sheetId, ?string $ipHash): void

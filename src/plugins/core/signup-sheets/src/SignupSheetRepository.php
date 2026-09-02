@@ -435,11 +435,20 @@ SQL);
     // Audit / rate limiting
     // =========================================================================
 
+    /**
+     * Record a public-surface event.
+     *
+     * `sga_created_at` is written explicitly as UTC, and the column carries no
+     * default so that forgetting to is an error rather than a silent bug. The
+     * rate-limit window below compares against UTC_TIMESTAMP(); a timestamp
+     * written in the MySQL session timezone would disagree with it by the
+     * offset, and the window would either never close or never open.
+     */
     public function audit(string $eventType, ?int $sheetId, ?string $ipHash): void
     {
         $statement = $this->connection()->prepare(
-            'INSERT INTO signupaudit_sga (sga_sheet_id, sga_event_type, sga_ip_hash)
-             VALUES (:sheet_id, :event_type, :ip_hash)'
+            'INSERT INTO signupaudit_sga (sga_sheet_id, sga_event_type, sga_ip_hash, sga_created_at)
+             VALUES (:sheet_id, :event_type, :ip_hash, UTC_TIMESTAMP())'
         );
         $statement->execute([
             'sheet_id' => $sheetId,
@@ -448,16 +457,26 @@ SQL);
         ]);
     }
 
-    public function isRateLimited(string $ipHash, int $limit): bool
+    /**
+     * How many of the given events this visitor has recorded in the last hour.
+     *
+     * @param string[] $eventTypes
+     */
+    public function countRecentEvents(string $ipHash, array $eventTypes): int
     {
-        $statement = $this->connection()->prepare(
-            "SELECT COUNT(*) FROM signupaudit_sga
-              WHERE sga_ip_hash = :ip_hash
-                AND sga_event_type = 'public_claim'
-                AND sga_created_at >= (UTC_TIMESTAMP() - INTERVAL 1 HOUR)"
-        );
-        $statement->execute(['ip_hash' => $ipHash]);
+        if ($eventTypes === []) {
+            return 0;
+        }
 
-        return (int) $statement->fetchColumn() >= $limit;
+        $placeholders = implode(', ', array_fill(0, count($eventTypes), '?'));
+        $statement = $this->connection()->prepare(
+            'SELECT COUNT(*) FROM signupaudit_sga
+              WHERE sga_ip_hash = ?
+                AND sga_event_type IN (' . $placeholders . ')
+                AND sga_created_at >= (UTC_TIMESTAMP() - INTERVAL 1 HOUR)'
+        );
+        $statement->execute(array_merge([$ipHash], array_values($eventTypes)));
+
+        return (int) $statement->fetchColumn();
     }
 }

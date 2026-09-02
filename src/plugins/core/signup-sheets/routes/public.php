@@ -98,7 +98,7 @@ $app->group('/signup-sheets', function (RouteCollectorProxy $group) use (
         }
 
         $service->deleteClaim((int) $claim['sgc_ID']);
-        $service->audit('public_cancel', (int) $claim['sheet_id'], null);
+        $service->audit(SignupSheetService::EVENT_CANCEL, (int) $claim['sheet_id'], null);
 
         $renderer = new PhpRenderer($signupSheetsPublicViews);
 
@@ -194,18 +194,28 @@ $app->group('/signup-sheets', function (RouteCollectorProxy $group) use (
 
         // Honeypot: a field real people never see and never fill in.
         if (!empty($body['website'])) {
-            $service->audit('public_rejected_honeypot', $sheetId, $ipHash);
+            $service->audit(SignupSheetService::EVENT_REJECTED_HONEYPOT, $sheetId, $ipHash);
 
             return $renderSheet(gettext('Your signup could not be accepted.'), null);
         }
 
-        if ($service->isRateLimited($ipHash, $signupSheetsPublicPlugin->getPublicRateLimit())) {
-            $service->audit('public_rate_limited', $sheetId, $ipHash);
+        // Two limits, counted separately. The attempt limit throttles abusive
+        // traffic of any shape; the signup limit is the business rule about how
+        // many slots one visitor may take. Auditing the claim only after it is
+        // accepted is what keeps rejected submissions out of the second count —
+        // otherwise anyone with the link could burn a shared address's signup
+        // allowance with submissions that were never going to be accepted.
+        if ($service->isAttemptLimitReached($ipHash, $signupSheetsPublicPlugin->getPublicAttemptLimit())) {
+            $service->audit(SignupSheetService::EVENT_RATE_LIMITED, $sheetId, $ipHash);
+
+            return $renderSheet(gettext('Too many requests from this connection in the last hour. Please try again later.'), null);
+        }
+
+        if ($service->isClaimLimitReached($ipHash, $signupSheetsPublicPlugin->getPublicRateLimit())) {
+            $service->audit(SignupSheetService::EVENT_RATE_LIMITED, $sheetId, $ipHash);
 
             return $renderSheet(gettext('Too many signups from this connection in the last hour. Please try again later.'), null);
         }
-
-        $service->audit('public_claim', $sheetId, $ipHash);
 
         try {
             $result = $service->claimSlot(
@@ -216,8 +226,12 @@ $app->group('/signup-sheets', function (RouteCollectorProxy $group) use (
                 null
             );
         } catch (SignupValidationException $e) {
+            $service->audit(SignupSheetService::EVENT_REJECTED_INVALID, $sheetId, $ipHash);
+
             return $renderSheet($e->getMessage(), null);
         }
+
+        $service->audit(SignupSheetService::EVENT_CLAIM, $sheetId, $ipHash);
 
         return $renderSheet(null, [
             'name' => (string) ($body['name'] ?? ''),

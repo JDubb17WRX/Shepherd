@@ -15,6 +15,13 @@ use RuntimeException;
  */
 class SignupSheetsPlugin extends AbstractPlugin
 {
+    /**
+     * How much looser the total-attempt limit is than the signup limit.
+     *
+     * @see getPublicAttemptLimit()
+     */
+    private const ATTEMPT_LIMIT_MULTIPLIER = 5;
+
     private static ?SignupSheetsPlugin $instance = null;
 
     private ?SignupSheetService $service = null;
@@ -124,13 +131,27 @@ class SignupSheetsPlugin extends AbstractPlugin
     }
 
     /**
-     * Maximum public signups accepted from one IP address per hour.
+     * Maximum accepted signups from one IP address per hour.
      */
     public function getPublicRateLimit(): int
     {
         $configured = (int) $this->getConfigValue('publicRateLimit');
 
         return $configured > 0 ? $configured : 20;
+    }
+
+    /**
+     * Maximum submissions of any kind from one IP address per hour.
+     *
+     * Derived rather than configured, to keep the admin surface to one number.
+     * It has to be looser than the signup limit: rejected submissions are
+     * counted here so malformed traffic is still throttled, and several people
+     * can sit behind one shared address, so a few fumbled forms must not
+     * consume everyone's signup allowance.
+     */
+    public function getPublicAttemptLimit(): int
+    {
+        return $this->getPublicRateLimit() * self::ATTEMPT_LIMIT_MULTIPLIER;
     }
 
     public function getContactEmail(): string
@@ -156,7 +177,7 @@ class SignupSheetsPlugin extends AbstractPlugin
             [
                 'key' => 'allowPublicSheets',
                 'label' => gettext('Allow public share links'),
-                'type' => 'checkbox',
+                'type' => 'boolean',
                 'required' => false,
                 'help' => gettext('When enabled, a sheet can be published at a secret link that anyone can use without a CRM login.'),
             ],
@@ -165,7 +186,7 @@ class SignupSheetsPlugin extends AbstractPlugin
                 'label' => gettext('Public signups per hour per visitor'),
                 'type' => 'number',
                 'required' => false,
-                'help' => gettext('Maximum signups accepted from one IP address per hour on public sheets.'),
+                'help' => gettext('Maximum signups accepted from one IP address per hour on public sheets. Rejected submissions are throttled separately, at five times this number.'),
             ],
             [
                 'key' => 'contactEmail',

@@ -18,6 +18,7 @@ use ChurchCRM\Plugins\SignupSheets\SignupValidationException;
 use ChurchCRM\Slim\Middleware\Request\Auth\AddEventsRoleAuthMiddleware;
 use ChurchCRM\Slim\Middleware\Request\Auth\ViewEventsRoleAuthMiddleware;
 use ChurchCRM\Slim\SlimUtils;
+use ChurchCRM\Utils\CsvExporter;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpNotFoundException;
@@ -142,19 +143,22 @@ $app->group('/signup-sheets', function (RouteCollectorProxy $group) use (
             throw new HttpNotFoundException($request, gettext('Signup sheet not found'));
         }
 
-        $handle = fopen('php://temp', 'r+');
-        foreach ($service->buildRosterCsv((int) $sheet['shs_ID']) as $row) {
-            fputcsv($handle, $row);
-        }
-        rewind($handle);
-        $csv = (string) stream_get_contents($handle);
-        fclose($handle);
+        $rows = $service->buildRosterCsv((int) $sheet['shs_ID']);
+        $headers = array_shift($rows);
+
+        // Volunteer names, emails, phones and comments arrive from an anonymous
+        // public form, so the roster must go through CsvExporter — it prepends a
+        // tab to values starting =, -, + or @ so a spreadsheet renders them as
+        // text rather than evaluating them as formulas.
+        $exporter = new CsvExporter();
+        $exporter->insertHeaders($headers);
+        $exporter->insertRows($rows);
 
         $filename = 'signup-sheet-' . (int) $sheet['shs_ID'] . '.csv';
-        $response->getBody()->write($csv);
+        $response->getBody()->write($exporter->getContent());
 
         return $response
-            ->withHeader('Content-Type', 'text/csv; charset=utf-8')
+            ->withHeader('Content-Type', 'text/csv; charset=UTF-8')
             ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"');
     });
 })->add(ViewEventsRoleAuthMiddleware::class);

@@ -18,9 +18,9 @@
     {
       "key": "allowPublicSheets",
       "label": "Allow public share links",
-      "type": "checkbox",
+      "type": "boolean",
       "required": false,
-      "default": "true",
+      "default": true,
       "help": "When enabled, a sheet can be published at a secret link that anyone can use without a CRM login."
     },
     {
@@ -29,7 +29,7 @@
       "type": "number",
       "required": false,
       "default": "20",
-      "help": "Maximum signups accepted from one IP address per hour on public sheets."
+      "help": "Maximum signups accepted from one IP address per hour on public sheets. Rejected submissions are throttled separately, at five times this number."
     },
     {
       "key": "contactEmail",

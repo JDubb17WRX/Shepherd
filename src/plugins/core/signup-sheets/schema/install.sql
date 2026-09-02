@@ -66,12 +66,16 @@ CREATE TABLE IF NOT EXISTS `signupclaim_sgc` (
     REFERENCES `signupslot_sls` (`sls_ID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- sga_created_at has no default on purpose: every row is written with an
+-- explicit UTC_TIMESTAMP() so the rate-limit window compares like with like.
+-- A CURRENT_TIMESTAMP default would follow the MySQL session timezone and skew
+-- that window, so the column is left to fail loudly if a writer forgets it.
 CREATE TABLE IF NOT EXISTS `signupaudit_sga` (
   `sga_ID` bigint unsigned NOT NULL AUTO_INCREMENT,
   `sga_sheet_id` int NULL,
   `sga_event_type` varchar(48) NOT NULL,
   `sga_ip_hash` char(64) NULL,
-  `sga_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sga_created_at` datetime NOT NULL,
   PRIMARY KEY (`sga_ID`),
   KEY `signupaudit_sga_ip` (`sga_ip_hash`, `sga_created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

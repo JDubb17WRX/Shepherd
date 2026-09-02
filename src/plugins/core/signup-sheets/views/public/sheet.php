@@ -193,7 +193,7 @@ $formAction = SystemURLs::getRootPath() . '/external/signup-sheets/' . rawurlenc
                         </label>
                         <input type="email" class="form-control" id="public-email" name="email" maxlength="254"
                             <?= !empty($sheet['shs_require_email']) ? 'required' : '' ?>>
-                        <div class="form-text"><?= gettext('Used only to send you your signup link. It is not shown on this page.') ?></div>
+                        <div class="form-text"><?= gettext('Shared with the organizers so they can reach you about this event. It is not shown on this page.') ?></div>
                     </div>
 
                     <div class="row">
