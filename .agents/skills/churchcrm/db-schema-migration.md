@@ -24,6 +24,20 @@ Backward compatibility:
 Rollback strategy:
 - Have explicit down-migration scripts; snapshot DB; monitor replication lag.
 
+### Plugin Tables Never Belong in `upgrade.json` <!-- learned: 2026-09-01 -->
+
+`UpgradeService::upgradeDatabaseVersion()` returns early when
+`$db_version === $installed_version`, and every block runs only for the
+versions in its `versions` array. Appending a plugin's `CREATE TABLE` script to
+the `current` block therefore leaves the tables missing on every database
+already at that release — the plugin installs and fails at first query. The
+early return happens before `upgrade.json` is read, so re-sequencing the block
+cannot fix it.
+
+Plugins declare `schemaFile` + `requiredTables` in `plugin.json` and are
+provisioned by `PluginManager::enablePlugin()` instead. See
+[[plugin-development]] → "Plugin-Owned Database Schema".
+
 ### Adding a New Version with DB Changes <!-- learned: 2026-04-27 -->
 
 When a new release ships with a DB migration SQL file, use a **two-block pattern** in `upgrade.json`:
@@ -110,6 +124,11 @@ Checklist for any `ALTER TABLE` migration:
 | `src/mysql/install/Install.sql` | Apply the same change to the `CREATE TABLE` block — required |
 | `cypress/data/seed.sql` | Update the `CREATE TABLE` block — **ask user first** |
 | `orm/schema.xml` | Update column/table attributes if Propel schema tracks this |
+
+**Exception — plugin-owned tables.** A plugin's tables belong in its own
+`schemaFile`, not in `Install.sql` or `upgrade.json`. Keeping them out of
+`Install.sql` is deliberate: a fresh install should not carry tables for a
+plugin nobody enabled. See "Plugin Tables Never Belong in `upgrade.json`" above.
 
 ### MySQL-Compatible Conditional Column Drops <!-- learned: 2026-07-27 -->
 

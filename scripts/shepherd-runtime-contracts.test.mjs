@@ -183,3 +183,116 @@ test('kiosk bearer cookies are secure on proxied HTTPS requests', async () => {
     assert.equal((kiosk.match(/'secure'\s*=>\s*\$isHttps/g) || []).length, 2);
     assert.equal((kiosk.match(/setcookie\('kioskCookie'/g) || []).length, 2);
 });
+
+test('plugins provision their own tables on enable, never via a release migration', async () => {
+    const [manifest, schema, pluginManager, abstractPlugin, install, upgradeJson] = await Promise.all([
+        read('src/plugins/core/signup-sheets/plugin.json'),
+        read('src/plugins/core/signup-sheets/schema/install.sql'),
+        read('src/ChurchCRM/Plugin/PluginManager.php'),
+        read('src/ChurchCRM/Plugin/AbstractPlugin.php'),
+        read('src/mysql/install/Install.sql'),
+        read('src/mysql/upgrade.json'),
+    ]);
+    const plugin = JSON.parse(manifest);
+
+    // UpgradeService returns early when the database version already equals the
+    // installed version, so a plugin whose schema rode on a release migration
+    // would never reach databases already at that release.
+    assert.equal(plugin.schemaFile, 'schema/install.sql');
+    assert.deepEqual(plugin.requiredTables, [
+        'signupsheet_shs',
+        'signupslot_sls',
+        'signupclaim_sgc',
+        'signupaudit_sga',
+    ]);
+
+    for (const table of plugin.requiredTables) {
+        assert.match(schema, new RegExp('CREATE TABLE IF NOT EXISTS `' + table + '`'));
+        assert.doesNotMatch(install, new RegExp('`' + table + '`'));
+        assert.doesNotMatch(upgradeJson, new RegExp(table));
+    }
+
+    // The schema runs on every enable, so it must never destroy existing data.
+    assert.doesNotMatch(schema, /DROP\s+(?:COLUMN|TABLE)/i);
+
+    assert.match(abstractPlugin, /public function installSchema\(\): void/);
+    assert.match(abstractPlugin, /SQLUtils::sqlImport\(\$schemaFile, Propel::getWriteConnection\('default'\)\)/);
+    assert.match(abstractPlugin, /public function getMissingTables\(\): array/);
+
+    // A verification gate that cannot verify must fail closed: returning an
+    // empty array on a query error would read as "nothing missing" and let
+    // enablePlugin() record the plugin as enabled over an unknown schema.
+    assert.match(abstractPlugin, /throw new .{1,2}RuntimeException\(\s*"Unable to verify tables for plugin/);
+
+    // Enable applies the schema and verifies it before the plugin is recorded
+    // as enabled, so a half-created schema can never present as a working plugin.
+    const enableBlock = pluginManager.match(
+        /public static function enablePlugin\(string \$pluginId\): bool[\s\S]*?\n    \}/,
+    );
+    assert.ok(enableBlock, 'enablePlugin must exist');
+    const enableBody = enableBlock[0];
+    assert.ok(
+        enableBody.indexOf('$plugin->installSchema()') < enableBody.indexOf('$plugin->activate()'),
+        'schema must be installed before the activate hook',
+    );
+    assert.ok(
+        enableBody.indexOf('getMissingTables()') < enableBody.indexOf("SystemConfig::setValue($enabledKey, '1')"),
+        'missing tables must be detected before the plugin is marked enabled',
+    );
+    assert.match(enableBody, /is missing required tables/);
+});
+
+test('the public signup surface escapes exports and throttles on one clock', async () => {
+    const [adminRoutes, publicRoutes, service, repository, manifest, sheetView] = await Promise.all([
+        read('src/plugins/core/signup-sheets/routes/routes.php'),
+        read('src/plugins/core/signup-sheets/routes/public.php'),
+        read('src/plugins/core/signup-sheets/src/SignupSheetService.php'),
+        read('src/plugins/core/signup-sheets/src/SignupSheetRepository.php'),
+        read('src/plugins/core/signup-sheets/plugin.json'),
+        read('src/plugins/core/signup-sheets/views/public/sheet.php'),
+    ]);
+
+    // Names, emails, phones and comments come from an anonymous form and end up
+    // in a staff spreadsheet, so the roster must go through the shared exporter
+    // that neutralises formula triggers rather than raw fputcsv.
+    assert.match(adminRoutes, /use ChurchCRM.Utils.CsvExporter;/);
+    assert.match(adminRoutes, /new CsvExporter\(\)/);
+    assert.doesNotMatch(adminRoutes, /fputcsv/);
+
+    // One clock. sga_created_at is written as UTC because the window compares
+    // against UTC_TIMESTAMP(); leaving it to CURRENT_TIMESTAMP would skew the
+    // limiter by the session timezone offset on any non-UTC MySQL.
+    assert.match(repository, /INSERT INTO signupaudit_sga[\s\S]*?UTC_TIMESTAMP\(\)/);
+    assert.match(repository, /sga_created_at >= \(UTC_TIMESTAMP\(\) - INTERVAL 1 HOUR\)/);
+    assert.match(repository, /INSERT INTO signupaudit_sga \(sga_sheet_id, sga_event_type, sga_ip_hash, sga_created_at\)/);
+
+    // Two counters: rejections must not consume the signup allowance, and a
+    // refusal must not extend the window that produced it.
+    assert.match(service, /public function isClaimLimitReached/);
+    assert.match(service, /public function isAttemptLimitReached/);
+    const attemptTypes = service.match(
+        /private const ATTEMPT_EVENT_TYPES = \[(?<body>[\s\S]*?)\];/,
+    );
+    assert.ok(attemptTypes, 'attempt event types must be declared');
+    assert.match(attemptTypes.groups.body, /EVENT_REJECTED_INVALID/);
+    assert.doesNotMatch(attemptTypes.groups.body, /EVENT_RATE_LIMITED/);
+
+    // The accepted-claim audit is what the signup limit counts, so it may only
+    // be written once claimSlot() has actually accepted the claim.
+    assert.ok(
+        publicRoutes.indexOf('$service->claimSlot(') < publicRoutes.indexOf('EVENT_CLAIM'),
+        'the claim audit must be written after claimSlot() succeeds',
+    );
+    assert.match(publicRoutes, /catch \(SignupValidationException \$e\) \{\s*\$service->audit\(SignupSheetService::EVENT_REJECTED_INVALID/);
+
+    // `checkbox` is not a type the plugin management view renders; it falls
+    // through to a text input, leaving the share-link switch as a blank box.
+    assert.equal(
+        JSON.parse(manifest).settings.find((setting) => setting.key === 'allowPublicSheets').type,
+        'boolean',
+    );
+    assert.match(service, /public const EVENT_CANCEL/);
+
+    // The plugin sends no email, so the form must not say that it does.
+    assert.doesNotMatch(sheetView, /send you your signup link/);
+});

@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../Include/LoadConfigs.php';
 
+use ChurchCRM\dto\SystemURLs;
+use ChurchCRM\Plugin\PluginManager;
 use ChurchCRM\Slim\Middleware\CorsMiddleware;
 use ChurchCRM\Slim\Middleware\VersionMiddleware;
 use ChurchCRM\Slim\SlimUtils;
@@ -31,6 +33,12 @@ require __DIR__ . '/routes/register.php';
 require __DIR__ . '/routes/verify.php';
 require __DIR__ . '/routes/calendar.php';
 require __DIR__ . '/routes/system.php';
+
+// Unauthenticated routes contributed by active plugins (publicRoutesFile in
+// plugin.json). Plugins are responsible for their own authorization here —
+// nothing on /external is behind AuthMiddleware.
+PluginManager::init(SystemURLs::getDocumentRoot() . '/plugins');
+PluginManager::registerPublicPluginRoutes($app);
 
 // Run app
 $app->run();
