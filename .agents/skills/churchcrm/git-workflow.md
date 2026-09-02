@@ -826,3 +826,26 @@ Dependabot force-pushes its own branches frequently (rebase/re-resolve). If `git
 ---
 
 Last updated: April 21, 2026
+
+### Runtime Contract Tests Are Enforced by CI <!-- learned: 2026-09-02 -->
+
+`scripts/shepherd-runtime-contracts.test.mjs` runs as the **Runtime contracts**
+job in `code-quality.yml`, on every pull request and every push to master. It
+was previously only ever run by hand, which meant the invariants it documents
+were not actually gating anything.
+
+```bash
+npm run test:shepherd:contracts
+```
+
+Run it locally before pushing when you touch anything it asserts on: the
+upgrade/install schema pair, plugin provisioning, session and cookie handling,
+the readiness probes, or the signup-sheets public surface.
+
+The suite imports only `node:assert`, `node:fs` and `node:test` and asserts
+against files checked into the repo — no database, no browser, no `npm ci`.
+**Keep it that way.** Its value is that it is cheap enough to gate every PR;
+adding a dependency or a running service would cost that.
+
+Note it is distinct from `docker/shepherd/Caddyfile.test.mjs`, which the
+**Shepherd image** workflow runs separately.
