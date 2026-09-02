@@ -97,9 +97,19 @@ test('website content editing reuses only completed local administrator sessions
     assert.match(bootstrapper, /bool \$initializeSession = true/);
     assert.match(bootstrapper, /if \(\$initializeSession\) \{\s+self::initSession\(\);/);
     assert.match(loadConfigs, /isPublicWebsiteContentRead/);
-    assert.match(loadConfigs, /isAnonymousEditorProbe/);
+    // Both nginx auth_request probes are exempt from anonymous session creation.
+    // The console one fires on every request to a proxied path, so losing this
+    // exemption fills the disk with session files nobody ever reads.
+    assert.match(loadConfigs, /isAnonymousSessionProbe/);
+    assert.match(loadConfigs, /\$sessionProbePaths = \[/);
+    assert.match(loadConfigs, /'\/website-content\/session'/);
+    assert.match(loadConfigs, /'\/console\/session'/);
     assert.match(loadConfigs, /sessionCookieName/);
-    assert.match(authMiddleware, /isPassiveWebsiteEditorProbe/);
+    // An existing scoped cookie must still initialise the session normally.
+    assert.match(loadConfigs, /!array_key_exists\(\$sessionCookieName, \$_COOKIE\)/);
+    assert.match(authMiddleware, /isPassiveGateProbe/);
+    assert.match(authMiddleware, /'\/api\/background\/website-content\/session'/);
+    assert.match(authMiddleware, /'\/api\/background\/console\/session'/);
     assert.match(authMiddleware, /\? 'debug' : 'warning'/);
 
     assert.match(service, /MAX_CONTENT_BYTES/);
