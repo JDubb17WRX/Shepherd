@@ -26,14 +26,6 @@ class SignupSheetsPlugin extends AbstractPlugin
 
     private ?SignupSheetService $service = null;
 
-    /**
-     * Memoised per request: the plugin list page asks whether the plugin is
-     * configured, and that answer is a database round trip.
-     *
-     * @var string[]|null
-     */
-    private ?array $missingTables = null;
-
     public function __construct(string $basePath = '')
     {
         parent::__construct($basePath);
@@ -103,19 +95,23 @@ class SignupSheetsPlugin extends AbstractPlugin
      */
     public function getConfigurationError(): ?string
     {
+        // Deliberately not memoised. A cached answer outlives the state it
+        // describes, so this method and getMissingTables() could contradict
+        // each other on the same object. The cost of asking again is one
+        // indexed information_schema lookup on an admin page.
         try {
-            $this->missingTables ??= $this->getMissingTables();
+            $missingTables = $this->getMissingTables();
         } catch (RuntimeException) {
             return gettext('Signup Sheets could not verify its database tables. Check the database connection, then see the application log.');
         }
 
-        if ($this->missingTables === []) {
+        if ($missingTables === []) {
             return null;
         }
 
         return sprintf(
             gettext('Signup Sheets is missing its database tables (%s). Disable and re-enable the plugin to create them.'),
-            implode(', ', $this->missingTables)
+            implode(', ', $missingTables)
         );
     }
 

@@ -620,9 +620,13 @@ half-created schema.
   unknown schema.
 - Surface a broken schema to the admin by overriding `getConfigurationError()`
   with `getMissingTables()`; catch its `RuntimeException` there (a page render
-  should not fatal) and still report the plugin as unconfigured. Memoise the
-  result, because the plugin list page calls `isConfigured()` on render and
-  each call is a database round trip.
+  should not fatal) and still report the plugin as unconfigured. **Do not
+  memoise the answer on the plugin instance** — a cached result outlives the
+  state it describes, so `getConfigurationError()` and `getMissingTables()`
+  end up contradicting each other on the same object. That bug was found by a
+  functional pass, not by review: the check reported a dropped table while the
+  admin-facing error still said everything was fine. The saving was one
+  indexed `information_schema` lookup on an admin page.
 
 Reference implementation: `src/plugins/core/signup-sheets/` (schema file,
 manifest keys, and the `getConfigurationError()` override).
