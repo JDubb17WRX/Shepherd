@@ -50,6 +50,25 @@ jobs:
       - name: Lint check (biome)
         run: npx biome check webpack/
 
+  runtime-contracts:
+    name: Runtime contracts
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Use Node.js (from .nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: '.nvmrc'
+      # No npm ci: the suite imports only node:assert, node:fs and node:test,
+      # and asserts against files in the repo. Keeping it dependency-free is
+      # what makes it cheap enough to gate every pull request.
+      - name: Shepherd runtime contracts
+        run: npm run test:shepherd:contracts
+
   format-fix:
     name: Apply format fixes
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
