@@ -204,12 +204,25 @@ describe("Events Dashboard (MVC)", () => {
             cy.visit("event/dashboard");
 
             // Find the event we just created and deactivate it via the menu
-            cy.get(`.event-action-menu-placeholder[data-event-id="${testEventId}"]`, { timeout: 10000 })
-                .within(() => {
-                    cy.get(".dropdown button[data-bs-toggle='dropdown']").click({ force: true });
-                });
+            // Wait for the *hydrated* menu, not the server-rendered placeholder.
+            // list-events.php only builds the dropdown once CRM.localesReady has
+            // fired, so querying the placeholder resolves immediately while the
+            // button inside it may not exist for several more seconds.
+            cy.get(
+                `.event-action-menu-placeholder[data-event-id="${testEventId}"] button[data-bs-toggle='dropdown']`,
+                { timeout: 10000 },
+            )
+                .should("be.visible")
+                .click();
 
-            cy.get(".dropdown-menu.show").contains("Deactivate").click();
+            // Scope the menu to this row, and target the stable class rather than
+            // the label: "Deactivate" is produced by i18next.t() and is therefore
+            // subject to the same locale race that gates hydration.
+            cy.get(
+                `.event-action-menu-placeholder[data-event-id="${testEventId}"] .dropdown-menu.show .deactivate-event`,
+            )
+                .should("be.visible")
+                .click();
 
             cy.wait("@status").then(({ request, response }) => {
                 expect(response.statusCode).to.eq(200);
@@ -230,12 +243,25 @@ describe("Events Dashboard (MVC)", () => {
             cy.intercept("POST", "**/api/events/*/status").as("status");
             cy.visit("event/dashboard");
 
-            cy.get(`.event-action-menu-placeholder[data-event-id="${testEventId}"]`, { timeout: 10000 })
-                .within(() => {
-                    cy.get(".dropdown button[data-bs-toggle='dropdown']").click({ force: true });
-                });
+            // Wait for the *hydrated* menu, not the server-rendered placeholder.
+            // list-events.php only builds the dropdown once CRM.localesReady has
+            // fired, so querying the placeholder resolves immediately while the
+            // button inside it may not exist for several more seconds.
+            cy.get(
+                `.event-action-menu-placeholder[data-event-id="${testEventId}"] button[data-bs-toggle='dropdown']`,
+                { timeout: 10000 },
+            )
+                .should("be.visible")
+                .click();
 
-            cy.get(".dropdown-menu.show").contains("Activate").click();
+            // Scope the menu to this row, and target the stable class rather than
+            // the label: "Activate" is produced by i18next.t() and is therefore
+            // subject to the same locale race that gates hydration.
+            cy.get(
+                `.event-action-menu-placeholder[data-event-id="${testEventId}"] .dropdown-menu.show .activate-event`,
+            )
+                .should("be.visible")
+                .click();
 
             cy.wait("@status").then(({ request, response }) => {
                 expect(response.statusCode).to.eq(200);
