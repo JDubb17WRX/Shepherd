@@ -50,6 +50,17 @@ describe("Session Login Flows", () => {
         });
 
         afterEach(() => {
+            // Leave the authenticated page before tearing the session down.
+            // /v2/dashboard polls /api/cart/ in the background; if that poll
+            // lands after the login reset below it answers 401, and the app
+            // surfaces the rejected jqXHR as an uncaught exception. That fails
+            // this hook — and with it the test and every test after it — for
+            // reasons unrelated to whatever was under test. The admin calls
+            // below authenticate by API key rather than cookie, so dropping the
+            // session here costs nothing.
+            cy.clearCookies();
+            cy.visit("/session/begin");
+
             cy.makePrivateAdminAPICall("POST", "/admin/api/user/27/login/reset", null, 200);
             cy.task("resetTwoFactorReplay", { username: "twofa_user" }).should("eq", 1);
         });
