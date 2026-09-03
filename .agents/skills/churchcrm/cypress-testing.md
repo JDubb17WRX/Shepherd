@@ -2256,3 +2256,61 @@ SyntaxError: ... Unexpected token (NN:CC)
 ```
 
 Note: `*/` inside double-quoted strings (`"**/api/..."`) within actual code is fine — only the parser is affected by comment context.
+
+## Gotcha: Locale-Gated Hydration Makes Placeholder Waits Useless <!-- learned: 2026-09-02 -->
+
+Several dashboards render an empty placeholder server-side and fill it in from
+JavaScript only after translations arrive. `src/event/views/list-events.php`
+is the reference case:
+
+```js
+if (window.CRM && window.CRM.localesLoaded) {
+    render();
+} else {
+    window.addEventListener('CRM.localesReady', render, { once: true });
+}
+```
+
+**A timeout on the placeholder buys you nothing** — the placeholder is in the
+server HTML, so it resolves on the first try while the controls inside it may
+not exist for seconds longer. Put the timeout on the *hydrated* element:
+
+```js
+// ❌ WRONG — the outer get resolves instantly; the inner get falls back to the
+// default 4s timeout, and force:true fires the click whether or not it landed
+cy.get(`.event-action-menu-placeholder[data-event-id="${id}"]`, { timeout: 10000 })
+    .within(() => {
+        cy.get(".dropdown button[data-bs-toggle='dropdown']").click({ force: true });
+    });
+cy.get(".dropdown-menu.show").contains("Deactivate").click();
+
+// ✅ CORRECT — wait for the hydrated control, let Cypress check actionability
+cy.get(
+    `.event-action-menu-placeholder[data-event-id="${id}"] button[data-bs-toggle='dropdown']`,
+    { timeout: 10000 },
+)
+    .should("be.visible")
+    .click();
+cy.get(
+    `.event-action-menu-placeholder[data-event-id="${id}"] .dropdown-menu.show .deactivate-event`,
+)
+    .should("be.visible")
+    .click();
+```
+
+**Two rules follow:**
+
+- **Never `force: true` to get past a hydration race.** It skips the
+  actionability checks that would otherwise wait, so the click lands on a
+  control that may not be wired up yet and the test fails later, somewhere
+  more confusing.
+- **Select menu items by their stable class, not their label.** Labels inside
+  a hydrated menu come from `i18next.t()`, so matching on `"Deactivate"` is
+  subject to the very locale race that gated the hydration — and breaks under
+  any non-English locale. `CRM.renderEventActionMenu()` emits
+  `.activate-event` / `.deactivate-event` for exactly this reason. Reserve
+  `cy.contains("Deactivate")` for tests whose *purpose* is asserting the label.
+
+Also scope the menu lookup to the row (`.event-action-menu-placeholder[data-event-id=…] .dropdown-menu.show`)
+rather than a bare `.dropdown-menu.show`, so a menu left open by another row
+can never satisfy the query.
