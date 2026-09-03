@@ -2256,3 +2256,49 @@ SyntaxError: ... Unexpected token (NN:CC)
 ```
 
 Note: `*/` inside double-quoted strings (`"**/api/..."`) within actual code is fine — only the parser is affected by comment context.
+
+## Gotcha: Destroying a Session While an Authenticated Page Is Still Open <!-- learned: 2026-09-02 -->
+
+A cleanup hook that resets or invalidates a session must first navigate away
+from the authenticated page, or the page's background polling will 401 against
+the session you just destroyed. `/v2/dashboard` polls `/api/cart/` and
+`/api/families/familiesInCart`; the app surfaces the rejected jqXHR as an
+**uncaught exception**, which fails the hook — and therefore the test, and
+every test after it in that suite.
+
+The tell in CI is a hook failure with no assertion in it:
+
+```
+Session Login Flows -- ... -- after each hook (failed)
+(uncaught exception) Error: {"readyState":4,"url":"/churchcrm/api/cart/",
+ "responseJSON":{"error":"No logged in user","code":401},"status":401}
+```
+
+```js
+// ❌ WRONG — the dashboard is still open and still polling
+afterEach(() => {
+    cy.makePrivateAdminAPICall("POST", "/admin/api/user/27/login/reset", null, 200);
+});
+
+// ✅ CORRECT — drop the session client-side and land somewhere inert first
+afterEach(() => {
+    cy.clearCookies();
+    cy.visit("/session/begin");
+    cy.makePrivateAdminAPICall("POST", "/admin/api/user/27/login/reset", null, 200);
+});
+```
+
+`makePrivateAdminAPICall` and friends authenticate with an API key rather than
+the session cookie, so clearing cookies before them costs nothing.
+
+**Do not reach for `Cypress.on("uncaught:exception", () => false)` here.** It
+hides the class of failure rather than the instance, and `cypress/support/e2e.js`
+already carries a `TODO(cypress-noise)` filter regretting exactly that trade.
+
+### Related: `affectedRows` counts changed rows, not matched rows
+
+`resetTwoFactorReplay` asserts `.should("eq", 1)` on the result of
+`UPDATE ... SET usr_TwoFactorAuthLastKeyTimestamp = NULL`. MySQL reports rows
+*changed*, so re-running the reset when the column is already NULL returns 0
+and the hook fails even though the user exists. If that assertion ever starts
+failing, the fix is to report matched rows, not to relax the assertion.
