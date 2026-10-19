@@ -4,6 +4,8 @@ import { createHmac } from 'node:crypto';
 
 const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:18088';
 const root = process.env.TEST_ROOT ?? '/shepherd';
+const mailOrigin = process.env.TEST_MAIL_ORIGIN || origin;
+const edgeHeaders = process.env.TEST_PREVIEW_AUTH ? {Authorization:'Basic '+Buffer.from(process.env.TEST_PREVIEW_AUTH).toString('base64')} : {};
 const fixtures = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 let checks = 0;
 function check(value, message) { assert.ok(value, message); checks++; console.log(`PASS ${message}`); }
@@ -20,7 +22,7 @@ function totp(secret) {
 class Browser {
   cookies = new Map();
   async request(path, options = {}) {
-    const headers = { Cookie: [...this.cookies].map(([k,v]) => `${k}=${v}`).join('; '), ...options.headers };
+    const headers = { ...edgeHeaders, Cookie: [...this.cookies].map(([k,v]) => `${k}=${v}`).join('; '), ...options.headers };
     const response = await fetch(origin + root + path, { ...options, headers, redirect: 'manual' });
     if (process.env.TEST_DEBUG) console.log(options.method || 'GET', path, response.status, response.headers.get('Location') || '');
     for (const cookie of response.headers.getSetCookie()) {
@@ -57,6 +59,12 @@ await member.login(fixtures.member);
 check((await member.request('/api/background/website-content/session',{headers:{Accept:'application/json'}})).status === 403, 'member cannot authorize CMS');
 check((await member.request('/admin/api/user/1/permissions',{headers:{Accept:'application/json'}})).status === 403, 'member cannot access administration API');
 const enrollment = new Browser();
+check((await member.request('/api/person/'+fixtures.member.id,{headers:{Accept:'application/json'}})).status === 200, 'zero-permission member retains read access');
+check((await member.request('/api/person/'+fixtures.member.id+'/photo',{method:'POST',headers:{Accept:'application/json','Content-Type':'application/json'},body:'{}'})).status === 403, 'zero-permission member cannot edit records');
+const self = new Browser();
+await self.login(fixtures.self);
+check((await self.request('/api/person/'+fixtures.admin.id,{headers:{Accept:'application/json'}})).status === 403, 'self-service account cannot reach internal people API');
+check((await self.request('/people/list',{headers:{Accept:'text/html'}})).status === 302, 'self-service account is directed to the member portal');
 await enrollment.login(fixtures.enroll);
 check((await enrollment.request('/v2/user/current/manage2fa', {headers:{Accept:'text/html'}})).status === 200, 'required enrollment page has no redirect loop');
 check((await enrollment.request('/api/background/website-content/session',{headers:{Accept:'application/json'}})).status === 403, 'unenrolled administrator cannot authorize CMS');
@@ -138,9 +146,9 @@ check((await admin.request(`/plugins/signup-sheets/api/sheets/${sheetId}`,{metho
 
 async function capturedMail(address, subject) {
   for(let attempt=0;attempt<15;attempt++) {
-    const list = await (await fetch(origin+'/_preview-mail/api/v1/messages')).json();
+    const list = await (await fetch(mailOrigin+'/_preview-mail/api/v1/messages',{headers:edgeHeaders})).json();
     const message = list.messages?.find(message => message.Subject.includes(subject) && message.To.some(to=>to.Address===address));
-    if(message) return await (await fetch(origin+'/_preview-mail/api/v1/message/'+message.ID)).json();
+    if(message) return await (await fetch(mailOrigin+'/_preview-mail/api/v1/message/'+message.ID,{headers:edgeHeaders})).json();
     await new Promise(resolve=>setTimeout(resolve,200));
   }
   throw new Error('Expected message was not captured by local Mailpit: '+subject);

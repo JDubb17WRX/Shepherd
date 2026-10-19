@@ -30,11 +30,16 @@ jobs:
           cache-to: type=gha,mode=max,scope=shepherd-7-8-1
           tags: shepherd:test
           labels: org.opencontainers.image.revision=${{ github.sha }}
+      - name: Verify final packaged application signatures
+        run: docker run --rm --entrypoint php -v "$PWD/docker/shepherd/verify-package.php:/tmp/verify-package.php:ro" shepherd:test /tmp/verify-package.php
       - name: Smoke-test private-media denial
         shell: bash
         run: |
           set -euo pipefail
-          docker run --detach --env SHEPHERD_SKIP_MIGRATION=1 --name shepherd-route-test --publish 127.0.0.1:18080:8080 shepherd:test
+          docker create --env SHEPHERD_SKIP_MIGRATION=1 --name shepherd-route-test --publish 127.0.0.1:18080:8080 shepherd:test
+          docker cp docker/shepherd/verify-package.php shepherd-route-test:/var/www/html/shepherd/plugins/core/obsolete-package-file.php
+          docker cp docker/shepherd/verify-package.php shepherd-route-test:/var/www/html/shepherd/plugins/community/preserved-community-file.txt
+          docker start shepherd-route-test
           trap 'docker rm --force shepherd-route-test >/dev/null 2>&1 || true' EXIT
 
           healthy=false
@@ -46,6 +51,8 @@ jobs:
             sleep 1
           done
           test "$healthy" = true
+          docker exec shepherd-route-test test ! -e /var/www/html/shepherd/plugins/core/obsolete-package-file.php
+          docker exec shepherd-route-test test -f /var/www/html/shepherd/plugins/community/preserved-community-file.txt
 
           docker exec shepherd-route-test sh -c 'printf private > /var/www/html/shepherd/Images/Person/qa-private.jpg'
           docker exec shepherd-route-test sh -c 'printf private > /var/www/html/shepherd/Images/Family/qa-private.jpg'

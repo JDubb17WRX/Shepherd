@@ -27,7 +27,7 @@ if ($actor === null) {
 }
 (new ReflectionProperty($provider, 'currentUser'))->setValue($provider, $actor);
 $_SESSION['AuthenticationProvider'] = $provider;
-foreach (['admin' => true, 'member' => false, 'enroll' => true] as $name => $admin) {
+foreach (['admin' => true, 'member' => false, 'enroll' => true, 'self' => false] as $name => $admin) {
     $username = 'upgrade.' . $name;
     $user = UserQuery::create()->findOneByUserName($username);
     if ($user === null) {
@@ -43,6 +43,7 @@ foreach (['admin' => true, 'member' => false, 'enroll' => true] as $name => $adm
         $user->setUserName($username);
     }
     $user->setAdmin($admin);
+    $user->setEditSelf($name === 'self');
     $user->setNeedPasswordChange(false);
     $user->setFailedLogins(0);
     $user->updatePassword('Upgrade-test-password-2026!');

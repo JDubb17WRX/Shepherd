@@ -28,10 +28,15 @@ RUN --mount=type=secret,id=trusted_ca \
     if [ -f /run/secrets/trusted_ca ]; then export COMPOSER_CAFILE=/run/secrets/trusted_ca; fi; composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 RUN find . -path './vendor' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l > /tmp/shepherd-php-lint.log
 
+FROM frontend AS integrity
+COPY --from=application /build/src/ /build/src/
+COPY docker/shepherd/healthz.php /build/src/healthz.php
+RUN node scripts/generate-signatures-node.js
+
 FROM php-base
 
 WORKDIR /var/www/html/shepherd
-COPY --from=application --chown=www-data:www-data /build/src/ ./
+COPY --from=integrity --chown=www-data:www-data /build/src/ ./
 COPY --chown=www-data:www-data docker/shepherd/Config.php ./Include/Config.php
 COPY --chown=www-data:www-data docker/shepherd/healthz.php ./healthz.php
 COPY docker/shepherd/Caddyfile /etc/caddy/Caddyfile
