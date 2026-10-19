@@ -179,17 +179,14 @@ $_currencySymbolCss = json_encode(CurrencyFormatter::symbol(), JSON_UNESCAPED_UN
               aria-label="<?= gettext('Toggle navigation') ?>">
         <span class="navbar-toggler-icon"></span>
       </button>
-      <a href="<?= SystemURLs::getRootPath() ?>/v2/dashboard" class="navbar-brand py-2">
+      <a href="<?= SystemURLs::getRootPath() ?>/v2/dashboard" class="navbar-brand crm-sidebar-brand py-2">
         <?php if (ChurchLogoService::hasCustomLogo()): ?>
         <?= ChurchLogo::img(['class' => 'navbar-brand-image crm-brand-logo']) ?>
         <?php else: ?>
-        <img src="<?= SystemURLs::getRootPath() ?>/Images/churchcrm-symbol-ink-blue.svg"
-             alt="<?= InputUtils::escapeAttribute(ChurchMetaData::getChurchName() ?: 'ChurchCRM') ?>"
-             class="navbar-brand-image crm-brand-logo crm-brand-logo-light">
-        <img src="<?= SystemURLs::getRootPath() ?>/Images/churchcrm-symbol-paper-blue.svg"
-             alt="<?= InputUtils::escapeAttribute(ChurchMetaData::getChurchName() ?: 'ChurchCRM') ?>"
-             class="navbar-brand-image crm-brand-logo crm-brand-logo-dark">
-        <span class="navbar-brand-text ps-2 fs-4 fw-bold">
+        <img src="<?= SystemURLs::getRootPath() ?>/skin/images/shepherd-logo.png"
+             alt="" width="42" height="42"
+             class="navbar-brand-image crm-brand-logo bg-white rounded">
+        <span class="navbar-brand-text fw-bold">
           <?= InputUtils::escapeHTML(ChurchMetaData::getChurchName() ?: 'ChurchCRM') ?>
         </span>
         <?php endif; ?>

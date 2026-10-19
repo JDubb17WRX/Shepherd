@@ -17,3 +17,33 @@ html[data-bs-theme="dark"] {
   height: 42px;
   width: auto;
 }
+
+.navbar-vertical .crm-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+
+  .crm-brand-logo {
+    flex-shrink: 0;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .navbar-brand-text {
+    min-width: 0;
+    font-size: 0.875rem;
+    line-height: 1.25;
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 1199.98px) {
+  .navbar-vertical .crm-sidebar-brand {
+    flex: 1;
+    margin-inline: 0.5rem;
+  }
+}
