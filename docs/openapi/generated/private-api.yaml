@@ -93,16 +93,17 @@ paths:
       summary: 'Begin 2FA enrollment — provision a new TOTP secret and return a QR code data URI'
       responses:
         '200':
-          description: 'QR code data URI for TOTP enrollment'
+          description: 'TOTP secret and QR code data URI for enrollment'
           content:
             application/json:
               schema:
                 properties:
+                  TwoFASecret: { description: 'Base32 secret for manual authenticator setup', type: string }
                   TwoFAQRCodeDataUri: { type: string }
                 type: object
       security:
         -
-          ApiKeyAuth: []
+          BrowserSessionAuth: []
   /user/current/refresh2farecoverycodes:
     post:
       tags:
@@ -119,7 +120,7 @@ paths:
                 type: object
       security:
         -
-          ApiKeyAuth: []
+          BrowserSessionAuth: []
   /user/current/remove2fasecret:
     post:
       tags:
@@ -130,20 +131,7 @@ paths:
           description: '2FA secret removed'
       security:
         -
-          ApiKeyAuth: []
-  /user/current/get2faqrcode:
-    get:
-      tags:
-        - 2FA
-      summary: "Get the current user's 2FA QR code as a PNG image"
-      responses:
-        '200':
-          description: 'PNG image of the 2FA QR code'
-          content:
-            image/png: {  }
-      security:
-        -
-          ApiKeyAuth: []
+          BrowserSessionAuth: []
   /user/current/test2FAEnrollmentCode:
     post:
       tags:
@@ -169,7 +157,7 @@ paths:
                 type: object
       security:
         -
-          ApiKeyAuth: []
+          BrowserSessionAuth: []
   /user/current/2fa-status:
     get:
       tags:
@@ -187,6 +175,36 @@ paths:
       security:
         -
           ApiKeyAuth: []
+  '/user/{userId}/apikey/reveal':
+    post:
+      tags:
+        - Users
+      summary: 'Reveal the current API key after recent browser reauthentication'
+      parameters:
+        -
+          name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 'Current API key'
+          content:
+            application/json:
+              schema:
+                properties:
+                  apiKey: { type: string, nullable: true }
+                type: object
+        '401':
+          description: 'Browser session is no longer valid'
+        '428':
+          description: 'Recent password confirmation required'
+        '403':
+          description: 'Browser session or CSRF validation failed'
+      security:
+        -
+          BrowserSessionAuth: []
   '/user/{userId}/apikey/regen':
     post:
       tags:
@@ -210,46 +228,7 @@ paths:
                 type: object
       security:
         -
-          ApiKeyAuth: []
-  '/user/{userId}/config/{key}':
-    post:
-      tags:
-        - Users
-      summary: 'Update a named config string for a user'
-      parameters:
-        -
-          name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-        -
-          name: key
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              properties:
-                value:
-                  type: string
-              type: object
-      responses:
-        '200':
-          description: 'Updated config key/value pair'
-        '400':
-          description: 'A string value is required'
-        '403':
-          description: 'This setting is administrator-only'
-        '404':
-          description: 'Unknown user configuration key'
-      security:
-        -
-          ApiKeyAuth: []
+          BrowserSessionAuth: []
   '/user/{userId}/setting/{settingName}':
     get:
       tags:
@@ -9841,6 +9820,8 @@ paths:
           description: 'Password reset and email sent'
         '403':
           description: 'Admin role required'
+        '428':
+          description: 'Recent browser password confirmation required'
         '409':
           description: 'Email delivery is disabled or SMTP is not configured, so the reset was refused'
           content:
@@ -9879,6 +9860,8 @@ paths:
           description: '2FA disabled for the user'
         '403':
           description: 'Admin role required'
+        '428':
+          description: 'Recent browser password confirmation required'
       security:
         -
           ApiKeyAuth: []
@@ -9886,7 +9869,7 @@ paths:
     post:
       tags:
         - Admin
-      summary: 'Reset failed login counter and send unlock email (Admin role required)'
+      summary: 'Reset failed login and 2FA rate-limit counters, then send an unlock email (Admin role required)'
       parameters:
         -
           name: userId
@@ -9896,9 +9879,11 @@ paths:
             type: integer
       responses:
         '200':
-          description: 'Login counter reset and unlock email sent'
+          description: 'Login counters reset and unlock email sent'
         '403':
           description: 'Admin role required'
+        '428':
+          description: 'Recent browser password confirmation required'
       security:
         -
           ApiKeyAuth: []
@@ -9925,6 +9910,8 @@ paths:
                 type: object
         '403':
           description: 'Admin role required'
+        '428':
+          description: 'Recent browser password confirmation required'
       security:
         -
           ApiKeyAuth: []
