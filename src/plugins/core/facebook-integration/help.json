@@ -1,0 +1,21 @@
+{
+  "summary": "Save the church's public Facebook Page and optional Meta Pixel identifiers in Shepherd. This first version is a settings-only foundation; it does not connect an account, load Meta scripts, embed a feed, or send tracking events.",
+  "sections": [
+    {
+      "title": "What to enter",
+      "content": "Add the public Facebook Page URL when available. Page ID and Meta Pixel ID are optional numeric identifiers. No Facebook password, access token, or account credentials are required or stored."
+    },
+    {
+      "title": "Current status: inactive",
+      "content": "The plugin is disabled by default. Saving settings or enabling the plugin does not turn on tracking or modify the public website. Page association, embedded content, and consent-aware public-site tracking will be implemented and verified after access is available. CRM member records, login, signup, and editing pages must remain outside any future Pixel tracking scope."
+    },
+    {
+      "title": "Page connection and Pixel are separate",
+      "content": "A public Page URL identifies the church's Facebook presence. A Meta Pixel is an optional measurement integration; it is not required for search engines or social sharing previews."
+    }
+  ],
+  "links": [
+    { "label": "Meta Page Plugin documentation", "url": "https://developers.facebook.com/docs/plugins/page-plugin/" },
+    { "label": "Meta Pixel documentation", "url": "https://developers.facebook.com/docs/meta-pixel/" }
+  ]
+}

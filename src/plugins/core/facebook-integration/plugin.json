@@ -1,0 +1,38 @@
+{
+  "id": "facebook-integration",
+  "name": "Facebook Integration",
+  "description": "Prepare the church's public Facebook Page and optional Meta Pixel settings. Tracking and embedded content remain inactive.",
+  "version": "1.0.0",
+  "author": "Elkins Park Reformed Presbyterian Church",
+  "authorUrl": "https://elkinsparkchurch.com",
+  "type": "core",
+  "minimumCRMVersion": "7.8.1",
+  "mainClass": "ChurchCRM\\Plugins\\FacebookIntegration\\FacebookIntegrationPlugin",
+  "dependencies": [],
+  "settingsUrl": "/plugins/facebook-integration/settings",
+  "settings": [
+    {
+      "key": "pageUrl",
+      "label": "Public Facebook Page URL",
+      "type": "text",
+      "required": false,
+      "help": "The church's public https://www.facebook.com/... address. Leave blank until available."
+    },
+    {
+      "key": "pageId",
+      "label": "Facebook Page ID (optional)",
+      "type": "text",
+      "required": false,
+      "help": "The numeric Page ID, if supplied by Meta. This is not an access token."
+    },
+    {
+      "key": "pixelId",
+      "label": "Meta Pixel ID (optional)",
+      "type": "text",
+      "required": false,
+      "help": "Store the numeric Pixel ID for future public-website integration. Saving or enabling this plugin does not activate tracking."
+    }
+  ],
+  "menuItems": [],
+  "hooks": []
+}
