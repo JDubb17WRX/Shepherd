@@ -6,13 +6,14 @@ RUN --mount=type=secret,id=trusted_ca \
 COPY . .
 RUN npm run build:frontend
 
-FROM dunglas/frankenphp:1-php8.4@sha256:b32a81ad4db40b528ada04087f47e22833f260266e73b3d88c62fd54e2a29aa6 AS php-base
+FROM dunglas/frankenphp:1-php8.4@sha256:0de5a32944f72c13b45d183e8e6c53546b8172cec21cc8599e24b12e0661506d AS php-base
 LABEL org.opencontainers.image.title="Shepherd" \
       org.opencontainers.image.description="Shepherd on ChurchCRM 7.8.1" \
       org.opencontainers.image.version="7.8.1" \
       org.opencontainers.image.source="https://github.com/JDubb17WRX/Shepherd"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN php -r 'exit(PHP_VERSION === "8.4.27" ? 0 : 1);' \
+    && apt-get update && apt-get install -y --no-install-recommends \
         gettext locales-all libcurl4-openssl-dev libfreetype6-dev libicu-dev \
         libjpeg-dev libonig-dev libpng-dev libxml2-dev libzip-dev \
     && install-php-extensions bcmath curl exif gd gettext iconv intl mbstring mysqli opcache pdo_mysql sodium xml zip \

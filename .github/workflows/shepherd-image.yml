@@ -3,7 +3,7 @@ name: Shepherd image
 on:
   pull_request:
   push:
-    branches: [master, feature/shepherd-7-8-1, codex/facebook-integration]
+    branches: [master, feature/shepherd-7-8-1, codex/facebook-integration, codex/php-8-4-27]
 
 permissions:
   contents: write
