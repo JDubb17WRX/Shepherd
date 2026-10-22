@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# ChurchCRM pre-push hook — runs Biome lint before any push.
+# ChurchCRM pre-push hook — runs runtime contracts and lint before any push.
 #
 # Enabled automatically by `npm install` (the `prepare` script in
 # package.json points core.hooksPath at this directory). To bypass for
@@ -18,6 +18,9 @@ fi
 if [ ! -f package.json ]; then
     exit 0
 fi
+
+echo "→ pre-push: checking Shepherd runtime contracts…"
+npm run --silent test:shepherd:contracts
 
 echo "→ pre-push: running Biome lint (npm run lint)…"
 
