@@ -32,8 +32,7 @@ declare namespace Cypress {
     rememberTestEnv(keys: string[]): Chainable<Record<string, unknown>>;
 
     /**
-     * Clear cookies and log in through the admin form. Use after cy.request(),
-     * which replaces the PHP session cy.session() would restore.
+     * Clear cookies and log in through the admin form without restoring a cached session.
      */
     freshAdminFormLogin(options?: {
       clearAll?: boolean;
