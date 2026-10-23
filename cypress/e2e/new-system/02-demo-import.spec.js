@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { finishFreshAdminLogin } from "../../support/fresh-install-auth";
+
 /**
  * Demo Data Import Tests (Steps 4-5)
  * 
@@ -30,6 +32,7 @@ describe('02 - Demo Data Import', () => {
         cy.visit('/login');
         cy.get('input[name=User]').type(adminCredentials.username);
         cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
+        finishFreshAdminLogin();
         cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
     };
 
@@ -378,17 +381,12 @@ describe('02 - Demo Data Import', () => {
         });
 
         it('should disable the Google Analytics plugin from plugin management', () => {
-            // Disable via API directly — avoids flaky jQuery click-handler timing
-            cy.request({
-                method: 'POST',
-                url: '/plugins/api/plugins/google-analytics/disable',
-                timeout: 30000
-            }).then((response) => {
-                expect(response.status).to.be.oneOf([200, 204]);
-            });
-
-            // Verify the plugin shows as disabled on the management page
             cy.visit('/plugins/management');
+            cy.intercept('POST', '**/plugins/api/plugins/google-analytics/disable').as('disableAnalytics');
+            cy.get('.card[data-plugin-id="google-analytics"] .btn-plugin-toggle[data-action="disable"]')
+                .should('be.visible')
+                .click();
+            cy.wait('@disableAnalytics').its('response.statusCode').should('eq', 200);
             cy.get('.card[data-plugin-id="google-analytics"]', { timeout: 10000 })
                 .find('.badge')
                 .should('contain', 'Disabled');

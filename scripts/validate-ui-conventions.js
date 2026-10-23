@@ -31,7 +31,7 @@ const SKIP_DIR = /(?:^|\/)(?:Base|Map)\//;
 function walk(dir, out = []) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, entry.name);
-        const rel = path.relative(ROOT, full) + (entry.isDirectory() ? '/' : '');
+        const rel = path.relative(ROOT, full).split(path.sep).join('/') + (entry.isDirectory() ? '/' : '');
         if (SKIP.some((s) => rel.includes(s)) || SKIP_DIR.test(rel)) continue;
         if (entry.isDirectory()) walk(full, out);
         else out.push(full);
@@ -91,7 +91,7 @@ const blocks = {};
 const problems = [];
 
 for (const file of files) {
-    const rel = path.relative(ROOT, file);
+    const rel = path.relative(ROOT, file).split(path.sep).join('/');
     const text = fs.readFileSync(file, 'utf8');
 
     if (MARKUP.test(file)) {

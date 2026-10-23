@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { finishFreshAdminLogin } from "../../support/fresh-install-auth";
+
 /**
  * Backup and Restore Tests (Steps 6-9)
  * 
@@ -26,6 +28,7 @@ describe('03 - Backup and Restore', () => {
         cy.visit('/login');
         cy.get('input[name=User]').type(adminCredentials.username);
         cy.get('input[name=Password]').type(password + '{enter}');
+        finishFreshAdminLogin();
         cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
     };
 
@@ -128,6 +131,7 @@ describe('03 - Backup and Restore', () => {
             // countdown. cy.url().should() with timeout auto-retries, so no
             // numeric wait is needed to cover the countdown.
             cy.get('#restoreSuccessModal', { timeout: 120000 }).should('be.visible');
+            cy.task('freshInstall:rememberFactor', 'JBSWY3DPEHPK3PXP', { log: false });
 
             // Should eventually redirect to login page
             cy.url({ timeout: 30000 }).should('satisfy', (url) => {
