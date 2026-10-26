@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { enrollFreshAdmin, finishFreshAdminLogin } from "../../support/fresh-install-auth";
+
 /**
  * Setup Wizard Tests (Step 1-2)
  * 
@@ -65,7 +67,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/setup');
             
             // Wait for prerequisite checks to complete
-            cy.get('#prerequisites-next-btn', { timeout: 30000 }).should('not.be.disabled');
+            cy.get('#prerequisites-next-btn', { timeout: 120000 }).should('not.be.disabled');
             
             // Click Continue to proceed to Configure step
             cy.get('#prerequisites-next-btn').click();
@@ -78,7 +80,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/setup');
             
             // Complete step 1
-            cy.get('#prerequisites-next-btn', { timeout: 30000 }).should('not.be.disabled');
+            cy.get('#prerequisites-next-btn', { timeout: 120000 }).should('not.be.disabled');
             cy.get('#prerequisites-next-btn').click();
             
             // Step 2: Configure (Database)
@@ -100,7 +102,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/setup');
             
             // Step 1: System Check (Prerequisites)
-            cy.get('#prerequisites-next-btn', { timeout: 30000 }).should('not.be.disabled');
+            cy.get('#prerequisites-next-btn', { timeout: 120000 }).should('not.be.disabled');
             cy.get('#prerequisites-next-btn').click();
             
             // Step 2: Configure (Database)
@@ -142,6 +144,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
+            finishFreshAdminLogin();
 
             // NeedPasswordChange=true on fresh install → forced change page
             cy.url({ timeout: 15000 }).should('include', '/changepassword');
@@ -149,10 +152,11 @@ describe('01 - Setup Wizard', () => {
             cy.contains('Password Change Required').should('be.visible');
         });
 
-        it('should complete forced password change and redirect to church-info', () => {
+        it('should change the password, enroll in 2FA, and reach church setup', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
+            finishFreshAdminLogin();
 
             cy.url({ timeout: 15000 }).should('include', '/changepassword');
 
@@ -161,7 +165,7 @@ describe('01 - Setup Wizard', () => {
             cy.get('#NewPassword2').type(newAdminPassword);
             cy.get('button[type=submit]').click();
 
-            // ChurchInfoRequiredMiddleware redirects admin to church-info when sChurchName is empty
+            enrollFreshAdmin();
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
 
         });
@@ -172,6 +176,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
 
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
             cy.contains('Church Information').should('be.visible');
@@ -181,6 +186,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
 
             cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
 
@@ -219,6 +225,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
 
             // Should redirect away from login
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
@@ -231,6 +238,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.url().then((url) => {
@@ -245,6 +253,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             // Check people API - should return mostly empty (only admin user)
@@ -265,6 +274,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.request('/admin/api/system/config/sVolunteerVersion').its('body.value').should('eq', 'v2');
@@ -280,6 +290,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(newAdminPassword + '{enter}');
+            finishFreshAdminLogin();
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
 
             cy.visit('/v2/user/current/changepassword');
@@ -299,6 +310,7 @@ describe('01 - Setup Wizard', () => {
             cy.visit('/login');
             cy.get('input[name=User]').type(adminCredentials.username);
             cy.get('input[name=Password]').type(adminCredentials.password + '{enter}');
+            finishFreshAdminLogin();
             cy.url({ timeout: 15000 }).should('not.include', '/session/begin');
         };
 

@@ -22,6 +22,8 @@ import "./ui-commands";
 import "./api-commands";
 import "./church-time-zone";
 
+before(() => cy.task("api:resetSessions", null, { log: false }));
+
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
 

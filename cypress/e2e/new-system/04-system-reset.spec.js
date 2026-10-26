@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { enrollFreshAdmin, finishFreshAdminLogin } from "../../support/fresh-install-auth";
+
 /**
  * System Reset Tests (Step 10)
  * 
@@ -32,6 +34,7 @@ describe('04 - System Reset', () => {
         cy.get('input[name=User]', { timeout: 15000 }).type(adminCredentials.username);
         cy.get('input[name=Password]').type(password);
         cy.get('input[name=Password]').type('{enter}');
+        finishFreshAdminLogin();
         cy.url({ timeout: 30000 }).should('not.include', '/session/begin');
 
         // After a DB reset the admin has NeedPasswordChange=true; complete the forced form if needed.
@@ -42,6 +45,8 @@ describe('04 - System Reset', () => {
                 cy.get('#NewPassword1').type('Cypress@01!');
                 cy.get('#NewPassword2').type('Cypress@01!');
                 cy.get('button[type=submit]').click();
+                enrollFreshAdmin();
+                adminCredentials.password = 'Cypress@01!';
                 // ChurchInfoRequiredMiddleware redirects to church-info when sChurchName is empty
                 cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
             }

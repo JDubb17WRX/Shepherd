@@ -24,11 +24,22 @@ export default defineConfig({
     baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:8081/',
     specPattern: ['cypress/e2e/new-system/**/*.spec.js'],
     setupNodeEvents(on, config) {
+      let enrollmentSecret: string | null = null;
+      const enrollmentTasks = {
+        'freshInstall:rememberFactor'(secret: string) {
+          enrollmentSecret = secret;
+          return null;
+        },
+        'freshInstall:factor'() {
+          if (!enrollmentSecret) throw new Error('Run fresh-install enrollment before subsequent specs');
+          return enrollmentSecret;
+        },
+      };
       if (process.env.SPLIT) {
         const cypressSplit = require('cypress-split');
         cypressSplit(on, config);
       }
-      return setupCommonNodeEvents(on, config);
+      return setupCommonNodeEvents(on, config, enrollmentTasks);
     }
   }
 })

@@ -198,6 +198,9 @@ $app->group('/api/user/{userId:[0-9]+}', function (RouteCollectorProxy $group): 
         }
 
         $user = $request->getAttribute('user');
+        if ((int) $user->getId() === (int) AuthenticationManager::getCurrentUser()->getId()) {
+            return SlimUtils::renderErrorJSON($response, gettext('You cannot delete your own account.'), [], 403);
+        }
         $userName = $user->getName();
         UserConfigQuery::create()->filterByPeronId($user->getId())->delete();
 

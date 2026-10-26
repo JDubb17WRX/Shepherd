@@ -126,33 +126,15 @@ Cypress.Commands.add("makePrivateNoPermAPICall", privateApiCall("noperm.api.key"
 Cypress.Commands.add(
     "makePrivateAPICall",
     (key, method, url, body, expectedStatus = 200, timeoutMs) => {
-        const requestOptions = {
-            method: method,
-            failOnStatusCode: false,
-            url: url,
-            headers: {
-                "content-type": "application/json",
-                "x-api-key": key,
-            },
-            body: body,
-            // Prevent the browser session cookie from being sent alongside the API key.
-            // cy.request() shares the browser cookie jar by default; sending both the
-            // session cookie and x-api-key causes PHP's AuthenticationManager to
-            // overwrite $_SESSION['AuthenticationProvider'] with APITokenAuthentication,
-            // which breaks subsequent browser page loads on the same session.
-            withCredentials: false,
-        };
-
-        if (typeof timeoutMs === 'number') {
-            requestOptions.timeout = timeoutMs;
-        }
-
-        return cy.request(requestOptions).then((resp) => {
+        const timeout = timeoutMs ?? Cypress.config("responseTimeout");
+        return cy.task("api:request", {
+            baseUrl: Cypress.config("baseUrl"), key, method, url, body, timeout,
+        }, { log: false, timeout: timeout + 1000 }).then((resp) => {
             // Handle single status code or array of acceptable status codes
             const acceptedStatuses = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus];
             expect(resp.status).to.be.oneOf(acceptedStatuses);
 
-            // Return the full response object so tests can access resp.body
+            // Yield status, headers, and body to API assertions.
             return resp;
         });
     },

@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { enrollFreshAdmin, finishFreshAdminLogin } from "../../support/fresh-install-auth";
+
 /**
  * Post-Reset Verification Tests (Steps 10c / 10d / 10e)
  *
@@ -35,6 +37,7 @@ describe('05 - Post-Reset Verification', () => {
         cy.get('input[name=User]', { timeout: 15000 }).type(adminCredentials.username);
         cy.get('input[name=Password]').type(password);
         cy.get('input[name=Password]').type('{enter}');
+        finishFreshAdminLogin();
         cy.url({ timeout: 30000 }).should('not.include', '/session/begin');
 
         cy.url().then((url) => {
@@ -43,6 +46,8 @@ describe('05 - Post-Reset Verification', () => {
                 cy.get('#NewPassword1').type('Cypress@01!');
                 cy.get('#NewPassword2').type('Cypress@01!');
                 cy.get('button[type=submit]').click();
+                enrollFreshAdmin();
+                adminCredentials.password = 'Cypress@01!';
                 cy.url({ timeout: 15000 }).should('include', '/admin/system/church-info');
             }
         });
@@ -90,7 +95,9 @@ describe('05 - Post-Reset Verification', () => {
             cy.get('#NewPassword1').type('changeme');
             cy.get('#NewPassword2').type('changeme');
             cy.get('input[type=submit]').click();
-            cy.contains('Password Change Successful', { timeout: 10000 }).should('be.visible');
+            cy.contains('Password Change Successful', { timeout: 10000 }).should('be.visible').then(() => {
+                adminCredentials.password = 'changeme';
+            });
         });
     });
 

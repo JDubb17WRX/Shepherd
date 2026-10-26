@@ -1,4 +1,9 @@
 // Shared node event setup used by multiple Cypress configs
+const apiTransport = require('./api-request.cjs');
+export const apiTasks = {
+  'api:request': apiTransport.apiRequest,
+  'api:resetSessions': apiTransport.resetApiSessions,
+};
 
 /**
  * Node-side database tasks.
@@ -306,7 +311,7 @@ export const mailTasks = {
   }
 };
 
-export function setupCommonNodeEvents(on: any, config: any) {
+export function setupCommonNodeEvents(on: any, config: any, extraTasks: Record<string, any> = {}) {
   // cypress-terminal-report logs printer for CI debugging
   try {
     const installLogsPrinter = require('cypress-terminal-report/src/installLogsPrinter');
@@ -323,9 +328,7 @@ export function setupCommonNodeEvents(on: any, config: any) {
     // ignore optional logging integration errors in local environments
   }
 
-  // Every task must be registered in a single on('task', ...) call — a second
-  // registration replaces the first rather than merging with it.
-  const tasks: Record<string, any> = { ...dbTasks, ...mailTasks, ...htaccessTasks, ...pluginFixtureTasks };
+  const tasks: Record<string, any> = { ...apiTasks, ...dbTasks, ...mailTasks, ...htaccessTasks, ...pluginFixtureTasks, ...extraTasks };
 
   // Register download verification tasks if available
   try {

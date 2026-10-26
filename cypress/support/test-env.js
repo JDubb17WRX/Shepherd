@@ -1,3 +1,5 @@
+import { completeLogin } from "./authentication";
+
 // Shared readers for Cypress `env` values. cy.env() is async and read-only;
 // allowCypressEnv is false, so Cypress.env() cannot be used.
 
@@ -50,8 +52,7 @@ Cypress.mailpitUrl = () => {
 };
 
 /**
- * Form login that does not go through cy.session(). Specs that call the API
- * before cy.visit() need this: cy.request() replaces the PHP session.
+ * Form login that does not restore a cached session.
  */
 Cypress.Commands.add("freshAdminFormLogin", (options = {}) => {
     return cy.env(["admin.username", "admin.password"]).then((env) => {
@@ -79,7 +80,7 @@ Cypress.Commands.add("freshAdminFormLogin", (options = {}) => {
         };
         field("input[name=User]", userOpts).type(username);
         field("input[name=Password]").type(`${password}{enter}`, { log: false });
-        cy.url().should("not.include", "/session/begin");
+        completeLogin(username);
         if (options.sessionCookie) {
             cy.getCookies().should("satisfy", (cookies) =>
                 cookies.some((cookie) => cookie.name.startsWith("CRM-")),

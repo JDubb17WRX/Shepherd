@@ -3,22 +3,30 @@
 describe("API Public User", () => {
     // Basic authentication tests
     describe("Login - Basic Authentication", () => {
-        it("Login with valid credentials returns apiKey", () => {
-            const user = {
-                userName: "admin",
-                password: "changeme",
-            };
+        it("Login with valid password-only credentials returns that user's apiKey", () => {
+            cy.env(["standard.username", "standard.password", "user.api.key"]).then((env) => {
+                cy.apiRequest({
+                    method: "POST",
+                    url: "/api/public/user/login",
+                    headers: { "content-type": "application/json" },
+                    body: { userName: env["standard.username"], password: env["standard.password"] },
+                }).then((resp) => {
+                    expect(resp.status).to.eq(200);
+                    expect(resp.body.apiKey).to.eq(env["user.api.key"]);
+                });
+            });
+        });
 
-            cy.apiRequest({
-                method: "POST",
-                url: "/api/public/user/login",
-                headers: { "content-type": "application/json" },
-                body: user,
-            }).then((resp) => {
-                expect(resp.status).to.eq(200);
-                expect(resp.body).to.have.property('apiKey');
-                cy.readEnv("admin.api.key").then((apiKey) => {
-                    expect(Boolean(resp.body.apiKey) && resp.body.apiKey === apiKey).to.eq(true);
+        it("An enrolled administrator must supply an OTP before receiving an apiKey", () => {
+            cy.env(["admin.username", "admin.password"]).then((env) => {
+                cy.apiRequest({
+                    method: "POST",
+                    url: "/api/public/user/login",
+                    body: { userName: env["admin.username"], password: env["admin.password"] },
+                }).then((resp) => {
+                    expect(resp.status).to.eq(202);
+                    expect(resp.body.requiresOTP).to.eq(true);
+                    expect(resp.body).not.to.have.property("apiKey");
                 });
             });
         });
@@ -113,59 +121,33 @@ describe("API Public User", () => {
             });
         });
 
-        // Regression test for GHSA-f2fq-4rmp-9x8c: repeated wrong OTP codes
-        // must count toward usr_FailedLogins and eventually lock the account.
-        // Uses dedicated `twofa_lockout_user` (password "changeme", 2FA enrolled)
-        // so the shared `twofa_user` fixture is not corrupted for other tests.
-        describe("2FA OTP brute-force lockout (GHSA-f2fq-4rmp-9x8c)", () => {
+        describe("2FA attempt rate limit (GHSA-f2fq-4rmp-9x8c)", () => {
             const LOCKOUT_USER = "twofa_lockout_user";
             const LOCKOUT_PASS = "changeme";
-            const MAX_FAILURES = 5; // must match iMaxFailedLogins in SystemConfig
+            const MAX_FACTOR_FAILURES = 10; // User::MAX_TWO_FACTOR_FAILURES
 
             before(() => {
-                // Reset twofa_lockout_user's FailedLogins to 0 so re-runs against
-                // the same DB don't silently pass via the top-level isLocked() gate
-                // instead of exercising the OTP-failure counter code path.
                 cy.makePrivateAdminAPICall(
                     "POST",
                     "/admin/api/user/903/login/reset",
                     null,
                     200,
                 );
-                // Guard: assert the server's iMaxFailedLogins matches MAX_FAILURES.
-                // If this assertion fails, the loop below may trigger lockout at the
-                // password gate before exhausting OTP failures, silently testing the
-                // wrong code path.
-                cy.makePrivateAdminAPICall(
-                    "GET",
-                    "/admin/api/system/config/iMaxFailedLogins",
-                    null,
-                    200,
-                ).then((resp) => {
-                    expect(
-                        Number(resp.body.value),
-                        "iMaxFailedLogins must equal MAX_FAILURES so the OTP-lockout code path is exercised",
-                    ).to.eq(MAX_FAILURES);
-                });
             });
 
-            it("Account is locked after iMaxFailedLogins wrong OTP submissions", () => {
-                // Submit MAX_FAILURES wrong OTP codes — each should increment usr_FailedLogins
-                for (let i = 0; i < MAX_FAILURES; i++) {
+            it("Refuses further login attempts after ten invalid OTP submissions", () => {
+                for (let i = 0; i < MAX_FACTOR_FAILURES; i++) {
                     cy.apiRequest({
                         method: "POST",
                         url: "/api/public/user/login",
                         headers: { "content-type": "application/json" },
-                        body: { userName: LOCKOUT_USER, password: LOCKOUT_PASS, otp: String(i).padStart(6, "0") },
+                        body: { userName: LOCKOUT_USER, password: LOCKOUT_PASS, otp: "invalid-otp" },
                         failOnStatusCode: false,
                     }).then((resp) => {
                         expect(resp.status).to.eq(401);
                     });
                 }
 
-                // After MAX_FAILURES wrong OTPs the account should be locked.
-                // A fresh login with the correct password (which would normally return 202
-                // requiresOTP) must now return 401 because isLocked() fires first.
                 cy.apiRequest({
                     method: "POST",
                     url: "/api/public/user/login",

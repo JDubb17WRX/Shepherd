@@ -1,3 +1,5 @@
+import { completeLogin, validateAuthenticatedSession } from "./authentication";
+
 // ***********************************************
 // This example commands.js shows you how to
 // create various custom commands and overwrite
@@ -10,7 +12,7 @@
 
 /**
  * Internal helper: Sets up a cached login session using cy.session()
- * Performs login and validates with CRM cookie presence
+ * Completes password and fixture 2FA login before validating the session
  * @param {string} sessionName - Unique identifier for this session (e.g., 'admin-session')
  * @param {string} username - The username to authenticate with
  * @param {string} password - The password to authenticate with
@@ -21,13 +23,9 @@ Cypress.Commands.add('setupLoginSession', (sessionName, username, password, opti
     const uniqueSuffix = forceLogin ? `-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` : '';
     const effectiveSessionName = `${sessionName}${uniqueSuffix}`;
 
-    // Default validate: confirm a CRM session cookie is present.
+    // Default validate: require access beyond the account-security steps.
     // Callers can override this via options.validate for role-specific checks.
-    const defaultValidate = () => {
-        cy.getCookies().should('satisfy', (cookies) => {
-            return cookies.some(cookie => cookie.name.startsWith('CRM-'));
-        });
-    };
+    const defaultValidate = validateAuthenticatedSession;
 
     cy.session(
         effectiveSessionName,
@@ -35,10 +33,10 @@ Cypress.Commands.add('setupLoginSession', (sessionName, username, password, opti
             // Perform the login
             cy.visit('/login');
             cy.get('input[name=User]').type(username);
-            cy.get('input[name=Password]').type(password + '{enter}');
+            cy.get('input[name=Password]').type(password + '{enter}', { log: false });
             // Wait for redirect away from session/login pages
             // ChurchCRM's login page is /session/begin, not /login
-            cy.url().should('not.include', '/session/begin');
+            completeLogin(username);
         },
         {
             validate: validate ?? defaultValidate
@@ -145,19 +143,18 @@ Cypress.Commands.add('setupManageGroupsOnlySession', (options = {}) =>
  * cy.loginWithCredentials(username, password, sessionName, expectSuccess = true)
  * Login with custom credentials (for testing password changes, etc.)
  * Creates a new session with the provided credentials
- * If expectSuccess is false, skips CRM cookie validation (for testing bad credentials)
+ * If expectSuccess is false, skips authentication validation (for testing bad credentials)
  */
 Cypress.Commands.add('loginWithCredentials', (username, password, sessionName = 'custom-session', expectSuccess = true) => {
     cy.session(sessionName, () => {
         cy.visit('/login');
         cy.get('input[name=User]').type(username);
-        cy.get('input[name=Password]').type(password + '{enter}');
+        cy.get('input[name=Password]').type(password + '{enter}', { log: false });
+        if (expectSuccess) completeLogin(username);
     }, {
         validate: () => {
             if (expectSuccess) {
-                cy.getCookies().should('satisfy', (cookies) => {
-                    return cookies.some(cookie => cookie.name.startsWith('CRM-'));
-                });
+                validateAuthenticatedSession();
             }
         }
     });
