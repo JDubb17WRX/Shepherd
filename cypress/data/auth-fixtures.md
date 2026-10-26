@@ -27,8 +27,11 @@ factor to the seeded value; a system reset enrolls a new factor.
 Recovery codes are not preallocated by this fixture. Run each test worker against
 its own database so concurrent logins cannot consume the same account's code.
 
-API-key helpers use the Node-side `api:request` task, which has no browser cookie
-jar. They return status, headers, and parsed JSON (or text), preserve the configured
+API-key helpers use the Node-side `api:request` task, with a separate cookie jar
+for each API key and test-server base URL. Jars are cleared before each spec;
+multi-request cart workflows retain their state without sharing browser cookies.
+GET and HEAD requests omit legacy body arguments. Helpers return status, headers,
+and parsed JSON (or text), preserve the configured
 base URL's subdirectory, and expose redirects for assertions instead of following
 them. Requests to another origin are rejected. UI requests that exercise the
 logged-in user's permissions use `cy.request()` without an API-key header.

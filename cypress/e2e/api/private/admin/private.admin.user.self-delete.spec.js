@@ -12,10 +12,8 @@ describe("Admin API refuses self-deletion", () => {
             expect(resp.body.message).to.eq("You cannot delete your own account.");
         });
 
-        // The API-key call replaces the browser session, so log in again
-        // before reading the users page. There is no GET for this route.
         cy.setupAdminSession();
-        cy.visit("admin/system/users");
+        cy.visit("/admin/system/users");
         cy.contains("#user-listing-table tbody tr", "Church Admin").should("exist");
     });
 });

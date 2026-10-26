@@ -38,9 +38,12 @@ Branch: `codex/cypress-auth-fixtures`. Local validation on October 23, 2026.
 
 ## Remaining validation
 
-The plugin CSRF and post-reset credential fixes were made after the 41-minute
-ordered run started and have been reviewed statically. Their integration result
-remains unconfirmed. A future run needs an empty new-system database;
+Both fresh-install jobs passed in GitHub on commit `5fff450f0`, including the
+subdirectory installation. This confirms the plugin CSRF and post-reset
+credential fixes in that CI run. The broader API/UI matrix still has failures;
+see [the October 26 investigation](ci-failure-analysis.md).
+
+A future fresh-install run needs an empty new-system database;
 the first spec enrolls a random factor which is held in the Cypress Node process
 for subsequent specs. Run all six specs together without sharding:
 
@@ -49,8 +52,7 @@ npx cypress run --config-file cypress/configs/new-system.config.ts
 ```
 
 The Windows bind mount made the setup integrity check take roughly 30–50 seconds,
-so the three readiness assertions now allow 120 seconds. This also needs a
-fresh-install subdirectory run before claiming coverage for both URL layouts.
+so the three readiness assertions now allow 120 seconds.
 
 Do not mark PR #16 checks green based on these local results. Rerun failed CI
 checks only when their failure is confirmed to be caused by code and the

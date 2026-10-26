@@ -1,5 +1,9 @@
 // Shared node event setup used by multiple Cypress configs
-export const apiTasks = { 'api:request': require('./api-request.cjs').apiRequest };
+const apiTransport = require('./api-request.cjs');
+export const apiTasks = {
+  'api:request': apiTransport.apiRequest,
+  'api:resetSessions': apiTransport.resetApiSessions,
+};
 
 /**
  * Node-side database tasks.

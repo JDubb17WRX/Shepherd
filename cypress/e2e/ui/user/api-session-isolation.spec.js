@@ -1,4 +1,13 @@
 describe("API-key and browser session isolation", () => {
+    it("keeps the API cart separate from the browser cart", () => {
+        cy.setupAdminSession();
+        cy.request("DELETE", "/api/cart/");
+        cy.makePrivateAdminAPICall("POST", "/api/cart/", { Persons: [2, 3] }, 200);
+        cy.request("/api/cart/").its("body.PeopleCart").should("have.length", 0);
+        cy.makePrivateAdminAPICall("GET", "/api/cart/", null, 200)
+            .its("body.PeopleCart").should("include.members", [2, 3]);
+        cy.makePrivateAdminAPICall("DELETE", "/api/cart/", null, 200);
+    });
     it("does not let an administrator browser session authorize an invalid API key", () => {
         cy.setupAdminSession();
         cy.getAllCookies().then((cookies) => {
