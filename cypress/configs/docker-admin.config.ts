@@ -65,8 +65,7 @@ export default defineConfig({
     // this directory so both suites can run as parallel CI matrix legs.
     specPattern: ['cypress/e2e/ui-admin/**/*.spec.js'],
     setupNodeEvents(on, config) {
-      // No-op unless SPLIT is set; CI runs this suite as a single chunk so its
-      // job summary matches the sharded UI jobs.
+      // CI sets SPLIT and SPLIT_INDEX; local runs keep the complete suite.
       if (process.env.SPLIT) {
         const cypressSplit = require('cypress-split');
         cypressSplit(on, config);

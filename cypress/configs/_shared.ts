@@ -345,7 +345,7 @@ export function setupCommonNodeEvents(on: any, config: any, extraTasks: Record<s
     // ignore optional logging integration errors in local environments
   }
 
-  const tasks: Record<string, any> = { ...apiTasks, ...dbTasks, ...mailTasks, ...htaccessTasks, ...pluginFixtureTasks, ...extraTasks };
+  const tasks: Record<string, any> = { ...apiTasks, ...dbTasks, ...mailTasks, ...htaccessTasks, ...pluginFixtureTasks, ...themeFixtureTasks, ...extraTasks };
 
   // Register download verification tasks if available
   try {
