@@ -1,7 +1,14 @@
 /// <reference types="cypress" />
 
+import { pdfText } from "../../../../support/pdf-text";
+
 describe("API Private Deposit Operations", () => {
     let depositID = 1; // Use existing deposit ID for testing
+    let emptyDepositId;
+
+    after(() => {
+        if (emptyDepositId) cy.makePrivateAdminAPICall("DELETE", `/api/deposits/${emptyDepositId}`, null, [200, 404]);
+    });
 
     describe("Deposit Retrieval Operations", () => {
         it("Get all deposits", () => {
@@ -72,8 +79,31 @@ describe("API Private Deposit Operations", () => {
                 "GET",
                 `/api/deposits/${depositID}/pdf`,
                 null,
-                [200, 404]
-            );
+                200
+            ).then((resp) => {
+                expect(resp.headers["content-type"]).to.include("application/pdf");
+                expect(resp.headers["content-disposition"]).to.match(/^attachment; filename="ChurchCRM-DepositReport-1-/);
+                expect(resp.body).to.match(/^%PDF-/);
+                expect(resp.body.trimEnd()).to.match(/%%EOF$/);
+            });
+        });
+
+        it("PDF contains readable deposit report content", () => {
+            cy.readEnv("admin.api.key").then((apiKey) => cy.request({
+                url: `/api/deposits/${depositID}/pdf`, headers: { "x-api-key": apiKey }, encoding: "binary",
+            })).then((response) => pdfText(response.body)).then((lines) => {
+                expect(lines.join(" ")).to.include("Deposit");
+            });
+        });
+
+        it("returns a controlled 404 for a deposit without payments", () => {
+            cy.makePrivateAdminAPICall("POST", "/api/deposits", {
+                depositType: "Bank", depositComment: "Empty PDF regression", depositDate: "2026-10-26",
+            }, 200).then((response) => {
+                emptyDepositId = response.body.Id;
+                cy.makePrivateAdminAPICall("GET", `/api/deposits/${emptyDepositId}/pdf`, null, 404)
+                    .its("body.message").should("eq", "No Payments on this Deposit");
+            });
         });
 
         it("Get deposit OFX format", () => {
@@ -176,7 +206,7 @@ describe("API Private Deposit Operations", () => {
                 "GET",
                 `/api/deposits/${depositID}/pdf`,
                 null,
-                [401, 403, 500]
+                403
             );
         });
 

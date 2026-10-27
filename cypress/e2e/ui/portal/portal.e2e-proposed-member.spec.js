@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { seedFamily } from "../../../support/people-fixtures";
+
 /**
  * #10376: a spouse proposed in the Member Portal keeps that role and waits for review, and
  * every reader of `Family::getAdults()` leaves them out until staff approve them. A family
@@ -103,10 +105,7 @@ describe("A family member proposed in the Member Portal", () => {
             visible: [{ type: "system", id: ANNIVERSARIES_CALENDAR }],
         });
 
-        cy.request({
-            method: "POST",
-            url: "/api/public/register/family",
-            body: {
+        seedFamily({
                 Name: pendingFamily.name,
                 Address1: "1 Review St",
                 City: "Testville",
@@ -118,9 +117,8 @@ describe("A family member proposed in the Member Portal", () => {
                     { firstName: pendingFamily.spouse, lastName: pendingFamily.name, gender: 2, role: 2 },
                     { firstName: pendingFamily.child, lastName: pendingFamily.name, gender: 1, role: 3 },
                 ],
-            },
-        }).then((response) => {
-            pendingFamilyId = response.body.Id;
+            }).then((response) => {
+            pendingFamilyId = response.Id;
         });
         cy.then(() => {
             admin("GET", `/api/persons/search/${pendingFamily.child}`).then((response) => {

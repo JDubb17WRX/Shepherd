@@ -4,9 +4,7 @@
  * Volunteer v2 on screen — the ministry's Sunday School switch (D29) and a class's events when
  * its team changes, the team is deleted, or the Calendar tab deletes events (D28).
  *
- * Order inside every test is API setup → fresh login → cy.visit(), because cy.request() rotates
- * the PHP session cookie (cypress-testing.md). tony.wade (person 3, no Add Events) is made
- * coordinator of both fixture ministries.
+ * tony.wade (person 3, no Add Events) coordinates both fixture ministries.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -27,20 +25,17 @@ let otherMinistryId = 0;
 const classes = {};
 const teams = {};
 
-function freshLogin(username, password) {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(username);
-    cy.get("input[name=Password]").type(`${password}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function loginAs(username, password) {
+    cy.setupLoginSession(`ui-${username}`, username, password);
+    return cy.visit("/");
 }
 
 function adminLogin() {
-    freshLogin(Cypress.testEnv("admin.username"), Cypress.testEnv("admin.password"));
+    loginAs(Cypress.testEnv("admin.username"), Cypress.testEnv("admin.password"));
 }
 
 function coordinatorLogin() {
-    freshLogin(Cypress.testEnv("standard.username"), Cypress.testEnv("standard.password"));
+    loginAs(Cypress.testEnv("standard.username"), Cypress.testEnv("standard.password"));
 }
 
 function admin(method, url, body, status = 200) {

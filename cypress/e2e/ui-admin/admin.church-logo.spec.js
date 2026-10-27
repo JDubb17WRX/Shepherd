@@ -17,12 +17,6 @@ const LOGO_PNG_BASE64 =
 const LOGO_API_URL = "/admin/api/system/church-logo";
 
 /**
- * cy.request()/cy.makePrivate*APICall() overwrite the PHP session's
- * authentication provider, so a browser session established before an API call
- * is dead afterwards. Always log in fresh AFTER the API calls.
- */
-
-/**
  * Drive the shared Uppy dashboard end to end: open it, hand the file to Uppy's
  * own hidden <input>, accept the auto-opened image editor, then press Upload.
  */
@@ -117,7 +111,7 @@ describe("Admin - Church Logo", () => {
 
     beforeEach(() => {
         cy.makePrivateAdminAPICall("DELETE", LOGO_API_URL, null, 200);
-        cy.freshAdminFormLogin({ enabled: true });
+        cy.setupAdminSession();
     });
 
     after(() => {
@@ -248,7 +242,7 @@ describe("Admin - Church Logo", () => {
             { imgBase64: `data:image/png;base64,${LOGO_PNG_BASE64}` },
             200,
         );
-        cy.freshAdminFormLogin({ enabled: true });
+        cy.setupAdminSession();
         cy.visit("/admin/system/church-info");
 
         cy.intercept("DELETE", `**${LOGO_API_URL}`).as("deleteLogo");
@@ -260,12 +254,9 @@ describe("Admin - Church Logo", () => {
         cy.get("#church-logo-preview")
             .should("have.attr", "src")
             .and("include", "/Images/churchcrm-logo-ink-blue.svg");
-        cy.get("#sidebar .navbar-brand .crm-brand-logo-light")
+        cy.get("#sidebar .navbar-brand .crm-brand-logo")
             .should("have.attr", "src")
-            .and("include", "/Images/churchcrm-symbol-ink-blue.svg");
-        cy.get("#sidebar .navbar-brand .crm-brand-logo-dark")
-            .should("have.attr", "src")
-            .and("include", "/Images/churchcrm-symbol-paper-blue.svg");
+            .and("include", "/skin/images/shepherd-logo.png");
         cy.get("#sidebar .navbar-brand-text").should("exist");
     });
 

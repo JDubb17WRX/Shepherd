@@ -4,17 +4,17 @@ describe("Admin User Password", () => {
     });
 
     it("List System Users", () => {
-        cy.visit("admin/system/users");
+        cy.visit("/admin/system/users");
         cy.contains("Church Admin");
     });
 
     it("Shows Status column header in the users table", () => {
-        cy.visit("admin/system/users");
+        cy.visit("/admin/system/users");
         cy.get("#user-listing-table thead th").contains("Status").should("exist");
     });
 
     it("Shows em-dash in Status column for a normal active user", () => {
-        cy.visit("admin/system/users");
+        cy.visit("/admin/system/users");
         // Status is the 6th column (Name, Login Name, Access, Last Login, Failed Logins, Status).
         // Target it by position to avoid matching the pre-existing em-dash in Failed Logins (col 5).
         cy.contains("#user-listing-table tbody tr", "Church Admin")
@@ -23,7 +23,7 @@ describe("Admin User Password", () => {
     });
 
     it("Admin Change password", () => {
-        cy.visit("admin/system/user/99/changePassword");
+        cy.visit("/admin/system/user/99/changePassword");
         cy.contains("Change Password");
         cy.contains("Amanda Black");
         cy.get("#NewPassword1").type("new-user-password");
@@ -55,7 +55,7 @@ describe("Admin User Password", () => {
                 }),
             )
             .its("body")
-            .should("contain", "You must enter the same password in both boxes")
+            .should("contain", "The new passwords do not match.")
             .and("not.contain", "Password Change Successful");
     });
 
@@ -68,7 +68,7 @@ describe("Admin User Password", () => {
 
     it("Non-admin user denied access to change password page", () => {
         cy.setupStandardSession();
-        cy.visit({ url: "admin/system/user/99/changePassword", failOnStatusCode: false });
+        cy.visit({ url: "/admin/system/user/99/changePassword", failOnStatusCode: false });
         // AdminRoleAuthMiddleware redirects non-admins to access-denied page
         cy.url().should("include", "access-denied");
         cy.get("#NewPassword1").should("not.exist");
@@ -86,7 +86,7 @@ describe("Admin User Password", () => {
         cy.setupAdminSession({ forceLogin: true });
         
         // Go directly to user editor to create a user for PersonID=25
-        cy.visit('admin/system/users/new?personId=25');
+        cy.visit('/admin/system/users/new?personId=25');
         cy.contains("User Editor");
         
         // Check that the form has pre-populated the UserName field with a value
@@ -96,7 +96,7 @@ describe("Admin User Password", () => {
         cy.get('#SaveButton').click();
         
         // Navigate to the system users page to verify the user was created
-        cy.visit('admin/system/users', { timeout: 10000 });
+        cy.visit('/admin/system/users', { timeout: 10000 });
         
         // Verify the page loaded and has the user table
         cy.get('#user-listing-table').should('exist');
@@ -126,7 +126,7 @@ describe("Admin User Password", () => {
         // Force a fresh login here to guarantee a valid server-side session.
         cy.setupAdminSession({ forceLogin: true });
 
-        cy.visit("admin/system/users");
+        cy.visit("/admin/system/users");
         cy.get("#user-listing-table").should("exist");
 
         // The logged-in admin's own row has no delete button, but every other
@@ -168,12 +168,19 @@ describe("Admin User Password", () => {
 
         it("reloads the users list after the reset", () => {
             cy.intercept("POST", `**/admin/api/user/${userId}/login/reset`).as("resetLogins");
-            cy.visit("admin/system/users");
-            cy.get(".dt-search input").type(userName);
+            cy.visit("/admin/system/users");
+            cy.intercept("GET", "**/admin/system/users").as("reloadedUsers");
+            cy.get(".dt-search input").clear().type(userName);
             cy.contains("#user-listing-table tbody tr", userName).find('[data-bs-toggle="dropdown"]').click();
             cy.get(`.js-reset-login-count[data-user_id="${userId}"]`).click();
             cy.get(".bootbox-accept").click();
-            cy.wait("@resetLogins").its("response.statusCode").should("eq", 200);
+            cy.wait("@resetLogins").then(({ response }) => {
+                expect(response.statusCode).to.eq(200);
+                expect(response.body.success).to.eq(true);
+            });
+            cy.wait("@reloadedUsers").its("response.statusCode").should("eq", 200);
+            cy.get(".dt-search input").clear().type(userName);
+            cy.contains("#user-listing-table tbody tr", userName).find("td:nth-child(5)").should("contain.text", "—");
             cy.get(`.js-reset-login-count[data-user_id="${userId}"]`).should("not.exist");
         });
     });

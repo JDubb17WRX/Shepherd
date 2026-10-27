@@ -637,6 +637,9 @@ class User extends BaseUser
      */
     public function hashPassword(string $password): string
     {
+        if (self::isBlankPassword($password)) {
+            throw new PasswordChangeException('New', gettext('Enter a new password'));
+        }
         if (strlen($password) > self::MAX_BCRYPT_PASSWORD_BYTES) {
             throw new \InvalidArgumentException('Passwords cannot exceed 72 bytes when using bcrypt');
         }
@@ -1276,8 +1279,8 @@ class User extends BaseUser
 
     public function adminSetUserPassword(string $newPassword): void
     {
-        if ($newPassword === '') {
-            throw new PasswordChangeException('New', gettext('The new password cannot be empty.'));
+        if (self::isBlankPassword($newPassword)) {
+            throw new PasswordChangeException('New', gettext('Enter a new password'));
         }
         if (strlen($newPassword) > self::MAX_BCRYPT_PASSWORD_BYTES) {
             throw new PasswordChangeException('New', gettext('The new password cannot exceed 72 bytes.'));
@@ -1351,6 +1354,9 @@ class User extends BaseUser
             throw new PasswordChangeException('Old', gettext('Incorrect password supplied for current user'));
         }
 
+        if (self::isBlankPassword($newPassword)) {
+            throw new PasswordChangeException('New', gettext('Enter a new password'));
+        }
         if (!$this->getIsPasswordPermissible($newPassword)) {
             throw new PasswordChangeException('New', gettext('Your password choice is too obvious. Please choose something else.'));
         }
@@ -1447,11 +1453,16 @@ class User extends BaseUser
         return !in_array(strtolower($newPassword), $aBadPasswords);
     }
 
+    private static function isBlankPassword(string $password): bool
+    {
+        return preg_match('/\A[\s\p{Z}\x{FEFF}]*\z/u', $password) === 1;
+    }
+
     private function verifyPasswordHash(string $password, string $storedHash): array
     {
         // bcrypt ignores bytes after 72; reject overlong input so two distinct
         // passwords can never authenticate as the same credential.
-        if (strlen($password) > self::MAX_BCRYPT_PASSWORD_BYTES) {
+        if (self::isBlankPassword($password) || strlen($password) > self::MAX_BCRYPT_PASSWORD_BYTES) {
             return [
                 'isValid' => false,
                 'upgradedHash' => null,

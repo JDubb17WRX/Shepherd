@@ -8,14 +8,6 @@
  * Guards against regressions from the global→scoped CSS migration.
  */
 
-/** Toggle bEnableSelfRegistration via the admin API. value: "1" = on, "0" = off. */
-function setSelfReg(value) {
-    cy.makePrivateAdminAPICall(
-        "POST",
-        "admin/api/system/config/bEnableSelfRegistration",
-        { value },
-    );
-}
 
 describe("Auth Page CSS Regression", () => {
     describe("Login Page Styling", () => {
@@ -48,56 +40,17 @@ describe("Auth Page CSS Regression", () => {
         });
     });
 
-    describe("Login Page — Segmented Pill Control (self-registration)", () => {
-        let savedSelfReg;
-
-        before(() => {
-            cy.getSystemConfig("bEnableSelfRegistration").then((value) => {
-                savedSelfReg = value;
-            });
-        });
-
-        after(() => {
-            cy.restoreSystemConfig("bEnableSelfRegistration", savedSelfReg);
-        });
-
-        it("Pill control is hidden when self-registration is disabled", () => {
-            setSelfReg("0");
+    describe("Shepherd account request navigation", () => {
+        it("keeps anonymous family registration unavailable", () => {
             cy.visit("/session/begin");
             cy.get(".login-tab-control").should("not.exist");
-            // Plain form title should appear instead
             cy.get(".login-form-title").should("be.visible");
-        });
-
-        it("Pill control is visible when self-registration is enabled", () => {
-            setSelfReg("1");
-            cy.visit("/session/begin");
+            cy.get('a[href$="/session/signup"]').should("be.visible").click();
             cy.get(".login-tab-control").should("be.visible");
-            cy.get(".login-tab-btn").should("have.length", 2);
-        });
-
-        it("Sign In pill is active by default", () => {
-            setSelfReg("1");
-            cy.visit("/session/begin");
-            cy.get("#tab-signin").should("have.class", "active");
-            cy.get("#tab-register").should("not.have.class", "active");
-        });
-
-        it("Register pill links to the registration page in a new tab", () => {
-            setSelfReg("1");
-            cy.visit("/session/begin");
-            cy.get("#tab-register")
-                .should("have.attr", "href")
-                .and("include", "/external/register/");
-            cy.get("#tab-register").should("have.attr", "target", "_blank");
-        });
-
-        it("Login form is always visible regardless of self-reg setting", () => {
-            setSelfReg("1");
-            cy.visit("/session/begin");
+            cy.contains(".login-tab-btn.active", "Sign Up").should("be.visible");
+            cy.get("#signup-email").should("be.visible");
+            cy.contains(".login-tab-btn", "Sign In").click();
             cy.get("input[name='User']").should("be.visible");
-            cy.get("input[name='Password']").should("be.visible");
-            cy.get(".btn-sign-in").should("be.visible");
         });
     });
 

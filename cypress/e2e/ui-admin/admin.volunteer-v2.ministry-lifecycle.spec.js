@@ -25,9 +25,6 @@
  *      sees Delete, and their DELETE is a 403;
  *   6. a refused delete keeps the page and surfaces the API's message as a toast.
  *
- * Order inside every hook is API setup → fresh login → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixtures are
- * removed in `before` as well as `after`.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -44,20 +41,9 @@ const COORDINATOR_PERSON = 3;
 let ministryId = 0;
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function freshCoordinatorLogin() {
@@ -196,12 +182,9 @@ describe("Volunteer v2 — ministry lifecycle (Deactivate, Reactivate, Delete)",
         createFixtures();
     });
 
-    // Every cy.request() below happens in a hook BEFORE the login of the test that
-    // follows it: a request after the login rotates the PHP session cookie, the
-    // page's next fetch is a 401 and the shell bounces to /session/begin.
     describe("as an administrator, on an active ministry", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(ministryUrl());
             cy.get("#volunteer-ministry").should("exist");
         });
@@ -256,7 +239,7 @@ describe("Volunteer v2 — ministry lifecycle (Deactivate, Reactivate, Delete)",
     describe("as an administrator, on a deactivated ministry", () => {
         beforeEach(() => {
             adminApi("POST", `${VOLUNTEER_URL}/ministries/${ministryId}`, { active: false }, 200);
-            freshAdminLogin();
+            adminLogin();
             cy.visit(ministryUrl());
             cy.get("#volunteer-ministry").should("exist");
         });
@@ -322,8 +305,6 @@ describe("Volunteer v2 — ministry lifecycle (Deactivate, Reactivate, Delete)",
             cy.get("#ministry-deactivate-btn").should("be.visible");
             headingHasMinistry("Ministries", true);
 
-            // Hiding is not security (D5): the same session's DELETE is a 403. Last,
-            // because cy.request() rotates the session the page above was using.
             cy.get("#ministry-deactivate-btn").click();
             cy.get(".bootbox .btn-danger").click();
             cy.get("#ministry-reactivate-btn").should("be.visible");

@@ -24,10 +24,6 @@
  * Every one of those fails on the unchanged branch: (1) and (2) because the form has no
  * needs section at all, (3) because the button does not exist.
  *
- * Fixtures go in through the very API the pages call, so a shape change breaks the
- * fixture as loudly as it breaks the screen. Order in every hook is API setup →
- * freshAdminLogin() → cy.visit(), because cy.request() rotates the PHP session cookie
- * (cypress-testing.md). Cleanup runs in `before` as well as `after`.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -50,20 +46,9 @@ let posLead = 0;
 let posHelper = 0;
 
 // Local helper — NOT a cy.* command (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function setVersion(value) {
@@ -194,6 +179,7 @@ function openNeedsEditor(trigger) {
 
 /** Fill the schedule form's non-staffing half: this spec's Wednesday events. */
 function fillScheduleBasics(name) {
+    cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
     cy.get("#schedule-form-name").clear().type(name);
     cy.get("#schedule-form-team").select(TEAM_NAME);
     // "Church events of a type" lists the church's event types from the core
@@ -330,13 +316,13 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
     describe("the schedule form's staffing-needs section", () => {
         beforeEach(() => {
             clearSchedules();
-            freshAdminLogin();
+            adminLogin();
             openSchedulesTab();
         });
 
         it("lists the team's positions, pre-checked, at 1 / 1 for a new schedule", () => {
             cy.get("#schedule-add-btn").click();
-            cy.get("#scheduleModal").should("be.visible");
+            cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
             cy.get("#schedule-form-team").select(TEAM_NAME);
 
             cy.get("#schedule-form-needs .volunteer-need-row").should("have.length", 2);
@@ -390,7 +376,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
 
             cy.get("#schedule-form-save").click();
             // The modal stays open and nothing was written. The problem is said once, inline.
-            cy.get("#scheduleModal").should("be.visible");
+            cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
             cy.get(".volunteer-needs-notice").should("be.visible");
             cy.get("#schedule-form-error").should("not.be.visible");
             cy.makePrivateAdminAPICall(
@@ -431,12 +417,10 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 201,
             );
 
-            // cy.request() rotates the PHP session cookie, so the browser has to sign in
-            // again before the page it is about to load can call the API for itself.
-            cy.then(freshAdminLogin);
+            cy.then(adminLogin);
             openSchedulesTab();
             cy.get("#volunteerSchedulesTable .volunteer-schedule-edit").first().click({ force: true });
-            cy.get("#scheduleModal").should("be.visible");
+            cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
 
             cy.get(`#staffing-need-${posLead}-check`).should("be.checked");
             cy.get(`#staffing-need-${posLead}-min`).should("have.value", "2");
@@ -450,7 +434,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
     describe("what the occurrence list says", () => {
         beforeEach(() => {
             clearSchedules();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows the red icon, naming the short position in its tooltip, after a schedule is made in the UI", () => {
@@ -466,7 +450,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
 
             onlyScheduleId().then((scheduleId) => {
                 generateOccurrences(scheduleId).then(() => {
-                    freshAdminLogin();
+                    adminLogin();
                     cy.visit(`/ministries/${ministryId}`);
                     cy.get("#nav-item-occurrences").click();
                     cy.get("#occurrences-loading").should("not.be.visible");
@@ -495,7 +479,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 201,
             ).then((created) => {
                 generateOccurrences(created.body.schedule.id).then(() => {
-                    freshAdminLogin();
+                    adminLogin();
                     cy.visit(`/ministries/${ministryId}`);
                     cy.get("#nav-item-occurrences").click();
                     cy.get("#occurrences-loading").should("not.be.visible");
@@ -538,13 +522,13 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                  VALUES (1, ?, '', '', ?, ?, 0)`,
                 [NAME, `${isoDate(3)} 18:00:00`, `${isoDate(3)} 20:00:00`],
             );
-            cy.then(freshAdminLogin);
+            cy.then(adminLogin);
             cy.visit(`/ministries/${ministryId}`);
             cy.get("#nav-item-occurrences").click();
             cy.get("#occurrences-loading").should("not.be.visible");
 
             cy.get("#occurrences-staff-event-btn").should("contain", "Staff an event").click();
-            cy.get("#staffEventModal").should("be.visible");
+            cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
             // The dialog focuses the search at `shown.bs.modal`; typing before the fade
             // ends would lose the tail of it to Bootstrap's own focus move.
             cy.get("#staff-event-form-search").should("have.focus").type("Harvest");
@@ -627,7 +611,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 201,
             ).then((created) => {
                 generateOccurrences(created.body.schedule.id).then(() => {
-                    freshAdminLogin();
+                    adminLogin();
                     cy.visit(`/ministries/${ministryId}`);
                     cy.get("#nav-item-occurrences").click();
                     cy.get("#occurrences-loading").should("not.be.visible");
@@ -677,7 +661,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 scheduleId = created.body.schedule.id;
                 cy.makePrivateAdminAPICall("POST", `${VOLUNTEER_URL}/schedules/${scheduleId}`, { active: true }, 200);
             });
-            cy.then(freshAdminLogin);
+            cy.then(adminLogin);
             openSchedulesTab();
         });
 
@@ -737,16 +721,20 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
 
             cy.intercept("POST", `**/api/ministries/schedules/${scheduleId}/generate`).as("generate");
             cy.get("#generate-form-save").click();
-            cy.wait("@generate").its("request.body.requirements").should("deep.eq", [
-                { positionId: posLead, defaults: [{ personId: PERSON_DEFAULT, accepted: true }] },
-            ]);
+            cy.wait("@generate").then(({ request, response }) => {
+                expect(response.statusCode).to.eq(200);
+                expect(response.body.created).to.be.greaterThan(0);
+                expect(request.body.requirements).to.deep.eq([
+                    { positionId: posLead, defaults: [{ personId: PERSON_DEFAULT, accepted: true }] },
+                ]);
+            });
             cy.get("#generateOccurrencesModal").should("not.be.visible");
             cy.get("#volunteerSchedulesTable tbody tr", { timeout: 15000 })
                 .first()
                 .find("td")
                 .eq(3)
                 .invoke("text")
-                .then((text) => {
+                .should((text) => {
                     expect(Number(text.trim())).to.be.greaterThan(0);
                 });
 
@@ -756,7 +744,6 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
             cy.get("#nav-item-occurrences").click();
             cy.get("#volunteerOccurrencesTable tbody tr", { timeout: 15000 }).should("have.length.at.least", 1);
 
-            // Last: the request rotates the session.
             cy.then(() => {
                 cy.dbQuery(
                     `SELECT vasg.vasg_Status, vasg.vasg_per_ID, vasg.vasg_vpos_ID,
@@ -814,7 +801,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 });
             });
 
-            cy.then(freshAdminLogin);
+            cy.then(adminLogin);
         });
 
         it("overrides this week's needs and puts them back", () => {
@@ -855,8 +842,6 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 "Needs 1 more",
             );
 
-            // Last, because cy.request() rotates the session cookie out from under the
-            // page: the schedule's own plan was never touched, only this one week's.
             cy.makePrivateAdminAPICall(
                 "GET",
                 `${VOLUNTEER_URL}/schedules/${scheduleId}/requirements`,
@@ -876,7 +861,7 @@ describe("Volunteer v2 — staffing needs (§2.10)", () => {
                 200,
             );
 
-            cy.then(freshAdminLogin);
+            cy.then(adminLogin);
             cy.visit(`/ministries/occurrences/${occurrenceId}`);
             cy.get("#requirements-loading").should("not.be.visible");
             cy.get("#requirements-empty")

@@ -1,7 +1,7 @@
 import { defineConfig } from 'cypress'
 import { verifyDownloadTasks } from 'cy-verify-downloads';
 import { registerRowCountGuard } from './row-count-guard';
-import { apiTasks, dbTasks, mailTasks, exposeMailpitUrl } from './_shared'
+import { apiTasks, dbTasks, mailTasks, themeFixtureTasks, exposeMailpitUrl } from './_shared'
 
 import base from './base.config'
 
@@ -65,8 +65,7 @@ export default defineConfig({
     // this directory so both suites can run as parallel CI matrix legs.
     specPattern: ['cypress/e2e/ui-admin/**/*.spec.js'],
     setupNodeEvents(on, config) {
-      // No-op unless SPLIT is set; CI runs this suite as a single chunk so its
-      // job summary matches the sharded UI jobs.
+      // CI sets SPLIT and SPLIT_INDEX; local runs keep the complete suite.
       if (process.env.SPLIT) {
         const cypressSplit = require('cypress-split');
         cypressSplit(on, config);
@@ -83,7 +82,7 @@ export default defineConfig({
       });
       // dbTasks adds db:query, the direct-MySQL task specs use to assert what has
       // no HTTP surface (#9705); mailTasks adds the Mailpit reads (#9710).
-      on('task', { ...apiTasks, ...verifyDownloadTasks, ...dbTasks, ...mailTasks });
+      on('task', { ...apiTasks, ...verifyDownloadTasks, ...dbTasks, ...mailTasks, ...themeFixtureTasks });
       exposeMailpitUrl(config);
       // Test-database drift guard (#9769) — read-only row counts, plus the
       // env flag cypress/support/e2e.js checks before arming the guard.

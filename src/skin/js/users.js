@@ -212,7 +212,7 @@ function restUserLoginCount(userId, userName) {
           },
           true,
         ).done(function (data) {
-          if (data.status === "success") window.location.href = window.CRM.root + "/admin/system/users";
+          if (data.success === true) window.location.href = window.CRM.root + "/admin/system/users";
         });
       }
     },

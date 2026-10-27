@@ -21,9 +21,6 @@
  * on `/event/calendar` here. `private.volunteer.event-ministry.spec.js` asserts
  * the feed itself.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(),
- * because cy.request() rotates the PHP session cookie (cypress-testing.md).
- * Fixtures are removed in `before` as well as `after`.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -55,22 +52,9 @@ let linkedEventId = 0;
 let plainEventId = 0;
 
 // Local helper — NOT a cy.* command (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(
-        Cypress.testEnv("admin.password") + "{enter}",
-    );
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function setVersion(value) {
@@ -285,7 +269,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
 
     describe("the ministry select on the event editor (§2.16 item 10)", () => {
         it("offers every ministry an administrator manages, and saves the choice", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/editor/${plainEventId}`);
 
             cy.get("#eventAdvancedFields", { timeout: 15000 }).should("exist");
@@ -317,7 +301,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
         });
 
         it("offers an explicit 'no ministry' choice that clears the field", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/editor/${plainEventId}`);
             cy.get('[data-bs-target="#eventAdvancedFields"]', {
                 timeout: 15000,
@@ -333,9 +317,6 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
         // #9869: choosing a ministry also pre-pins that ministry's own calendar, because
         // a coordinator without Add Events may pin there and nowhere else.
         it("pre-pins the ministry's own calendar when a ministry is chosen", () => {
-            // Reset the event to one church pin and no ministry: the two tests above
-            // leave it in whatever state they ended in, and this one is about what the
-            // editor ADDS. API setup before the login — cy.request() rotates the cookie.
             cy.makePrivateAdminAPICall(
                 "POST",
                 `/api/events/${plainEventId}`,
@@ -350,7 +331,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
                 200,
             );
 
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/editor/${plainEventId}`);
             cy.get('[data-bs-target="#eventAdvancedFields"]', {
                 timeout: 15000,
@@ -394,7 +375,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
 
         it("is not rendered at all while the rollout flag is v1", () => {
             setVersion("v1");
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/editor/${plainEventId}`);
             cy.get('[data-bs-target="#eventAdvancedFields"]', {
                 timeout: 15000,
@@ -407,7 +388,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
 
     describe("the Volunteers card on the event view (§3.5)", () => {
         it("lists the linked occurrence with its gap count and links to it", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/view/${linkedEventId}`);
 
             cy.get("#event-volunteers-card", { timeout: 15000 }).should(
@@ -421,7 +402,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
         });
 
         it("is absent on an event with no volunteer occurrences", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/view/${plainEventId}`);
             cy.get(".card", { timeout: 15000 }).should("exist");
             cy.get("#event-volunteers-card").should("not.exist");
@@ -429,7 +410,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
 
         it("is absent while the rollout flag is v1", () => {
             setVersion("v1");
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/event/view/${linkedEventId}`);
             cy.get(".card", { timeout: 15000 }).should("exist");
             cy.get("#event-volunteers-card").should("not.exist");
@@ -439,7 +420,7 @@ describe("Volunteer v2 — event ministry field and Volunteers card (#9713)", ()
 
     describe("the occurrence page's link back to the event (§3.5)", () => {
         it("names the event it takes its times from", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/ministries/occurrences/${occurrenceId}`);
 
             cy.get("#occurrence-event-link", { timeout: 15000 })

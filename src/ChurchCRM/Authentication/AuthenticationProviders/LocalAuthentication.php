@@ -552,6 +552,13 @@ class LocalAuthentication implements IAuthenticationProvider
             LoggerUtils::getAuthLogger()->debug('Processing local login', $logCtx);
             // Get the information for the selected user
             $candidateUser = UserQuery::create()->findOneByUserName($AuthenticationRequest->username);
+            if ($candidateUser?->getSignInBlockedReason() !== null) {
+                $authenticationResult->isAuthenticated = false;
+                $authenticationResult->message = gettext('Invalid login or password');
+                LoggerUtils::getAuthLogger()->warning('Authentication refused for blocked person', $logCtx);
+
+                return $authenticationResult;
+            }
             $primaryAuthentication = null;
             if ($candidateUser === null) {
                 // Set the error text
@@ -561,7 +568,7 @@ class LocalAuthentication implements IAuthenticationProvider
                 $primaryAuthentication = $candidateUser->authenticatePrimaryPassword($AuthenticationRequest->password);
             }
 
-            if ($candidateUser instanceof User && ($candidateUser->getSignInBlockedReason() !== null || $primaryAuthentication['isLocked'])) {
+            if ($candidateUser instanceof User && $primaryAuthentication['isLocked']) {
                 // Block the login if a maximum login failure count has been reached
                 $authenticationResult->isAuthenticated = false;
                 $authenticationResult->message = gettext('Too many failed logins: your account has been locked.  Please contact an administrator.');

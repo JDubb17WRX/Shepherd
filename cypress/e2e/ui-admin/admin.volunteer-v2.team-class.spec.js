@@ -3,9 +3,6 @@
 /**
  * Volunteer v2 — linking a team to a Sunday School class, on screen (D23).
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). No cy.dbQuery():
- * ui-admin specs run under docker-admin.config.ts, which does not register it.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -25,12 +22,9 @@ let ministryId = 0;
 let classId = 0;
 let teamId = 0;
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function admin(method, url, body, status = 200) {
@@ -86,7 +80,7 @@ describe("Volunteer v2 — a team linked to a Sunday School class, on screen (D2
     });
 
     it("links a class from the team dialog and imports its teachers", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit(`/ministries/${ministryId}`);
         cy.get("#volunteerTeamsTable tbody tr").should("have.length.at.least", 1);
 
@@ -120,7 +114,7 @@ describe("Volunteer v2 — a team linked to a Sunday School class, on screen (D2
     });
 
     it("editing the team keeps the link and does not ask again", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit(`/ministries/${ministryId}`);
         cy.contains("#volunteerTeamsTable tbody tr", TEAM_NAME).find("button[data-bs-toggle=dropdown]").click();
         cy.contains("#volunteerTeamsTable tbody tr", TEAM_NAME).find(".volunteer-team-edit").click();
@@ -131,7 +125,7 @@ describe("Volunteer v2 — a team linked to a Sunday School class, on screen (D2
     });
 
     it("the class page says where its teachers are managed and stops offering teacher moves", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit(`/groups/sundayschool/class/${classId}`);
         cy.get("#class-teachers-managed-note")
             .should("contain", MINISTRY_NAME)
@@ -145,7 +139,7 @@ describe("Volunteer v2 — a team linked to a Sunday School class, on screen (D2
     });
 
     it("the group view offers no teacher removal", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit(`/groups/view/${classId}`);
         cy.get("#class-teachers-managed-note").should("contain", TEAM_NAME);
         cy.get(`#membersTable .remove-member-btn[data-personid="${PERSON_STUDENT}"]`).should("exist");
@@ -154,13 +148,13 @@ describe("Volunteer v2 — a team linked to a Sunday School class, on screen (D2
     });
 
     it("the portal team page names the class, read-only", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit(`/portal/teams/${teamId}`);
         cy.get("#portal-team-class").should("contain", CLASS_NAME).find("a").should("not.exist");
     });
 
     it("the role editor refuses to make a student a teacher", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit(`/groups/${classId}/members/${PERSON_STUDENT}/role?return=group`);
         cy.get("#NewRole").select(String(TEACHER));
         cy.get("input[name=Submit]").click();

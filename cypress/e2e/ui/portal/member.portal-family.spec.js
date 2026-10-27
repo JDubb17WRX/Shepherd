@@ -35,16 +35,10 @@ describe("Member Portal — My Family", () => {
         cy.url({ timeout: 10000 }).should("include", "/portal");
     };
 
-    // Local helper — NOT a cy.* command. Needed because the assertions at the
-    // end of a test use the admin API, and cy.request() with an API key kills
-    // the browser's PHP session.
-    const freshAdminLogin = () => {
-        cy.clearCookies();
-        cy.visit("/session/begin");
-        cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-        cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-        cy.url().should("not.include", "/session/begin");
-    };
+    const adminLogin = () => {
+    cy.setupAdminSession();
+    return cy.visit("/");
+};
 
     /** The members the portal proposed, found again on the pending list by first name. */
     const proposedFirstNames = [];
@@ -164,7 +158,7 @@ describe("Member Portal — My Family", () => {
 
             // The member is pending, not live: it appears on the staff review
             // page, which is the whole point of Person::SELF_REGISTER.
-            freshAdminLogin();
+            adminLogin();
             cy.visit("/people/self-register");
             cy.get("#selfRegistrations", { timeout: 15000 }).should("contain", firstName);
             cy.get("#selfRegistrations").should("contain", "Family Member");

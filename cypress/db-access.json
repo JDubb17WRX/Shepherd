@@ -1,6 +1,10 @@
 {
     "$comment": "Who may use raw SQL / cy.dbQuery() under cypress/ (#10377). approved: a dedicated schema spec or a fixture/reset utility, never an ordinary behavior spec. baseline: what each existing spec used when the guard arrived; it only goes down. Checked by npm run lint (scripts/validate-cypress-db-access.js).",
     "approved": {
+        "cypress/support/people-fixtures.js": {
+            "kind": "fixture",
+            "reason": "Seeds isolated people and legacy pending-review families without enabling anonymous registration. Callers delete their records through the authenticated API."
+        },
         "cypress/configs/_shared.ts": {
             "kind": "fixture",
             "reason": "Defines the db:query task behind cy.dbQuery()."

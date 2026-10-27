@@ -29,11 +29,8 @@ const PORTAL_PAGES = ["/portal/", "/portal/profile"];
 // ── helpers (local functions, NOT cy.* commands — cypress-testing.md) ───────
 
 function adminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url({ timeout: 10000 }).should("include", ADMIN_DASHBOARD);
+    cy.setupAdminSession();
+    cy.visit(ADMIN_DASHBOARD);
 }
 
 /** The portal, whichever bar it is wearing, is never the admin shell. */
@@ -62,10 +59,6 @@ function assertStaffSelf() {
         .and("include", ADMIN_DASHBOARD);
     cy.get("body").type("{esc}");
 }
-
-before(() => {
-    cy.rememberTestEnv(["admin.username", "admin.password"]);
-});
 
 describe("Member Portal e2e — #9869 scenario 3, staff in the portal", () => {
     describe("an administrator in the portal", () => {

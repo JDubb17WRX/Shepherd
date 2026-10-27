@@ -39,7 +39,7 @@ describe("Shepherd public registration policy", () => {
             failOnStatusCode: false,
         }).then((resp) => {
             expect(resp.status).to.eq(403);
-            expect(resp.body).not.to.have.property("Id");
+            expect(resp.body ?? "").to.eq("");
         });
     });
 

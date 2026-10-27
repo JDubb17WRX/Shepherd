@@ -8,16 +8,6 @@
  * - Group with ID=1 must exist
  * - At least one group property definition must exist (pro_Class='g')
  *
- * API-based data setup runs BEFORE cy.freshAdminFormLogin(). Despite withCredentials:false
- * on makePrivateAPICall, CI confirmed that cy.setupAdminSession() is not sufficient —
- * the PHP session is still killed by cy.request(). cy.freshAdminFormLogin() is required.
- */
-
-/**
- * Direct login helper — bypasses cy.session() cache entirely.
- * Call this after all API setup is complete; it clears cookies so the
- * PHP session created by cy.request() is discarded and a real browser
- * session is established instead.
  */
 
 // ------------------------------------------------------------------ //
@@ -100,7 +90,7 @@ describe("UI: Group Property Assignment (/groups/view/{id})", () => {
             });
 
             // Step 2: Login after all API setup
-            cy.freshAdminFormLogin();
+            cy.setupAdminSession();
 
             // Step 3: UI only from here
             cy.get("@prop").then((prop) => {
@@ -156,7 +146,7 @@ describe("UI: Group Property Assignment (/groups/view/{id})", () => {
             });
 
             // Login AFTER API setup
-            cy.freshAdminFormLogin();
+            cy.setupAdminSession();
         });
 
         afterEach(() => {
@@ -365,7 +355,7 @@ describe("UI: GroupPropsFormEditor Delete button (CSP regression #8520)", () => 
         );
 
         // Now login and create a test field via UI
-        cy.freshAdminFormLogin();
+        cy.setupAdminSession();
         cy.visit(`/groups/${groupID}/properties/form`);
         cy.get("select#newFieldType").select("1");
         cy.get("input#newFieldName").clear().type(fieldName);
@@ -374,7 +364,7 @@ describe("UI: GroupPropsFormEditor Delete button (CSP regression #8520)", () => 
     });
 
     beforeEach(() => {
-        cy.freshAdminFormLogin();
+        cy.setupAdminSession();
         cy.visit(`/groups/${groupID}/properties/form`);
     });
 
@@ -444,7 +434,7 @@ describe("UI: GroupPropsFormEditor Back button and Show in Profile (#9381)", () 
         );
 
         // Login and create a test field if it doesn't already exist
-        cy.freshAdminFormLogin();
+        cy.setupAdminSession();
         cy.visit(`/groups/${groupID}/properties/form`);
         cy.get("body").then(($body) => {
             if (!$body.find(`input[value="${testFieldName}"]`).length) {
@@ -457,7 +447,7 @@ describe("UI: GroupPropsFormEditor Back button and Show in Profile (#9381)", () 
     });
 
     beforeEach(() => {
-        cy.freshAdminFormLogin();
+        cy.setupAdminSession();
         cy.visit(`/groups/${groupID}/properties/form`);
     });
 
@@ -492,8 +482,16 @@ describe("UI: GroupPropsFormEditor Back button and Show in Profile (#9381)", () 
     });
 
     it("Save Changes button is visible and form submits without errors", () => {
-        cy.get('button[name="SaveChanges"]').should("be.visible").click();
-        cy.url().should("include", "/properties/form");
-        cy.get(".alert-danger").should("not.exist");
+        cy.get(`input[value="${testFieldName}"]`).invoke("attr", "name").then((name) => {
+            const field = `input[name="${name}"]`;
+            const savedName = `${testFieldName} Saved`;
+            cy.get(field).clear().type(savedName);
+            cy.get('button[name="SaveChanges"]').should("be.visible").click();
+            cy.url().should("include", "/properties/form");
+            cy.get(".alert-danger:not([data-notification-id])").should("not.exist");
+            cy.reload();
+            cy.get(field).should("have.value", savedName).clear().type(testFieldName);
+            cy.get('button[name="SaveChanges"]').click();
+        });
     });
 });

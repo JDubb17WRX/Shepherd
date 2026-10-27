@@ -287,6 +287,23 @@ export const pluginFixtureTasks = {
   }
 };
 
+export const themeFixtureTasks = {
+  'themeFixtures:remove'({ theme, homeOnly = false }: { theme: string; homeOnly?: boolean }) {
+    const fs = require('fs');
+    const path = require('path');
+    if (!['cypresstheme', 'e2e9869good', 'e2e9869broken'].includes(theme)) {
+      throw new Error('Only disposable Cypress themes may be removed');
+    }
+    const root = path.resolve(__dirname, '../../src/Include/themes');
+    const target = path.resolve(root, theme, ...(homeOnly ? ['templates', 'home.html.twig'] : []));
+    if (!target.startsWith(root + path.sep)) {
+      throw new Error('Theme fixture path must stay inside the theme directory');
+    }
+    fs.rmSync(target, { recursive: !homeOnly, force: true });
+    return null;
+  }
+};
+
 export const mailTasks = {
   /** Is a Mailpit instance reachable? Never throws — the answer is the point. */
   async 'mail:available'() {
@@ -328,7 +345,7 @@ export function setupCommonNodeEvents(on: any, config: any, extraTasks: Record<s
     // ignore optional logging integration errors in local environments
   }
 
-  const tasks: Record<string, any> = { ...apiTasks, ...dbTasks, ...mailTasks, ...htaccessTasks, ...pluginFixtureTasks, ...extraTasks };
+  const tasks: Record<string, any> = { ...apiTasks, ...dbTasks, ...mailTasks, ...htaccessTasks, ...pluginFixtureTasks, ...themeFixtureTasks, ...extraTasks };
 
   // Register download verification tasks if available
   try {

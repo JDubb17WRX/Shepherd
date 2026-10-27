@@ -6,8 +6,6 @@
  * only creates events, then asks whether to staff them: one event opens Staff an event, a series
  * goes to the schedules that follow it, or opens Add schedule for it. Design §5.4, §5.5.
  *
- * Fixtures go in through the admin API, counts straight into `eventcounts_evtcnt`. Order in
- * every hook is fixture → login → visit, because cy.request() rotates the PHP session cookie.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -32,12 +30,9 @@ let teamId = 0;
 let positionId = 0;
 let classId = 0;
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function admin(method, url, body, status = 200) {
@@ -163,8 +158,10 @@ function cleanupFixtures() {
 }
 
 function openCalendarTab() {
+    cy.intercept("GET", `**/api/ministries/ministries/${ministryId}/events`).as("ministryCalendarEvents");
     cy.visit(`/ministries/${ministryId}`);
     cy.get("#nav-item-calendar").click();
+    cy.wait("@ministryCalendarEvents").its("response.statusCode").should("eq", 200);
     cy.get("#ministry-events-loading").should("not.be.visible");
 }
 
@@ -217,7 +214,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("sits next to Occurrences and starts empty", () => {
@@ -238,7 +235,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
     it("creates a one-off event on the ministry's own calendar", () => {
         openCalendarTab();
         cy.get("#ministry-event-add-btn").click();
-        cy.get("#ministryEventModal").should("be.visible");
+        cy.get("#ministryEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#ministryEventModalTitle").should("have.text", "New event");
         cy.get("#ministry-event-form-title").should("have.focus").type(ONE_OFF);
         cy.get("#ministry-event-form-type").select("Church Service");
@@ -277,7 +274,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
     it("starts a series' Last date a year after its first date, follows the first date until it is chosen, and refuses a blank", () => {
         openCalendarTab();
         cy.get("#ministry-event-add-series-btn").click();
-        cy.get("#ministryEventModal").should("be.visible");
+        cy.get("#ministryEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#ministry-event-form-title").should("have.focus");
         cy.get("#ministry-event-form-range-start").should("have.value", isoDate(1));
         cy.get("#ministry-event-form-range-end").should("have.value", oneYearAfter(isoDate(1)));
@@ -323,7 +320,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         cy.wait("@staff").its("response.body.schedules").should("deep.eq", []);
 
         cy.get("#nav-item-schedules").should("have.class", "active");
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#scheduleModalTitle").should("have.text", "Add schedule");
         cy.get("#schedule-form-name").should("have.value", SERIES);
         cy.get("#schedule-form-team").should("have.value", String(teamId));
@@ -368,7 +365,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
     it("opens Staff an event with a new one-time event chosen when asked to staff it", () => {
         openCalendarTab();
         cy.get("#ministry-event-add-btn").click();
-        cy.get("#ministryEventModal").should("be.visible");
+        cy.get("#ministryEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#ministry-event-form-title").should("have.focus").type(PICNIC);
         cy.get("#ministry-event-form-date").clear().type(isoDate(6));
         cy.get("#ministry-event-form-save").click();
@@ -377,7 +374,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         staffPrompt().should("contain", `${PICNIC} on ${shortDate(isoDate(6))} created. Staff it now?`);
         cy.contains(".ministry-event-staff-prompt button", "Staff them").click();
         eventIdTitled(PICNIC).then(([eventId]) => {
-            cy.get("#staffEventModal").should("be.visible");
+            cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
             cy.get("#staff-event-form-event").should("have.value", String(eventId));
         });
         cy.get("#staff-event-form-save").click();
@@ -391,7 +388,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         openCalendarTab();
         eventIdTitled(ONE_OFF).then(([eventId]) => {
             rowAction(ONE_OFF, ".ministry-event-staff");
-            cy.get("#staffEventModal").should("be.visible");
+            cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
             cy.get("#staff-event-form-event").should("have.value", String(eventId));
             cy.get("#staff-event-form-save").click();
             cy.get("#staffEventModal").should("not.be.visible");
@@ -420,11 +417,13 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         ).then((resp) => {
             addCounts(resp.body.events[0].id, 30, 12);
         });
-        freshAdminLogin();
+        adminLogin();
         openCalendarTab();
         cy.get("#volunteerMinistryEventsTable tbody").should("contain", ONE_OFF).and("not.contain", PAST);
 
+        cy.intercept("GET", `**/api/ministries/ministries/${ministryId}/events?past=1`).as("pastMinistryEvents");
         cy.get("#ministry-events-past").check({ force: true });
+        cy.wait("@pastMinistryEvents").its("response.statusCode").should("eq", 200);
         cy.contains("#volunteerMinistryEventsTable tbody tr", PAST).within(() => {
             cy.get(".ministry-event-headcount").should("have.text", "Headcount: 42");
             cy.get(".ministry-event-staff").should("not.exist");
@@ -432,6 +431,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         cy.get("#volunteerMinistryEventsTable tbody").should("not.contain", ONE_OFF);
 
         cy.get("#ministry-events-past").uncheck({ force: true });
+        cy.wait("@ministryCalendarEvents").its("response.statusCode").should("eq", 200);
         cy.get("#volunteerMinistryEventsTable tbody").should("contain", ONE_OFF);
     });
 
@@ -439,7 +439,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         eventIdTitled(SERIES).then(([firstId]) => {
             addCounts(firstId, 20, 7);
         });
-        freshAdminLogin();
+        adminLogin();
         openCalendarTab();
         cy.contains("#volunteerMinistryEventsTable tbody tr", SERIES).first().find(".ministry-event-staffing").click();
 
@@ -480,7 +480,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
             { title: RAKING, eventTypeId: 1, date: isoDate(6), startTime: "08:00", endTime: "10:00" },
             201,
         );
-        freshAdminLogin();
+        adminLogin();
         openCalendarTab();
         cy.contains("#volunteerMinistryEventsTable tbody tr", RAKING).find(".ministry-event-select").check();
         cy.get("#ministry-events-delete-btn").should("contain", "Delete events (1)").click();
@@ -495,7 +495,7 @@ describe("Volunteer v2 — the ministry Calendar tab (D24) and the headcount car
         cy.get("#nav-item-schedules").click();
         cy.get("#schedules-loading").should("not.be.visible");
         cy.get("#schedule-add-btn").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-name").should("have.focus");
         cy.get("#schedule-form-link-mode").should("have.value", "class");
         cy.get("#schedule-form-group").should("have.value", String(classId));

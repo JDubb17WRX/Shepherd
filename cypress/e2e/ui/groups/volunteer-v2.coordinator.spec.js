@@ -17,10 +17,6 @@
  * Everything is built and torn down through the REAL APIs, so the page is
  * exercised against data the rest of the system produced.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(),
- * because cy.request() rotates the PHP session cookie (cypress-testing.md).
- * Fixture rows are removed in `before` as well as `after`: an `after` hook does
- * not run when the runner crashes mid-spec.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -57,12 +53,9 @@ let seriesStart = "";
 let seriesEnd = "";
 
 // Local helper — NOT a cy.* command (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 /** Log in as the standard user (person 3), the ministry-coordinator persona. */
@@ -398,7 +391,7 @@ describe("Volunteer v2 coordinator dashboard (#9711)", () => {
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     describe("S1 — what needs my attention (§5.2)", () => {
@@ -520,6 +513,7 @@ describe("Volunteer v2 coordinator dashboard (#9711)", () => {
 
     describe("Admin → Ministry Settings (the settings' one home, 2026-09-18)", () => {
         it("changes the reminder lead time and the change persists", () => {
+            cy.intercept("POST", "**/admin/api/system/config/iVolunteerReminderLeadHours").as("saveReminderLead");
             cy.visit("/admin/ministry-settings");
 
             cy.get("#ministrySettingsPanel").should("be.visible");
@@ -533,6 +527,8 @@ describe("Volunteer v2 coordinator dashboard (#9711)", () => {
                 .clear()
                 .type("12");
             cy.get("#ministrySettingsPanel .settings-panel-save").click();
+            cy.wait("@saveReminderLead").its("response.statusCode").should("eq", 200);
+            cy.get("#ministrySettingsPanel .settings-panel-save").should("not.be.disabled");
 
             cy.then(() => {
                 adminApi("GET", LEAD_SETTING_URL, null, 200).then((resp) => {
@@ -569,7 +565,7 @@ describe("Volunteer v2 coordinator dashboard (#9711)", () => {
 
         it("leaves the V1 pane and its ids untouched when both are on", () => {
             setVersion("both");
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/people/view/${POOL_MEMBER_A}`);
             cy.get("#nav-item-volunteer").should("exist");
             cy.get("#nav-item-volunteer-v2").should("exist");

@@ -26,10 +26,6 @@
  *      "Showing … to …" line and "Back to upcoming" are gone; the past is
  *      reached by moving From back.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixture rows
- * are removed in `before` as well as `after`: an `after` hook does not run when
- * the runner crashes mid-spec.
  *
  * `cy.dbQuery()` appears once, for the past occurrence — generation deliberately
  * refuses to back-fill (§2.9), so there is no API that can make one.
@@ -72,20 +68,9 @@ let wednesdayScheduleId = 0;
 let firstTeamName = "";
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function adminApi(method, url, body, expectedStatus = 200) {
@@ -166,7 +151,7 @@ function ministryUrl() {
 function openVolunteersTab() {
     cy.get("#nav-item-volunteers").click();
     cy.get("#volunteers .volunteer-loading").should("not.be.visible");
-    cy.get("#volunteerQualificationsTable").should("be.visible");
+    cy.get("#volunteerQualificationsTable", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
 }
 
 /**
@@ -179,7 +164,7 @@ function openVolunteersTab() {
 function openOccurrencesTab() {
     cy.get("#nav-item-occurrences").click();
     cy.get("#occurrences .volunteer-loading").should("not.be.visible");
-    cy.get("#volunteerOccurrencesTable").should("be.visible");
+    cy.get("#volunteerOccurrencesTable", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
 }
 
 /** The query string of the most recent `GET /occurrences`, retried until it matches. */
@@ -227,7 +212,7 @@ function resetPool() {
  * Seed the session cart in the SAME PHP session the browser is using.
  * `cy.makePrivateAdminAPICall` authenticates with an x-api-key and sends no
  * session cookie, which would land the cart in a different session entirely,
- * and `freshAdminLogin()` clears cookies — so this has to be a plain
+ * and `adminLogin()` clears cookies — so this has to be a plain
  * `cy.request` AFTER the login.
  */
 function seedCart(personIds) {
@@ -351,7 +336,7 @@ describe("Volunteer v2 ministry page, round three (#9701)", () => {
         beforeEach(() => {
             clearQualifications(firstPositionId);
             clearQualifications(secondPositionId);
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("keeps the 'ticks save as you make them' hint and has no Save button", () => {
@@ -381,7 +366,7 @@ describe("Volunteer v2 ministry page, round three (#9701)", () => {
                 { personId: TICKED_PERSON },
                 [200, 201],
             );
-            freshAdminLogin();
+            adminLogin();
 
             cy.visit(ministryUrl());
             openVolunteersTab();
@@ -402,7 +387,7 @@ describe("Volunteer v2 ministry page, round three (#9701)", () => {
                 { personId: TICKED_PERSON },
                 [200, 201],
             );
-            freshAdminLogin();
+            adminLogin();
 
             cy.visit(ministryUrl());
             openVolunteersTab();
@@ -454,7 +439,7 @@ describe("Volunteer v2 ministry page, round three (#9701)", () => {
     describe("Add Volunteer", () => {
         beforeEach(() => {
             resetPool();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("is called Add Volunteer and names the selected team in its title", () => {
@@ -544,7 +529,7 @@ describe("Volunteer v2 ministry page, round three (#9701)", () => {
     describe("Add from Cart", () => {
         beforeEach(() => {
             resetPool();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("is called Add from Cart and offers no position selector", () => {
@@ -639,7 +624,7 @@ describe("Volunteer v2 ministry page, round three (#9701)", () => {
         });
 
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("replaces Filter by Date with a Team / Event / From / To form", () => {

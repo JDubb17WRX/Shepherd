@@ -1,29 +1,6 @@
 /// <reference types="cypress" />
 
-/**
- * Tests for the mandatory 2FA grace period feature (#5169).
- *
- * What is actually tested here:
- *   1. i2FAGracePeriodDays config key is readable via the API and returns
- *      exactly 7 (the configured default).
- *   2. i2FAGracePeriodDays persists a written value and can be reset.
- *   3. i2FAGracePeriodDays accepts 0 (immediate enforcement mode).
- *   4. With grace=7 and mandate on, an unenrolled user can reach the
- *      dashboard (within-grace pass-through) and sees the grace banner.
- *   5. With grace=0 and mandate on, an unenrolled user is immediately
- *      redirected to the enrollment page.
- *   6. With mandate off, no grace banner is shown.
- *
- * TODO (require Docker environment with direct DB access):
- *   - Verify that an unenrolled user whose grace start is >N days in the
- *     past is blocked and redirected to manage2fa (expired status).
- *   - Verify that the banner disappears after the user successfully enrolls.
- *   - Verify that disabling 2FA while the mandate is active re-stamps a
- *     fresh grace start (new window, not immediate lock-out).
- *
- * Note: tests that mutate global config (bRequire2FA, i2FAGracePeriodDays)
- * restore defaults in afterEach to avoid cross-test contamination.
- */
+// Shepherd requires enrollment immediately whenever two-factor authentication is mandatory.
 
 describe("2FA Grace Period — config API", () => {
     it("GET i2FAGracePeriodDays returns exactly 7 (the default)", () => {
@@ -131,7 +108,7 @@ describe("2FA Grace Period — enforcement", () => {
         disableUser2FA(3);
     });
 
-    it("grace=7, mandate on: unenrolled user can access dashboard (within-grace pass-through)", () => {
+    it("grace=7, mandate on: unenrolled user must enroll before accessing the dashboard", () => {
         disableUser2FA(3);
         setRequire2FA(true);
         setGraceDays(7);
@@ -141,13 +118,9 @@ describe("2FA Grace Period — enforcement", () => {
         cy.get("input[name=User]").type(Cypress.testEnv("standard.username"));
         cy.get("input[name=Password]").type(Cypress.testEnv("standard.password") + "{enter}");
 
-        // Should land on dashboard, NOT on the enrollment page
-        cy.url({ timeout: 15000 }).should("not.include", "manage2fa");
-        cy.url({ timeout: 15000 }).should("not.include", "enroll2fa");
-
-        // Grace banner must be visible
-        cy.get("#two-fa-grace-banner", { timeout: 10000 }).should("exist");
-        cy.get("#two-fa-grace-banner").should("contain.text", "day");
+        cy.url({ timeout: 15000 }).should("include", "manage2fa");
+        cy.visit("/v2/dashboard");
+        cy.url().should("include", "manage2fa");
     });
 
     it("grace=0, mandate on: unenrolled user is immediately redirected to enrollment", () => {

@@ -26,12 +26,6 @@
  *   - `/volunteer/setup` is gone from the menu and the URL 404s;
  *   - **New ministry** on the dashboard creates one and lands on it.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixture rows
- * are removed in `before` as well as `after`: an `after` hook does not run when
- * the runner crashes mid-spec. No cy.dbQuery() here — the `db:query` task is
- * registered in docker-admin.config.ts too, but every fixture below is reachable
- * through a real endpoint, which is a feature.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -62,20 +56,9 @@ let teamId = 0;
 let positionId = 0;
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: in CI a login page occasionally reloads while the name is being
-    // typed (the submit then goes out with an empty user and bounces back here).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 /** Log in as person 95, who this spec makes a leader of the ministry's only team. */
@@ -128,6 +111,15 @@ function cleanupFixtures() {
 
 function ministryUrl() {
     return `${MINISTRIES_URL}/${ministryId}`;
+}
+
+let ministryVisitCount = 0;
+
+function visitMinistry() {
+    const alias = `ministryDetails${++ministryVisitCount}`;
+    cy.intercept("GET", `**/api/ministries/ministries/${ministryId}`).as(alias);
+    cy.visit(ministryUrl());
+    cy.wait(`@${alias}`).its("response.statusCode").should("eq", 200);
 }
 
 before(() => {
@@ -196,11 +188,11 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("the tab strip", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("names seven tabs in the order the product owner chose", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#volunteer-ministry-tabs").should("be.visible");
 
             cy.get("#volunteer-ministry-tabs .nav-link").then(($tabs) => {
@@ -230,18 +222,18 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("no longer offers the guided setup from the page header", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get('#volunteer-ministry a[href*="/volunteer/setup"]').should("not.exist");
         });
     });
 
     describe("the Overview tab", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows exactly three counts: Teams, Volunteers, Unfilled Positions", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#overview-content").should("be.visible");
 
             cy.get("#overview-team-count").should("have.text", "2");
@@ -260,7 +252,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("carries the teams card, with a Team Leader column and a row action menu", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#teams-loading").should("not.be.visible");
             cy.get("#volunteerTeamsTable").should("be.visible").and("contain", TEAM_NAME);
             cy.get("#volunteerTeamsTable thead").should("contain", "Team Leader");
@@ -291,7 +283,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("renames the Coordinators card and strips every team-leader control from it", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#volunteer-scope-panel").should("be.visible");
             cy.get("#volunteer-scope-panel .card-title").should(
                 "contain",
@@ -311,11 +303,11 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("the Volunteers tab", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("offers no 'All teams' option and opens on the first team", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
             cy.get("#volunteers .volunteer-loading").should("not.be.visible");
 
@@ -328,7 +320,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("renders the grid with the pool people down the side and positions across the top", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
             cy.get("#volunteers .volunteer-loading").should("not.be.visible");
             cy.get("#volunteerQualificationsTable").should("be.visible");
@@ -343,8 +335,10 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("marks a pool member with no qualifications yet (D19)", () => {
-            cy.visit(ministryUrl());
+            cy.intercept("GET", `**/api/ministries/ministries/${ministryId}/qualification-matrix*`).as("poolQualifications");
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
+            cy.wait("@poolQualifications").its("response.statusCode").should("eq", 200);
             cy.get(
                 `#volunteerQualificationsTable input.volunteer-qual-toggle[data-person-id="${POOL_NEVER_QUALIFIED}"]`,
             )
@@ -357,7 +351,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("toggles a qualification and it survives a reload", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
             cy.get(
                 `#volunteerQualificationsTable input.volunteer-qual-toggle[data-person-id="4"][data-position-id="${positionId}"]`,
@@ -387,7 +381,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         // neither carries a position select any more (round three; the wording and
         // the counts are asserted in admin.volunteer-v2.ministry-page-3.spec.js).
         it("offers the person picker and the cart bulk-add", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
 
             cy.get("#qualification-add-person").should("be.visible").click();
@@ -412,7 +406,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("renders every label through gettext/i18next, never a raw key", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
             cy.get("#volunteers").should("not.contain", "i18next");
             cy.get("#volunteers").invoke("text").should("not.match", /\{\{[a-z]+\}\}/);
@@ -421,11 +415,11 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("Remove Volunteer", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("is offered to an administrator and takes the person out of the ministry", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-volunteers").click();
             cy.get("#volunteers .volunteer-loading").should("not.be.visible");
             cy.get("#volunteerQualificationsTable thead").should("contain", "Actions");
@@ -463,7 +457,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
             // rather than by clicking the tab behind the dialog: bootbox's hide()
             // returns early while Bootstrap is still transitioning, so the dialog
             // can outlive the action it confirmed and cover the tab strip.
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#overview-content").should("be.visible");
             cy.get("#overview-volunteer-count").should(
                 "have.text",
@@ -490,11 +484,11 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("the Positions tab", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("loads lazily and shows the active badge", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-positions").click();
             cy.get("#volunteerPositionsTable").should("be.visible");
             cy.get("#volunteerPositionsTable").should("contain", POSITION_ONE);
@@ -502,7 +496,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("adds a position from the tab", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#nav-item-positions").click();
             // The dialog's Team list comes from the ministry document the table is drawn
             // from, so Add before it arrives opens a dialog with no team to choose.
@@ -527,11 +521,11 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("the Help Wanted tab", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("renders the card on its own tab and on no other", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#overview-content").should("be.visible");
             // It used to sit outside the tab content, so it painted under every tab.
             cy.get("#volunteer-help-wanted").should("not.be.visible");
@@ -545,7 +539,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
         });
 
         it("saves the advert and it survives a reload", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             // The two fields are filled from the ministry document, so ticking the
             // switch before that response lands would be overwritten by it.
             cy.get("#overview-content").should("be.visible");
@@ -567,11 +561,11 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("the volunteer pool panel", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("is gone from the ministry page entirely", () => {
-            cy.visit(ministryUrl());
+            visitMinistry();
             cy.get("#volunteerPoolTable").should("not.exist");
             cy.get("#pool-add-btn").should("not.exist");
             cy.get("#poolAddModal").should("not.exist");
@@ -590,7 +584,7 @@ describe("Volunteer v2 ministry page (#9701)", () => {
 
     describe("a ministry that does not exist", () => {
         it("404s", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`${MINISTRIES_URL}/99999999`, { failOnStatusCode: false });
             cy.contains(/not found|Access Denied/i).should("exist");
         });
@@ -630,7 +624,7 @@ describe("Volunteer v2 — the Setup page is gone (#9701)", () => {
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("is not in the menu any more", () => {
