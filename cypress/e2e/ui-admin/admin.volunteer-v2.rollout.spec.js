@@ -10,8 +10,6 @@
  * `ensureAuthentication()` call runs at file-load time — before any Slim
  * middleware — so an x-api-key request to them 302s to /session/begin.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(),
- * because cy.request() rotates the PHP session cookie (cypress-testing.md).
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -19,20 +17,9 @@ const PERSON_VIEW_URL = "/people/view/1";
 const LEGACY_EDITOR_URL = "/VolunteerOpportunityEditor.php";
 
 // Local helper — NOT a cy.* command (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function setVersion(value) {
@@ -56,7 +43,7 @@ describe("Volunteer v2 rollout — navigation and person view (#9704)", () => {
     describe("v1 (default, legacy only)", () => {
         beforeEach(() => {
             setVersion("v1");
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows one Volunteer tab on the person view, the legacy one", () => {
@@ -82,7 +69,7 @@ describe("Volunteer v2 rollout — navigation and person view (#9704)", () => {
     describe("v2 (new experience only)", () => {
         beforeEach(() => {
             setVersion("v2");
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows one Volunteer tab, the V2 placeholder", () => {
@@ -122,7 +109,7 @@ describe("Volunteer v2 rollout — navigation and person view (#9704)", () => {
         // no Ministries heading at all until the next login.
         beforeEach(() => {
             setVersion("v1");
-            freshAdminLogin();
+            adminLogin();
             cy.visit(PERSON_VIEW_URL);
             cy.get('a[href$="/ministries/dashboard"]').should("not.exist");
         });
@@ -155,7 +142,7 @@ describe("Volunteer v2 rollout — navigation and person view (#9704)", () => {
     describe("both (side-by-side transition)", () => {
         beforeEach(() => {
             setVersion("both");
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows two clearly labelled Volunteer tabs", () => {

@@ -19,10 +19,6 @@
  * The API contract for `recruiting` is pinned by
  * `private.volunteer.recruiting.spec.js`; what is asserted here is the SCREEN.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixture rows
- * are removed in `before` as well as `after`: an `after` hook does not run when
- * the runner crashes mid-spec.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -49,20 +45,9 @@ let recruitingPositionId = 0;
 let sundayScheduleId = 0;
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function adminApi(method, url, body, expectedStatus = 200) {
@@ -137,7 +122,7 @@ function openPositionsTab() {
 function openOccurrencesTab() {
     cy.get("#nav-item-occurrences").click();
     cy.get("#occurrences .volunteer-loading").should("not.be.visible");
-    cy.get("#volunteerOccurrencesTable").should("be.visible");
+    cy.get("#volunteerOccurrencesTable", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
 }
 
 /** The row of the Positions table whose Name cell holds `name`. */
@@ -225,7 +210,7 @@ describe("Volunteer v2 ministry page, round four (#9701)", () => {
 
     describe("the Occurrences tab toolbar", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("has no DataTables search box above the table", () => {
@@ -290,7 +275,9 @@ describe("Volunteer v2 ministry page, round four (#9701)", () => {
         it("renders one toolbar, not one per reload of the table", () => {
             cy.intercept("GET", "**/api/ministries/occurrences?*").as("listOccurrences");
             cy.visit(ministryUrl());
-            openOccurrencesTab();
+            cy.get("#nav-item-occurrences").click();
+            cy.wait("@listOccurrences").its("response.statusCode").should("eq", 200);
+            cy.get("#volunteerOccurrencesTable").should("be.visible");
 
             // Re-run the query; the DataTable is destroyed and rebuilt each time.
             cy.get("#occurrence-event-filter").type("Sunday");
@@ -306,9 +293,6 @@ describe("Volunteer v2 ministry page, round four (#9701)", () => {
     // ═════════════════════════════════════════════════════════════════════════
 
     describe("the Recruit Volunteers switch", () => {
-        // API setup BEFORE the login, never after: cy.request() rotates the PHP
-        // session cookie, so a mid-test adminApi() call logs the browser out and
-        // the next cy.visit() lands on /session/begin (cypress-testing.md).
         beforeEach(() => {
             adminApi(
                 "POST",
@@ -322,7 +306,7 @@ describe("Volunteer v2 ministry page, round four (#9701)", () => {
                 { recruiting: false },
                 200,
             );
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("offers the switch, off, with its hint, on Add position", () => {
@@ -404,28 +388,27 @@ describe("Volunteer v2 ministry page, round four (#9701)", () => {
                 { recruiting: false },
                 200,
             );
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("adds everyone qualified for a position to the cart from the row menu, and has no Deactivate item (2026-09-18)", () => {
-            // Person 4 qualified for the quiet position, through the API, before the
-            // login: cy.request() rotates the session the page would otherwise use.
             adminApi("POST", `${VOLUNTEER_URL}/positions/${quietPositionId}/qualifications`, { personId: 4, notes: "" }, [200, 201]);
-            adminApi("DELETE", "/api/cart/", null, [200, 404]);
-            freshAdminLogin();
+            adminLogin();
+            cy.request("DELETE", "/api/cart/");
             cy.visit(ministryUrl());
             openPositionsTab();
 
+            cy.intercept("POST", "**/api/cart/").as("addQualifiedToCart");
             positionRow(POSITION_QUIET).find("[data-bs-toggle='dropdown']").click();
             positionRow(POSITION_QUIET).should("not.contain", "Deactivate");
             positionRow(POSITION_QUIET).find(".volunteer-position-cart").should("contain", "Add Volunteers to Cart").click();
-            // The core cart's own notification is the signal the POST came back.
+            cy.wait("@addQualifiedToCart").its("response.statusCode").should("eq", 200);
             cy.get(".notyf__toast", { timeout: 10000 }).should("be.visible");
 
-            adminApi("GET", "/api/cart/", null, 200).then((resp) => {
+            cy.request("/api/cart/").then((resp) => {
                 expect(resp.body.PeopleCart.map((row) => Number(row.PersonID ?? row.personId ?? row))).to.include(4);
             });
-            adminApi("DELETE", "/api/cart/", null, [200, 404]);
+            cy.request("DELETE", "/api/cart/");
         });
 
         it("has Recruiting and Self sign-up headers between Team and Status", () => {

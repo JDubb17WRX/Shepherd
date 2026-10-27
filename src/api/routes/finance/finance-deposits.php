@@ -196,8 +196,12 @@ $app->group('/deposits', function (RouteCollectorProxy $group): void {
             return SlimUtils::renderJSON($response->withStatus(404), ['message' => 'No Payments on this Deposit']);
         }
 
-        $request->getAttribute('deposit')->getPDF();
-        return SlimUtils::renderSuccessJSON($response);
+        $pdf = $request->getAttribute('deposit')->getPDF();
+        $response->getBody()->write($pdf['bytes']);
+
+        return $response
+            ->withHeader('Content-Type', 'application/pdf')
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $pdf['filename'] . '"');
     })->add(DepositMiddleware::class);
 
     /**

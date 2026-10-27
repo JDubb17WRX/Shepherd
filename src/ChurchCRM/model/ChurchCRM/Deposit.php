@@ -395,7 +395,8 @@ class Deposit extends BaseDeposit
         $thisReport->pdf->line($thisReport->curX + 17, $thisReport->curY + 8, $thisReport->curX + 80, $thisReport->curY + 8);
     }
 
-    public function getPDF(): void
+    /** @return array{bytes: string, filename: string} */
+    public function getPDF(): array
     {
         AuthService::requireUserGroupMembership('bFinance');
         $Report = new \stdClass();
@@ -421,8 +422,9 @@ class Deposit extends BaseDeposit
 
         $this->generateDepositSummary($Report);
 
-        // Export file
-        $Report->pdf->Output('ChurchCRM-DepositReport-' . $this->getId() . '-' . date(SystemConfig::getValue('sDateFilenameFormat')) . '.pdf', 'D');
+        $filename = 'ChurchCRM-DepositReport-' . $this->getId() . '-' . date(SystemConfig::getValue('sDateFilenameFormat')) . '.pdf';
+
+        return ['bytes' => $Report->pdf->Output($filename, 'S'), 'filename' => $filename];
     }
 
     public function getTotalAmount()

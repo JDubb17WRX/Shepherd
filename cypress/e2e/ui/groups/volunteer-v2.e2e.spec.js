@@ -34,10 +34,6 @@
  * `VARCHAR(32)` and truncated it (upstream #9831), but #9879 widened the column
  * and the seed now stores all 37 characters.
  *
- * Order inside every hook is **API setup → login → cy.visit()**: `cy.request()`
- * rotates the PHP session cookie (`cypress-testing.md`). Fixtures are removed in
- * `before` as well as `after` — an `after` hook does not run when the runner
- * crashes mid-spec.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -96,27 +92,25 @@ let seriesEnd = "";
  * once while building #9714: "Timed out after waiting 30000ms for your remote
  * page to load" in a `beforeEach`, passing on the next run.)
  */
-function freshLogin(username, password) {
-    cy.clearCookies();
-    cy.visit("/session/begin", { timeout: 90000 });
-    cy.get("input[name=User]").type(username);
-    cy.get("input[name=Password]").type(password + "{enter}");
-    cy.url().should("not.include", "/session/begin");
+function loginAs(username, password) {
+    cy.setupLoginSession(`ui-${username}`, username, password);
+    return cy.visit("/");
 }
 
-function freshAdminLogin() {
-    freshLogin(Cypress.testEnv("admin.username"), Cypress.testEnv("admin.password"));
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function freshCoordinatorLogin() {
-    freshLogin(
+    loginAs(
         Cypress.testEnv("standard.username"),
         Cypress.testEnv("standard.password"),
     );
 }
 
 function freshMemberLogin() {
-    freshLogin(MEMBER_USERNAME, MEMBER_PASSWORD);
+    loginAs(MEMBER_USERNAME, MEMBER_PASSWORD);
 }
 
 function dbOk(sql, params = []) {
@@ -517,7 +511,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
 
     describe("Volunteer v2 e2e (UI) — the shortest loop", () => {
         it("admin: the ministry, its team and its positions are all on the ministry page", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`${MINISTRIES_URL}/${ministryId}`);
 
             cy.get("#overview-content", { timeout: 20000 }).should("be.visible");
@@ -691,7 +685,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
         });
 
         it("leaves the legacy V1 person-view tab working for an administrator", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/people/view/${PERSON_VOLUNTEER}`);
             cy.get("#nav-item-volunteer").should("exist");
             cy.get("#nav-item-volunteer-v2").should("not.exist");
@@ -716,7 +710,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
 
         screens.forEach(([label, url, ready]) => {
             it(`${label} renders no raw i18next key or unsubstituted placeholder`, () => {
-                freshAdminLogin();
+                adminLogin();
                 cy.visit(typeof url === "function" ? url() : url);
                 cy.get(ready, { timeout: 20000 }).should("exist");
 
@@ -786,7 +780,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
             let english = "";
 
             setLocale("en_US");
-            freshAdminLogin();
+            adminLogin();
             cy.visit(DASHBOARD_URL);
             cy.get("#volunteer-dashboard", { timeout: 20000 }).should("exist");
             cy.get("body")
@@ -797,7 +791,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
 
             cy.then(() => {
                 setLocale("fr_FR");
-                freshAdminLogin();
+                adminLogin();
                 cy.visit(DASHBOARD_URL);
                 cy.get("#volunteer-dashboard", { timeout: 20000 }).should("exist");
                 // The five panels still render — a locale must never break the page.
@@ -830,7 +824,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
 
         it("keeps the volunteer's own page intact in another language", () => {
             setLocale("fr_FR");
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`${MINISTRIES_URL}/${ministryId}`);
             cy.get("#overview-content", { timeout: 20000 }).should("be.visible");
             cy.get("#overview-content")
@@ -848,7 +842,7 @@ describe("Volunteer v2 — #9714's browser walk-through and the responsive pass"
 
     describe("Volunteer v2 e2e (UI) — responsive, coordinator and admin screens", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         afterEach(() => {

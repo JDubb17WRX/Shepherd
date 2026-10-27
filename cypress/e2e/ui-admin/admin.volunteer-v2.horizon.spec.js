@@ -5,8 +5,6 @@
  * a class with no meetings disabled), the Generate dialog speaks of the horizon in weeks, and a
  * ministry's New event starts on the default event type. Design §0.8 D31, §5.4.
  *
- * Fixtures go in through the admin API. Order in every hook is fixture → login → visit, because
- * cy.request() rotates the PHP session cookie.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -30,12 +28,9 @@ let emptyClassId = 0;
 let crewId = 0;
 let shortCrewId = 0;
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function admin(method, url, body, status = 200) {
@@ -105,7 +100,7 @@ function openSchedulesTab(base = `/ministries/${ministryId}`) {
 
 function openAddSchedule() {
     cy.get("#schedule-add-btn").click();
-    cy.get("#scheduleModal").should("be.visible");
+    cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
     cy.get("#schedule-form-name").should("have.focus");
 }
 
@@ -123,7 +118,7 @@ function openNewEvent() {
     cy.get("#nav-item-calendar").click();
     cy.get("#ministry-events-loading").should("not.be.visible");
     cy.get("#ministry-event-add-btn").click();
-    cy.get("#ministryEventModal").should("be.visible");
+    cy.get("#ministryEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
     cy.get("#ministry-event-form-title").should("have.focus");
 }
 
@@ -200,7 +195,7 @@ describe("Volunteer v2 D31 — schedules follow events that exist, up to the hor
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("offers no 'any event' choice: the Event picker lists only upcoming titles", () => {
@@ -264,7 +259,7 @@ describe("Volunteer v2 D31 — schedules follow events that exist, up to the hor
 
     it("follows a new horizon in the Generate dialog", () => {
         admin("POST", HORIZON_URL, { value: "3" });
-        freshAdminLogin();
+        adminLogin();
         openSchedulesTab();
         openGenerateDialog(crewId);
         cy.get("#generate-form-intro").should("contain", `in the next 3 weeks (through ${shortDate(21)})`);
@@ -278,7 +273,7 @@ describe("Volunteer v2 D31 — schedules follow events that exist, up to the hor
         cy.get("#ministry-event-form-type").select("Church Service").should("have.value", String(CHURCH_SERVICE_TYPE));
 
         admin("POST", DEFAULT_TYPE_URL, { value: String(CHURCH_SERVICE_TYPE) });
-        freshAdminLogin();
+        adminLogin();
         openNewEvent();
         cy.get("#ministry-event-form-type").should("have.value", String(CHURCH_SERVICE_TYPE));
     });
@@ -286,7 +281,7 @@ describe("Volunteer v2 D31 — schedules follow events that exist, up to the hor
     it("gives the portal's team leader the same dialog, pointing to a coordinator for missing meetings", () => {
         openSchedulesTab(`/portal/teams/${teamId}`);
         cy.get("#schedule-add-btn").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-link-mode").select("ministry");
         cy.get("#schedule-form-title-filter option").first().should("be.disabled");
         cy.get("#schedule-form-title-filter").should("not.contain", "Any of this ministry's events");

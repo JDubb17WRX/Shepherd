@@ -32,10 +32,6 @@
  * are covered in admin.volunteer-v2.ministry-page-3.spec.js; what is left here is
  * the behaviour round three did not change.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixture rows
- * are removed in `before` as well as `after`: an `after` hook does not run when
- * the runner crashes mid-spec.
  *
  * `cy.dbQuery()` appears exactly once, for the past occurrence. It is registered
  * for this suite (docker-admin.config.ts) and there is deliberately no API that
@@ -53,11 +49,12 @@ const MINISTRY_NAME = `${PREFIX} Coffee Bar`;
 const SECOND_TEAM_NAME = `${PREFIX} Saturday Crew`;
 
 /**
- * Enough columns that the grid cannot fit a 900px window, and few enough that it
+ * Enough columns that the grid cannot fit a 600px window, and few enough that it
  * fits a 1600px one — which is what makes "the scrollbar comes and goes" provable
  * with one grid and two viewport sizes rather than two different grids.
  */
 const WIDE_POSITION_COUNT = 3;
+const NARROW_VIEWPORT_WIDTH = 600;
 const positionName = (n) => `${PREFIX} Coffee Position ${n}`;
 /** The one position on the SECOND team, so a team switch changes the columns. */
 const SECOND_TEAM_POSITION = `${PREFIX} Saturday Barista`;
@@ -74,20 +71,9 @@ let secondTeamPositionId = 0;
 let scheduleId = 0;
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: in CI a login page occasionally reloads while the name is being
-    // typed (the submit then goes out with an empty user and bounces back here).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function adminApi(method, url, body, expectedStatus = 200) {
@@ -162,7 +148,7 @@ function ministryUrl() {
 function openVolunteersTab() {
     cy.get("#nav-item-volunteers").click();
     cy.get("#volunteers .volunteer-loading").should("not.be.visible");
-    cy.get("#volunteerQualificationsTable").should("be.visible");
+    cy.get("#volunteerQualificationsTable", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
 }
 
 function qualBox(personId, positionId) {
@@ -278,7 +264,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
 
     describe("the Volunteers grid at different window widths", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         afterEach(() => {
@@ -299,7 +285,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
         });
 
         it("scrolls sideways when the window is too narrow for the columns", () => {
-            cy.viewport(900, 800);
+            cy.viewport(NARROW_VIEWPORT_WIDTH, 800);
             cy.visit(ministryUrl());
             openVolunteersTab();
 
@@ -315,7 +301,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
         });
 
         it("opens the row action menu fully visible even while the grid is scrolling", () => {
-            cy.viewport(900, 800);
+            cy.viewport(NARROW_VIEWPORT_WIDTH, 800);
             cy.visit(ministryUrl());
             openVolunteersTab();
 
@@ -342,7 +328,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
                     expect(rect.width, "menu width").to.be.greaterThan(0);
                     expect(rect.height, "menu height").to.be.greaterThan(0);
                     expect(rect.left, "menu left edge").to.be.at.least(0);
-                    expect(rect.right, "menu right edge").to.be.at.most(900);
+                    expect(rect.right, "menu right edge").to.be.at.most(NARROW_VIEWPORT_WIDTH);
                     expect(rect.bottom, "menu bottom edge").to.be.at.most(800);
 
                     // Painted and on top, not merely laid out: a clipped menu is not
@@ -364,7 +350,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
         beforeEach(() => {
             clearQualifications(firstPositionId);
             clearQualifications(secondTeamPositionId);
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("says there is no Save button because each tick saves itself", () => {
@@ -383,10 +369,12 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
         // in the grid moves, are in admin.volunteer-v2.ministry-page-3.spec.js; what
         // this case still owns is that a tick confirms itself at all.
         it("confirms the save", () => {
+            cy.intercept("POST", "**/api/ministries/positions/*/qualifications").as("savedQualification");
             cy.visit(ministryUrl());
             openVolunteersTab();
 
             qualBox(TICKED_PERSON, firstPositionId).should("not.be.checked").check();
+            cy.wait("@savedQualification").its("response.statusCode").should("be.oneOf", [200, 201]);
 
             cy.get(".notyf__toast--success").should("be.visible");
         });
@@ -474,7 +462,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
                 { personId: TICKED_PERSON },
                 [200, 201],
             );
-            freshAdminLogin();
+            adminLogin();
 
             cy.intercept("DELETE", "**/api/ministries/qualifications/*").as("revokeQual");
             cy.visit(ministryUrl());
@@ -520,7 +508,7 @@ describe("Volunteer v2 ministry page, round two (#9701)", () => {
         });
 
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("opens on what is still to come, with From set to today", () => {

@@ -20,12 +20,6 @@
  * The API contract is pinned by `private.volunteer.ministry-group.spec.js`; this
  * file is about what the screen does with it.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixtures are
- * removed in `before` as well as `after`: an `after` hook does not run when the
- * runner crashes mid-spec. No cy.dbQuery() here — the `db:query` task is
- * registered only in cypress/configs/docker.config.ts, and ui-admin specs run
- * under docker-admin.config.ts.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -42,20 +36,9 @@ let ministryId = 0;
 let groupId = 0;
 
 // Local helper — NOT a cy.* command (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function setVersion(value) {
@@ -112,7 +95,7 @@ describe("Volunteer v2 — a ministry's pool Group in the Groups module (D19)", 
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("shows the managed note on the group page, linking to the ministry", () => {

@@ -79,11 +79,8 @@ const readConfig = (name) =>
     });
 
 function adminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url({ timeout: 10000 }).should("include", "/v2/dashboard");
+    cy.setupAdminSession();
+    cy.visit("/");
 }
 
 function memberLogin() {
@@ -100,6 +97,8 @@ before(() => {
 
 describe("Member Portal e2e — #9869 scenario 4, a church themes the portal", () => {
     before(() => {
+        cy.task("themeFixtures:remove", { theme: GOOD_THEME });
+        cy.task("themeFixtures:remove", { theme: BROKEN_THEME });
         // What a church uploads: one stylesheet, and a theme.json so the admin page
         // has a name to show instead of a folder.
         cy.writeFile(
@@ -131,7 +130,8 @@ describe("Member Portal e2e — #9869 scenario 4, a church themes the portal", (
     after(() => {
         setConfig("sMemberPortalTheme", "default");
         setConfig("bPortalDeveloperMode", "0");
-        cy.exec(`rm -rf ${GOOD_DIR} ${BROKEN_DIR}`, { failOnNonZeroExit: false });
+        cy.task("themeFixtures:remove", { theme: GOOD_THEME });
+        cy.task("themeFixtures:remove", { theme: BROKEN_THEME });
     });
 
     it("finds the uploaded folder on Admin → Member Portal and says it is valid", () => {
@@ -196,9 +196,7 @@ describe("Member Portal e2e — #9869 scenario 4, a church themes the portal", (
         cy.get("#e2e-theme-home").should("not.exist");
         cy.get(".portal-header").should("have.css", "background-color", THEME_TEAL);
 
-        cy.exec(`rm -f ${GOOD_DIR}/templates/home.html.twig`, {
-            failOnNonZeroExit: false,
-        });
+        cy.task("themeFixtures:remove", { theme: GOOD_THEME, homeOnly: true });
     });
 
     it("refuses the broken theme, lists the findings, and leaves members alone", () => {

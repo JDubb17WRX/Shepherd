@@ -18,9 +18,6 @@
  * not used: everything is built and torn down through the very API this page
  * calls, so a shape change breaks the fixture as loudly as it breaks the page.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(),
- * because cy.request() rotates the PHP session cookie (cypress-testing.md).
- * Fixtures are removed in `before` as well as `after`.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -50,20 +47,9 @@ let seriesStart = "";
 let seriesEnd = "";
 
 // Local helper — NOT a cy.* command (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: in CI a login page occasionally reloads while the name is being
-    // typed (the submit then goes out with an empty user and bounces back here).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function setVersion(value) {
@@ -380,7 +366,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
     describe("rendering (§5.5, §5.8)", () => {
         beforeEach(() => {
             clearAssignments();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("breadcrumbs link to the dashboard and the ministry page (not relative 404s)", () => {
@@ -481,7 +467,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
     describe("assigning through the eligible picker (§5.5)", () => {
         beforeEach(() => {
             clearAssignments();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("offers only qualified people and assigns the chosen one", () => {
@@ -515,7 +501,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
                 201,
             );
 
-            freshAdminLogin();
+            adminLogin();
             cy.visit(occurrenceUrl());
 
             openAssignPicker(posMilk);
@@ -548,7 +534,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
                 201,
             );
 
-            freshAdminLogin();
+            adminLogin();
             cy.visit(occurrenceUrl());
 
             cy.get(`.volunteer-requirement[data-position-id="${posEspresso}"] .volunteer-assignment-row a`)
@@ -587,7 +573,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
                 { positionId: posEspresso, personId: POOL_MEMBER_A },
                 201,
             );
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("uses the shared action-menu scaffold, not a volunteer-only one", () => {
@@ -636,7 +622,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
     describe("the cart sink is gone from this page", () => {
         beforeEach(() => {
             clearAssignments();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("offers only Assign on a requirement card", () => {
@@ -687,7 +673,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
                 { positionId: posMilk, personId: POOL_MEMBER_A },
                 201,
             );
-            freshAdminLogin();
+            adminLogin();
             cy.intercept("POST", `**/api/ministries/occurrences/${occurrenceId}/status`).as("status");
             cy.visit(occurrenceUrl());
 
@@ -731,7 +717,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
         });
 
         it("says nobody is assigned, and changes nothing when the confirm is declined", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.intercept("POST", `**/api/ministries/occurrences/${occurrenceId}/status`).as("status");
             cy.visit(occurrenceUrl());
 
@@ -751,7 +737,7 @@ describe("Volunteer v2 — occurrence / staffing view (#9709)", () => {
     describe("the swap queue (§5.5)", () => {
         beforeEach(() => {
             clearAssignments();
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows its own empty state when nothing is proposed", () => {

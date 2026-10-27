@@ -6,8 +6,6 @@
  * schedule's saved defaults, and a default whose qualification was revoked is kept and marked.
  * Design §0.8 D32, D35, §5.4.
  *
- * Fixtures go in through the admin API. Order in every hook is fixture → login → visit, because
- * cy.request() rotates the PHP session cookie.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -27,12 +25,9 @@ let teamId = 0;
 let scheduleId = 0;
 const position = {};
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function admin(method, url, body, status = 200) {
@@ -174,13 +169,13 @@ describe("Volunteer v2 D32 — default volunteers belong to the schedule", () =>
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("offers one default picker per place in a new schedule, None by default, and a second one when Max goes to 2", () => {
         openSchedulesTab();
         cy.get("#schedule-add-btn").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-name").should("have.focus");
         cy.get("#schedule-form-needs select.volunteer-need-default-select").should("have.length", 2).each(($select) => {
             expect($select.val()).to.eq("");
@@ -207,7 +202,7 @@ describe("Volunteer v2 D32 — default volunteers belong to the schedule", () =>
     it("edits and saves two defaults on a Max-2 need, in order, with the schedule", () => {
         openSchedulesTab();
         openRowAction("edit");
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get(`${need("lead")} select.volunteer-need-default-select`).should("have.length", 1);
         cy.get(`${need("lead")} .volunteer-need-max`).type("{selectall}2").should("have.value", "2");
         picker("lead", 0).should("have.value", "").select(String(LEADER));
@@ -247,7 +242,7 @@ describe("Volunteer v2 D32 — default volunteers belong to the schedule", () =>
     it("keeps both choices when Max goes below them, marks the extra one and blocks Save until one is removed", () => {
         openSchedulesTab();
         openRowAction("edit");
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get(`${need("lead")} select.volunteer-need-default-select`).should("have.length", 2);
         picker("lead", 0).should("have.value", String(LEADER));
         picker("lead", 1).should("have.value", String(SECOND));
@@ -271,7 +266,7 @@ describe("Volunteer v2 D32 — default volunteers belong to the schedule", () =>
         cy.get("#scheduleModal")
             .contains(/Max is 1 but 2 default volunteers are chosen/)
             .should("have.length", 1);
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("@save").should("not.have.been.called");
 
         picker("lead", 1).select("");
@@ -325,7 +320,7 @@ describe("Volunteer v2 D32 — default volunteers belong to the schedule", () =>
         ]);
         openSchedulesTab();
         openRowAction("edit");
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         picker("reader").should("have.value", String(READER));
         picker("reader").find("option:selected").should("contain", "(no longer qualified)");
         cy.get(`${need("reader")} .volunteer-need-default-unqualified`).should("be.visible");
@@ -357,7 +352,7 @@ describe("Volunteer v2 D32 — default volunteers belong to the schedule", () =>
             .find("[data-bs-toggle='dropdown']")
             .click();
         cy.get(`.volunteer-schedule-edit[data-schedule-id="${scheduleId}"]`).should("be.visible").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get(`${need("lead")} select.volunteer-need-default-select`).should("have.length", 2);
         picker("lead", 0).should("have.value", String(LEADER));
         picker("lead", 1).should("have.value", String(SECOND));

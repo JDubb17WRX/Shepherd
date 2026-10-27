@@ -4,9 +4,6 @@
  * Volunteer v2 — the schedule dialog's three sources and offsets, and the Staff an
  * event dialog (D20, D21, D22; design §5.4).
  *
- * Fixtures go in through the admin API and, for the calendar events the dialogs pick
- * from, straight into `events_event`. Order in every hook is fixture → login → visit,
- * because cy.request() rotates the PHP session cookie (cypress-testing.md).
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -23,18 +20,9 @@ let teamId = 0;
 let teamName = "";
 let classGroupId = 0;
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function adminApi(method, url, body, expectedStatus = 200) {
@@ -84,8 +72,10 @@ function openSchedulesTab() {
 }
 
 function openAddSchedule() {
+    cy.intercept("GET", "**/api/ministries/classes").as("scheduleClasses");
     cy.get("#schedule-add-btn").click();
-    cy.get("#scheduleModal").should("be.visible");
+    cy.wait("@scheduleClasses").its("response.statusCode").should("eq", 200);
+    cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
     cy.get("#schedule-form-name").should("have.focus");
 }
 
@@ -145,7 +135,7 @@ describe("Volunteer v2 — where a schedule's dates come from, and Staff an even
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("offers three sources and no weekly pattern of its own", () => {
@@ -210,7 +200,7 @@ describe("Volunteer v2 — where a schedule's dates come from, and Staff an even
             .contains("tr", `${PREFIX} Faith City Volunteers`)
             .find(".volunteer-schedule-edit")
             .click({ force: true });
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-link-mode").should("have.value", "class");
         cy.get("#schedule-form-group").should("have.value", String(classGroupId));
         cy.get("#schedule-form-start-offset").should("have.value", "45");
@@ -251,7 +241,7 @@ describe("Volunteer v2 — where a schedule's dates come from, and Staff an even
         cy.get("#occurrences-add-btn").should("not.exist");
 
         cy.get("#occurrences-staff-event-btn").click();
-        cy.get("#staffEventModal").should("be.visible");
+        cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#staff-event-form-search").should("have.focus");
         cy.get("#staff-event-form-offsets").should("contain", "Volunteers start");
         cy.get("#staff-event-form-search").type("Harvest");
@@ -273,7 +263,7 @@ describe("Volunteer v2 — where a schedule's dates come from, and Staff an even
         // Again: the picker says the team already staffs it, and the server's 409 is
         // shown in the dialog rather than lost.
         cy.get("#occurrences-staff-event-btn").click();
-        cy.get("#staffEventModal").should("be.visible");
+        cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#staff-event-form-search").should("have.focus").type("Harvest");
         cy.get("#staff-event-form-event option").should("have.length", 2);
         cy.get("#staff-event-form-event option").eq(1).should("contain", "already staffed by this team");
@@ -282,7 +272,7 @@ describe("Volunteer v2 — where a schedule's dates come from, and Staff an even
         });
         cy.get("#staff-event-form-save").click();
         cy.get("#staff-event-form-error").should("be.visible").and("contain", "already staffing this event");
-        cy.get("#staffEventModal").should("be.visible");
+        cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
     });
 
     it("asks for an event before staffing", () => {
@@ -290,7 +280,7 @@ describe("Volunteer v2 — where a schedule's dates come from, and Staff an even
         cy.get("#nav-item-occurrences").click();
         cy.get("#occurrences-loading").should("not.be.visible");
         cy.get("#occurrences-staff-event-btn").click();
-        cy.get("#staffEventModal").should("be.visible");
+        cy.get("#staffEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#staff-event-form-search").should("have.focus");
         cy.get("#staff-event-form-save").click();
         cy.get("#staff-event-form-error").should("be.visible").and("contain", "Choose the event to staff");

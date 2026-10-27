@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { seedPerson } from "../../../support/people-fixtures";
+
 import { pdfText } from "../../../support/pdf-text";
 
 // Unassigned (0) is the classification a public registration lands in, so it is the one that would print it.
@@ -30,12 +32,8 @@ describe("Directory report - pending self-registrations", () => {
     let personId;
 
     before(() => {
-        cy.request({
-            method: "POST",
-            url: "/api/public/register/person",
-            body: { firstName: "Cypress", lastName, email: "dir-pending@example.com", gender: 1 },
-        }).then((response) => {
-            personId = response.body.Id;
+        seedPerson({ firstName: "Cypress", lastName, email: "dir-pending@example.com", gender: 1 }).then((response) => {
+            personId = response.Id;
         });
     });
 

@@ -20,8 +20,6 @@
  *   7. the unfilled-position alert has a lead time of its own (#10526) and a
  *      daily batch time (#10529).
  *
- * Order inside every hook is API setup → fresh login → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md).
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -37,20 +35,9 @@ let originalLead = "48";
 let originalGapLead = "48";
 let originalBatchTime = "07:00";
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function freshStandardLogin() {
@@ -104,7 +91,7 @@ describe("Admin → Ministry Settings", () => {
 
     it("is in the Admin menu and renders the settings, the explanation and delivery health", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.visit(PAGE_URL);
 
         cy.get('a[href$="/admin/ministry-settings"]').should("exist");
@@ -132,7 +119,7 @@ describe("Admin → Ministry Settings", () => {
         adminApi("POST", HORIZON_URL, { value: "8" }, 200);
         adminApi("POST", DEFAULT_TYPE_URL, { value: "" }, 200);
         cy.dbQuery("DELETE FROM config_cfg WHERE cfg_name IN ('sLastVolunteerTopUpRunDate', 'sLastVolunteerTopUpResult')");
-        freshAdminLogin();
+        adminLogin();
         cy.visit(PAGE_URL);
 
         cy.get("#ministrySettingsPanel input[name='iVolunteerSchedulingHorizonWeeks']")
@@ -155,7 +142,7 @@ describe("Admin → Ministry Settings", () => {
         adminApi("GET", HORIZON_URL, null, 200).its("body.value").should("eq", "10");
         adminApi("GET", DEFAULT_TYPE_URL, null, 200).its("body.value").should("eq", "1");
 
-        freshAdminLogin();
+        adminLogin();
         // The page's own footer posts the same endpoint on load, rate limited; wait for the button's.
         cy.intercept("POST", "**/api/background/timerjobs", (req) => {
             if (JSON.stringify(req.body ?? "").includes("force")) {
@@ -173,7 +160,7 @@ describe("Admin → Ministry Settings", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
         adminApi("POST", LEAD_URL, { value: "48" }, 200);
         adminApi("POST", GAP_LEAD_URL, { value: "48" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.visit(PAGE_URL);
 
         cy.get("#ministrySettingsPanel input[name='iVolunteerGapAlertLeadHours']")
@@ -194,7 +181,7 @@ describe("Admin → Ministry Settings", () => {
     it("sets the time of the daily unfilled-position email (#10529)", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
         adminApi("POST", BATCH_TIME_URL, { value: "07:00" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.visit(PAGE_URL);
 
         cy.get("#ministrySettingsPanel input[name='sVolunteerGapAlertBatchTime']")
@@ -223,7 +210,7 @@ describe("Admin → Ministry Settings", () => {
     it("offers no Save before the current values have loaded, so nothing is sent (D32)", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
         adminApi("POST", LEAD_URL, { value: "36" }, 200);
-        freshAdminLogin();
+        adminLogin();
         slowLeadTime();
         cy.intercept("POST", "**/admin/api/system/config/*").as("saveSetting");
         cy.visit(PAGE_URL);
@@ -241,7 +228,7 @@ describe("Admin → Ministry Settings", () => {
 
     it("keeps Save disabled until the current values have loaded (D32)", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
-        freshAdminLogin();
+        adminLogin();
         slowLeadTime();
         cy.visit(PAGE_URL);
 
@@ -255,7 +242,7 @@ describe("Admin → Ministry Settings", () => {
 
     it("keeps Save disabled and says so when a current value cannot be loaded (D32)", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.intercept("GET", "**/admin/api/system/config/iVolunteerSchedulingHorizonWeeks", {
             statusCode: 500,
             body: { message: "boom" },
@@ -272,7 +259,7 @@ describe("Admin → Ministry Settings", () => {
         cy.dbQuery("REPLACE INTO config_cfg (cfg_name, cfg_value) VALUES ('sLastVolunteerTopUpResult', ?)", [
             JSON.stringify({ ranAt: "2026-09-30 06:00:00", schedules: 3, created: 5, failed: 0, assigned: 4, skipped: 1, unqualified: 2 }),
         ]);
-        freshAdminLogin();
+        adminLogin();
         cy.visit(PAGE_URL);
 
         // Shown in ChurchCRM's locale; the stored value stays on the <time> element.
@@ -290,7 +277,7 @@ describe("Admin → Ministry Settings", () => {
 
     it("sends the administrator to Feature Toggles while V2 is off, where the switch lives", () => {
         adminApi("POST", SETTING_URL, { value: "v1" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.visit(PAGE_URL);
         cy.url().should("include", "/admin/system/feature-toggles");
 
@@ -305,7 +292,7 @@ describe("Admin → Ministry Settings", () => {
 
     it("explains each volunteer experience in a side panel on Feature Toggles", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.visit("/admin/system/feature-toggles");
         cy.get("#ministry-experience-help").should("not.be.visible");
         cy.get('a[data-bs-target="#ministry-experience-help"]').click();
@@ -319,7 +306,7 @@ describe("Admin → Ministry Settings", () => {
     });
 
     it("has taken both settings off the System Settings page", () => {
-        freshAdminLogin();
+        adminLogin();
         cy.visit("/SystemSettings.php");
         cy.get('select[name="new_value[sVolunteerVersion]"]').should("not.exist");
         cy.get('input[name="new_value[iVolunteerReminderLeadHours]"]').should("not.exist");
@@ -329,7 +316,7 @@ describe("Admin → Ministry Settings", () => {
 
     it("leaves the Ministry Dashboard with the notification card and a link here, not a settings strip", () => {
         adminApi("POST", SETTING_URL, { value: "v2" }, 200);
-        freshAdminLogin();
+        adminLogin();
         cy.visit("/ministries/dashboard");
         cy.get("#volunteerSettings").should("not.exist");
         cy.get("#volunteer-cron-hint").should("not.exist");

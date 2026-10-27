@@ -12,8 +12,6 @@
  *   Greeter  min 0 / max 2, one assigned    → Optional · 1 of up to 2
  *   Runner   min 1 / max 1, nobody, until the rollup tests assign one
  *
- * Fixtures go in through the admin API; order in every hook is fixture → login → visit,
- * because cy.request() rotates the PHP session cookie.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -42,12 +40,9 @@ function admin(method, url, body, status = 200) {
     return cy.makePrivateAdminAPICall(method, url, body, status);
 }
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function isoDate(offsetDays) {
@@ -160,7 +155,7 @@ describe("Volunteer v2 — staffing counts read as status words (D34)", () => {
 
     describe("one position, on the occurrence page", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(`/ministries/occurrences/${occurrenceId}`);
             cy.get("#requirements-loading").should("not.be.visible");
         });
@@ -203,7 +198,7 @@ describe("Volunteer v2 — staffing counts read as status words (D34)", () => {
         });
 
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("words the Calendar tab chip as the team's rollup", () => {

@@ -38,11 +38,8 @@ const loginAsMember = () => {
 };
 
 const loginAsAdmin = () => {
-    cy.clearCookies();
-    cy.visit("session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    cy.url({ timeout: 10000 }).should("include", "/v2/dashboard");
+    cy.setupAdminSession();
+    return cy.visit("/");
 };
 
 before(() => {
@@ -51,6 +48,7 @@ before(() => {
 
 describe("Member Portal — church theme", () => {
     before(() => {
+        cy.task("themeFixtures:remove", { theme: THEME_ID });
         cy.writeFile(
             `${THEME_DIR}/theme.css`,
             `:root { --portal-header-bg: ${HEADER_GREEN}; }\n`
@@ -60,7 +58,7 @@ describe("Member Portal — church theme", () => {
 
     after(() => {
         setPortalTheme("default");
-        cy.exec(`rm -rf ${THEME_DIR}`, { failOnNonZeroExit: false });
+        cy.task("themeFixtures:remove", { theme: THEME_ID });
     });
 
     it("theme.css alone recolours the portal", () => {
@@ -103,7 +101,7 @@ describe("Member Portal — church theme", () => {
     });
 
     it("Removing the override restores the default home page", () => {
-        cy.exec(`rm -f ${THEME_DIR}/templates/home.html.twig`, { failOnNonZeroExit: false });
+        cy.task("themeFixtures:remove", { theme: THEME_ID, homeOnly: true });
         loginAsMember();
         cy.get(".portal-home").should("exist");
         cy.get("#theme-override").should("not.exist");

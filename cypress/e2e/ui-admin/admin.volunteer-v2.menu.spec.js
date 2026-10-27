@@ -29,10 +29,6 @@
  * ministries now, so the route 302s to the dashboard and the dashboard keeps
  * the "New ministry" quick action.
  *
- * Order inside every hook is API setup → freshLogin() → cy.visit(), because
- * cy.request() rotates the PHP session cookie (cypress-testing.md). Fixture
- * rows are removed in `before` as well as `after`: an `after` hook does not run
- * when the runner crashes mid-spec.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -65,20 +61,9 @@ let ministryB = 0;
 let teamA = 0;
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 /** Log in as the standard user (person 3) — the person this spec scopes. */
@@ -194,7 +179,7 @@ describe("Volunteer v2 — the Ministries sidebar heading", () => {
 
     describe("an administrator", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit(DASHBOARD_URL);
         });
 
@@ -331,7 +316,6 @@ describe("Volunteer v2 — the Ministries sidebar heading", () => {
             cy.visit(`${MINISTRIES_URL}/${ministryB}`, { failOnStatusCode: false });
             cy.get("#volunteer-ministry").should("not.exist");
 
-            // Last: cy.request() rotates the session cookie.
             cy.makePrivateAPICall(
                 Cypress.testEnv("user.api.key"),
                 "POST",
@@ -451,7 +435,7 @@ describe("Volunteer v2 — the Ministries sidebar heading", () => {
         });
 
         it("shows neither heading", () => {
-            freshAdminLogin();
+            adminLogin();
             cy.visit("/people/view/1");
             menuSectionShouldNotExist("Ministries");
             // "Volunteer" is absent in every state now (#9867), not just this one.

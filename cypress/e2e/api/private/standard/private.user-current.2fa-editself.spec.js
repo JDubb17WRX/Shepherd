@@ -1,108 +1,61 @@
 /// <reference types="cypress" />
 
-/**
- * Regression tests for issue #9886.
- *
- * EditSelf is an exclusive permission mode: AuthMiddleware blocks an
- * EditSelf-only user from the whole internal API surface
- * (User::isEditSelfExclusive()). The 2FA self-service endpoints under
- * /api/user/current/ are the documented exception — they only ever act on
- * AuthenticationManager::getCurrentUser(), and the page that drives them
- * (/v2/user/current/manage2fa) is already exempt. Without the API exemption
- * the QR code never renders and a user under bRequire2FA is locked out
- * permanently.
- *
- * Test user: amanda.black (user ID 99, `selfedit.api.key`)
- *   - Permissions: EditSelf=1 ONLY (all others = 0)
- *
- * The companion spec private.selfedit.family-scope.spec.js asserts that every
- * OTHER internal endpoint still returns 403 for this user; the last test here
- * repeats a sample of that so a regression that widens the exemption fails
- * inside this file too.
- */
-describe("Issue #9886 - EditSelf-only users can manage their own 2FA", () => {
-    before(() => {
-        cy.rememberTestEnv(["selfedit.api.key"]);
+import { totp } from "../../../../support/authentication";
+
+describe("EditSelf-only account security", () => {
+    it("allows read-only status with an API key", () => {
+        cy.makePrivateEditSelfAPICall("GET", "/api/user/current/2fa-status", null, 200)
+            .its("body.IsEnabled").should("be.a", "boolean");
     });
-    it("GET /api/user/current/2fa-status → 200", () => {
-        cy.makePrivateEditSelfAPICall(
-            "GET",
-            "/api/user/current/2fa-status",
-            null,
-            200,
-        ).then((resp) => {
-            expect(resp.body).to.have.property("IsEnabled");
-            expect(resp.body.IsEnabled).to.be.a("boolean");
+
+    ["refresh2fasecret", "refresh2farecoverycodes", "remove2fasecret", "test2FAEnrollmentCode"].forEach((action) => {
+        it(`rejects API-key authorization for ${action}`, () => {
+            cy.makePrivateEditSelfAPICall("POST", `/api/user/current/${action}`, { enrollmentCode: "000000" }, 403);
         });
     });
 
-    it("POST /api/user/current/refresh2fasecret → 200 and returns a QR code", () => {
-        cy.makePrivateEditSelfAPICall(
-            "POST",
-            "/api/user/current/refresh2fasecret",
-            {},
-            200,
-        ).then((resp) => {
-            expect(resp.body).to.have.property("TwoFAQRCodeDataUri");
-            expect(resp.body.TwoFAQRCodeDataUri).to.match(/^data:image\/png;base64,/);
-        });
+    it("does not expose the retired QR-secret endpoint", () => {
+        cy.makePrivateEditSelfAPICall("GET", "/api/user/current/get2faqrcode", null, 404);
     });
 
-    it("POST /api/user/current/refresh2farecoverycodes → 200 and returns codes", () => {
-        cy.makePrivateEditSelfAPICall(
-            "POST",
-            "/api/user/current/refresh2farecoverycodes",
-            {},
-            200,
-        ).then((resp) => {
-            expect(resp.body).to.have.property("TwoFARecoveryCodes");
-            expect(resp.body.TwoFARecoveryCodes).to.be.an("array").and.not.be.empty;
-        });
-    });
-
-    it("POST /api/user/current/remove2fasecret → 200", () => {
-        cy.makePrivateEditSelfAPICall(
-            "POST",
-            "/api/user/current/remove2fasecret",
-            {},
-            200,
-        );
-    });
-
-    // The remaining two exempt endpoints cannot return 200 under API-key auth:
-    // get2faqrcode needs an enrolled secret and test2FAEnrollmentCode needs the
-    // provisional key that refresh2fasecret leaves on the SESSION user object.
-    // Assert only what this spec is about — that AuthMiddleware no longer
-    // answers 403 — rather than whitelisting the handler's own status code.
-    const notBlocked = (method, url, body) => {
-        cy.apiRequest({
-            method,
-            url,
-            body,
-            headers: { "x-api-key": Cypress.testEnv("selfedit.api.key") },
-            failOnStatusCode: false,
-        }).then((resp) => {
-            expect(resp.status, `${method} ${url}`).to.not.eq(403);
-        });
-    };
-
-    it("GET /api/user/current/get2faqrcode is not blocked by the limited-access gate", () => {
-        notBlocked("GET", "/api/user/current/get2faqrcode");
-    });
-
-    it("POST /api/user/current/test2FAEnrollmentCode is not blocked by the limited-access gate", () => {
-        // Guards the AUTH_FLOW_EXEMPT_PATHS entry for the TOTP verification step
-        // that completes enrollment. The happy path (200 + "Code is invalid" for a
-        // wrong code) is covered through a real session in
-        // cypress/e2e/ui/security/limited-access.spec.js.
-        notBlocked("POST", "/api/user/current/test2FAEnrollmentCode", {
-            enrollmentCode: "000000",
-        });
-    });
-
-    it("the exemption stays narrow — other internal APIs are still 403", () => {
+    it("keeps unrelated internal APIs forbidden", () => {
         cy.makePrivateEditSelfAPICall("GET", "/api/person/99", null, 403);
         cy.makePrivateEditSelfAPICall("GET", "/api/family/20", null, 403);
         cy.makePrivateEditSelfAPICall("GET", "/api/user/99/setting/ui.style", null, 403);
+    });
+
+    describe("completed browser authentication", () => {
+        let csrfToken;
+        const post = (action, body = {}) => cy.request({
+            method: "POST", url: `/api/user/current/${action}`, body,
+            headers: { "X-CSRF-Token": csrfToken },
+        });
+
+        beforeEach(() => {
+            cy.setupLoginSession("editself-security", "limited.user", "changeme", { forceLogin: true });
+            cy.request("/v2/user/current/manage2fa").then((page) => {
+                csrfToken = Cypress.$(page.body).find('input[name="csrf_token"]').val();
+                expect(csrfToken).to.match(/^[a-f0-9]{64}$/);
+            });
+        });
+
+        after(() => {
+            if (csrfToken) post("remove2fasecret");
+        });
+
+        it("requires CSRF, then enrolls and generates recovery codes", () => {
+            cy.request({ method: "POST", url: "/api/user/current/refresh2fasecret", body: {}, failOnStatusCode: false })
+                .its("status").should("eq", 403);
+            post("reauthenticate", { currentPassword: "changeme" });
+            post("refresh2fasecret").then((response) => {
+                expect(response.body.TwoFAQRCodeDataUri).to.match(/^data:image\/png;base64,/);
+                const counter = Math.floor(Date.parse(response.headers.date) / 30000);
+                cy.then(() => totp(response.body.TwoFASecret, counter)).then((code) =>
+                    post("test2FAEnrollmentCode", { enrollmentCode: code })
+                        .its("body.IsEnrollmentCodeValid").should("eq", true));
+            });
+            post("refresh2farecoverycodes").its("body.TwoFARecoveryCodes").should("be.an", "array").and("not.be.empty");
+            cy.request("/api/user/current/2fa-status").its("body.IsEnabled").should("eq", true);
+        });
     });
 });

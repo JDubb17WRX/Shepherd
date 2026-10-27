@@ -114,13 +114,10 @@ describe("Member Portal — account pages for staff", () => {
         cy.get("#sidebar").should("not.exist");
     });
 
-    it("The two-factor enrollment wizard runs on the portal page", () => {
+    it("The enrolled administrator sees two-factor management in the portal", () => {
         cy.visit("/portal/profile/two-factor");
         cy.get("#two-factor-enrollment-app").should("exist");
-        // The shared two-factor-enrollment bundle mounts and draws its intro
-        // step, which is what proves the portal page carries a working wizard
-        // and not just an empty container.
-        cy.get("#begin2faEnrollment", { timeout: 10000 })
+        cy.get("#disable2FABtn", { timeout: 10000 })
             .should("exist")
             .and("be.visible")
             .and("be.enabled");

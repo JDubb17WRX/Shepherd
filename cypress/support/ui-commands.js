@@ -36,7 +36,7 @@ Cypress.Commands.add('setupLoginSession', (sessionName, username, password, opti
             cy.get('input[name=Password]').type(password + '{enter}', { log: false });
             // Wait for redirect away from session/login pages
             // ChurchCRM's login page is /session/begin, not /login
-            completeLogin(username);
+            completeLogin(username, { validate: validate ?? defaultValidate });
         },
         {
             validate: validate ?? defaultValidate

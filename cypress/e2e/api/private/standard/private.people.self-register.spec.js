@@ -1,34 +1,25 @@
 /// <reference types="cypress" />
 
+import { seedPerson, seedFamily } from "../../../../support/people-fixtures";
+
 describe("API Private Self-Register Review", () => {
     const created = { persons: [], families: [] };
 
     const unique = (prefix) => `${prefix}${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
     const registerPerson = () =>
-        cy
-            .request({
-                method: "POST",
-                url: "/api/public/register/person",
-                body: {
+        seedPerson({
                     firstName: "Cypress",
                     lastName: unique("Pending"),
                     email: "pending@example.com",
                     gender: 1,
-                },
-            })
-            .then((resp) => {
-                expect(resp.status).to.eq(200);
-                created.persons.push(resp.body.Id);
-                return resp.body.Id;
+                }).then((resp) => {
+                created.persons.push(resp.Id);
+                return resp.Id;
             });
 
     const registerFamily = () =>
-        cy
-            .request({
-                method: "POST",
-                url: "/api/public/register/family",
-                body: {
+        seedFamily({
                     Name: unique("PendingFam"),
                     Address1: "1 Review St",
                     Address2: "",
@@ -52,12 +43,9 @@ describe("API Private Self-Register Review", () => {
                             hideAge: false,
                         },
                     ],
-                },
-            })
-            .then((resp) => {
-                expect(resp.status).to.eq(200);
-                created.families.push(resp.body.Id);
-                return resp.body.Id;
+                }).then((resp) => {
+                created.families.push(resp.Id);
+                return resp.Id;
             });
 
     const pendingPersonIds = () =>
@@ -84,13 +72,13 @@ describe("API Private Self-Register Review", () => {
         });
     });
 
-    it("Flags a public person registration as pending review", () => {
+    it("Lists a legacy person registration awaiting review", () => {
         registerPerson().then((id) => {
             pendingPersonIds().then((ids) => expect(ids).to.include(id));
         });
     });
 
-    it("Flags a public family registration as pending review", () => {
+    it("Lists a legacy family registration awaiting review", () => {
         registerFamily().then((id) => {
             pendingFamilyIds().then((ids) => expect(ids).to.include(id));
         });

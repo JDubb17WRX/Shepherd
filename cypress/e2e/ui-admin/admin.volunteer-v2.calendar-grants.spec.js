@@ -5,7 +5,6 @@
  * editor offering a coordinator only the calendars they may pin to.
  * Design: docs/design/volunteer-v2.md §0.8 D25, §2.16; member-portal-design.md §5.3.
  *
- * API setup runs before a fresh login: cy.request() rotates the PHP session cookie.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -29,16 +28,13 @@ function dbOk(sql, params = []) {
     });
 }
 
-function freshLogin(username, password) {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(username);
-    cy.get("input[name=Password]").type(`${password}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function loginAs(username, password) {
+    cy.setupLoginSession(`ui-${username}`, username, password);
+    return cy.visit("/");
 }
 
 function adminLogin() {
-    freshLogin(Cypress.testEnv("admin.username"), Cypress.testEnv("admin.password"));
+    loginAs(Cypress.testEnv("admin.username"), Cypress.testEnv("admin.password"));
 }
 
 function setVersion(value) {
@@ -175,7 +171,9 @@ describe("Volunteer v2 D25 — calendar grants in the UI", () => {
     it("does not offer the field on a ministry's own calendar", () => {
         adminLogin();
         openSidebar();
+        cy.intercept("GET", `**/api/calendars/${ministryCalendar.A}`).as("ministryCalendarDetails");
         cy.get(`.calendarproperties[data-calendarid="${ministryCalendar.A}"]`, { timeout: 20000 }).click();
+        cy.wait("@ministryCalendarDetails").its("response.statusCode").should("eq", 200);
         cy.get(".bootbox .modal-body").should("be.visible").and("contain", "Access Token");
         cy.get("#calendarMinistryGrantsField").should("not.exist");
     });
@@ -209,7 +207,7 @@ describe("Volunteer v2 D25 — calendar grants in the UI", () => {
         cy.get(`#ministry-event-form-calendars .ministry-event-calendar[value="${PUBLIC_CALENDAR}"]`).should("exist");
         cy.get("#ministry-event-form-calendars-hint").should("contain", "You may add events to every calendar");
 
-        freshLogin(Cypress.testEnv("standard.username"), Cypress.testEnv("standard.password"));
+        loginAs(Cypress.testEnv("standard.username"), Cypress.testEnv("standard.password"));
         openNewEvent();
         cy.get(`#ministry-event-form-calendars .ministry-event-calendar[value="${ministryCalendar.A}"]`).should("exist");
         cy.get(`#ministry-event-form-calendars .ministry-event-calendar[value="${PUBLIC_CALENDAR}"]`).should("not.exist");
@@ -238,7 +236,7 @@ describe("Volunteer v2 D25 — calendar grants in the UI", () => {
             eventId = rows[0].event_id;
         });
 
-        freshLogin(Cypress.testEnv("standard.username"), Cypress.testEnv("standard.password"));
+        loginAs(Cypress.testEnv("standard.username"), Cypress.testEnv("standard.password"));
         cy.then(() => cy.visit(`/event/editor/${eventId}`));
         cy.intercept("POST", "**/api/events/*").as("saveEvent");
 

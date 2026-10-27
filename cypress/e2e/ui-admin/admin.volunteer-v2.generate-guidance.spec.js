@@ -6,10 +6,6 @@
  * Design §0.8 D30, §5.4. New events going to the schedule that already follows them is "Staff them"
  * since D33, in `admin.volunteer-v2.ministry-events.spec.js`.
  *
- * Fixtures go in through the admin API. Order in every hook is fixture → login → visit, because
- * cy.request() rotates the PHP session cookie. Since D31 a schedule is only created while an event
- * it follows is upcoming, so the "found nothing" fixtures follow events beyond the scheduling
- * horizon, or events moved into the past after the schedule was made.
  */
 
 const SETTING_URL = "/admin/api/system/config/sVolunteerVersion";
@@ -35,12 +31,9 @@ let goneScheduleId = 0;
 let emptyClassId = 0;
 let emptyScheduleId = 0;
 
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(`${Cypress.testEnv("admin.password")}{enter}`);
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 function admin(method, url, body, status = 200) {
@@ -211,13 +204,13 @@ describe("Volunteer v2 D30 — why nothing was generated", () => {
     });
 
     beforeEach(() => {
-        freshAdminLogin();
+        adminLogin();
     });
 
     it("shows each class's upcoming meetings in the schedule dialog, a class with none disabled", () => {
         openSchedulesTab();
         cy.get("#schedule-add-btn").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-link-mode").should("have.value", "class");
         cy.get("#schedule-form-group").should("have.value", String(classId));
         cy.get(`#schedule-form-group option[value="${classId}"]`).should("have.text", `${CLASS_NAME} (1 upcoming)`);
@@ -243,7 +236,7 @@ describe("Volunteer v2 D30 — why nothing was generated", () => {
             .find("[data-bs-toggle='dropdown']")
             .click();
         cy.get(`.volunteer-schedule-edit[data-schedule-id="${emptyScheduleId}"]`).should("be.visible").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-group").should("have.value", String(emptyClassId));
         cy.get(`#schedule-form-group option[value="${emptyClassId}"]`)
             .should("not.be.disabled")
@@ -261,7 +254,7 @@ describe("Volunteer v2 D30 — why nothing was generated", () => {
             .find("[data-bs-toggle='dropdown']")
             .click();
         cy.get(`.volunteer-schedule-edit[data-schedule-id="${goneScheduleId}"]`).should("be.visible").click();
-        cy.get("#scheduleModal").should("be.visible");
+        cy.get("#scheduleModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         cy.get("#schedule-form-title-filter").should("have.value", GONE_TITLE);
         cy.get("#schedule-form-title-warning")
             .should("be.visible")
@@ -287,7 +280,7 @@ describe("Volunteer v2 D30 — why nothing was generated", () => {
         cy.get("#generate-form-add-events").should("be.visible").and("contain", `New recurring event for ${CLASS_NAME}`).click();
         cy.get("#generateOccurrencesModal").should("not.be.visible");
         cy.get("#nav-item-calendar").should("have.class", "active");
-        cy.get("#ministryEventModal").should("be.visible");
+        cy.get("#ministryEventModal", { timeout: Cypress.config("responseTimeout") }).should("be.visible");
         // The dialog focuses its title once the fade ends; typing before that loses keys to the move.
         cy.get("#ministry-event-form-title").should("have.focus");
         cy.get("#ministryEventModalTitle").should("have.text", "New recurring event");

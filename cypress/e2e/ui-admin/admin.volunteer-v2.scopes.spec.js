@@ -28,10 +28,6 @@
  * The second case deliberately depends on the grant the first case made through
  * the UI rather than re-granting it over the API: that dependency is the proof.
  *
- * Order inside every hook is API setup → freshAdminLogin() → cy.visit(),
- * because cy.request() rotates the PHP session cookie (cypress-testing.md).
- * Fixture rows are removed in `before` as well as `after`: an `after` hook does
- * not run when the runner crashes mid-spec.
  *
  * No cy.dbQuery() anywhere — the `db:query` task is registered only in
  * cypress/configs/docker.config.ts, and a ui-admin spec that calls it fails with
@@ -58,20 +54,9 @@ let ministryId = 0;
 let teamId = 0;
 
 // Local helpers — NOT cy.* commands (cypress-testing.md).
-function freshAdminLogin() {
-    cy.clearCookies();
-    cy.visit("/session/begin");
-    cy.get("input[name=User]").type(Cypress.testEnv("admin.username"));
-    cy.get("input[name=Password]").type(Cypress.testEnv("admin.password") + "{enter}");
-    // One retry: under CI load the submit occasionally lands back on the login
-    // page although the server logged the login (a lost cookie on the redirect).
-    cy.url().then((url) => {
-        if (url.includes("/session/begin")) {
-            cy.get("input[name=User]").clear().type(Cypress.testEnv("admin.username"));
-            cy.get("input[name=Password]").clear().type(Cypress.testEnv("admin.password") + "{enter}");
-        }
-    });
-    cy.url().should("not.include", "/session/begin");
+function adminLogin() {
+    cy.setupAdminSession();
+    return cy.visit("/");
 }
 
 /** Log in as the standard user (person 3) — the person this spec makes a coordinator. */
@@ -201,7 +186,7 @@ describe("Volunteer v2 coordinator and team-leader grants (#9706 UI)", () => {
 
     describe("the ministry page card", () => {
         beforeEach(() => {
-            freshAdminLogin();
+            adminLogin();
         });
 
         it("shows the card with an explanation and an empty coordinator list", () => {
