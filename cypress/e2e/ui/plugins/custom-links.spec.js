@@ -1,27 +1,19 @@
 describe('Custom Links Plugin UI - Security & Functionality', () => {
+    let wasActive;
+
     before(() => {
-        // Enable the custom-links plugin before running tests
-        cy.setupAdminSession();
-        cy.request({
-            method: 'POST',
-            url: '/plugins/api/plugins/custom-links/enable',
-            headers: { 'Content-Type': 'application/json' },
-            failOnStatusCode: false
-        }).then((response) => {
-            // Plugin may already be enabled, that's OK
-            expect(response.status).to.be.oneOf([200, 400]);
+        cy.makePrivateAdminAPICall('GET', '/plugins/api/plugins').then(({ body }) => {
+            wasActive = body.data.find((plugin) => plugin.id === 'custom-links').isActive;
         });
+        cy.makePrivateAdminAPICall('POST', '/plugins/api/plugins/custom-links/enable', null, 200)
+            .its('body.success').should('eq', true);
     });
 
     after(() => {
-        // Disable the plugin after tests to leave clean state
-        cy.setupAdminSession();
-        cy.request({
-            method: 'POST',
-            url: '/plugins/api/plugins/custom-links/disable',
-            headers: { 'Content-Type': 'application/json' },
-            failOnStatusCode: false
-        });
+        if (wasActive === false) {
+            cy.makePrivateAdminAPICall('POST', '/plugins/api/plugins/custom-links/disable', null, 200)
+                .its('body.success').should('eq', true);
+        }
     });
 
     beforeEach(() => {

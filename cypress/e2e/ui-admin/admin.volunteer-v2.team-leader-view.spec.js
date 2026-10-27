@@ -43,7 +43,7 @@ function login(usernameKey, passwordKey) {
 }
 
 const leaderLogin = () => login("standard.username", "standard.password");
-const adminLogin = () => login("admin.username", "admin.password");
+const adminLogin = () => cy.setupAdminSession();
 
 function adminApi(method, url, body, expectedStatus = 200) {
     return cy.makePrivateAdminAPICall(method, url, body, expectedStatus);
@@ -72,7 +72,7 @@ function cleanupFixtures() {
 }
 
 before(() => {
-    cy.rememberTestEnv(["admin.username", "admin.password", "standard.username", "standard.password"]);
+    cy.rememberTestEnv(["standard.username", "standard.password"]);
     cy.useChurchTimeZone();
 });
 
